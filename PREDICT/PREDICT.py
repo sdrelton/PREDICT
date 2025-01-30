@@ -1,3 +1,4 @@
+import pandas as pd
 class PREDICT:
     """
     A class used to represent the PREDICT model.
@@ -7,6 +8,8 @@ class PREDICT:
         The data to be used by the model.
     Model : any
         The model to be used for prediction.
+    dateCol: str
+        The column in the data that contains the date.
     startDate : any
         The start date for the prediction window.
     endDate : any
@@ -33,19 +36,29 @@ class PREDICT:
         Runs the prediction model over the specified date range.
     """
     
-    def __init__(self):
+    def __init__(self, data, Model, dateCol = 'date', startDate='min', endDate='max', timestep='week'):
         """
         Initializes the PREDICT class with default values.
         """
-        data = None
-        Model = None
-        startDate = None
-        endDate = None
-        timestep = None
-        currentWindowStart = startDate
-        currentWindowEnd = startDate + timestep
-        log = dict()
-        logHooks = list()
+        self.data = data
+        self.Model = Model
+        self.dateCol = dateCol
+        if startDate == 'min':
+            self.startDate = self.data[self.dateCol].min()
+        else:
+            self.startDate = startDate
+        if endDate == 'max':
+            self.endDate = self.data[self.dateCol].max()
+        else:
+            self.endDate = endDate
+        if timestep == 'week':
+            self.timestep = pd.Timedelta(weeks=1)
+        else:
+            self.timestep = timestep
+        self.currentWindowStart = self.startDate
+        self.currentWindowEnd = self.startDate + self.timestep
+        self.log = dict()
+        self.logHooks = list()
 
     def addLogHook(self, hook):
         """
@@ -69,6 +82,8 @@ class PREDICT:
         val : any
             The value for the log entry.
         """
+        if key not in self.log.keys():
+            self.log[key] = dict()
         self.log[key][date] = val
     
     def getLog(self):
@@ -87,10 +102,13 @@ class PREDICT:
         """
         while self.currentWindowEnd <= self.endDate:
             self.Model.predict(self.data)
-            self.currentWindowStart += self.timestep
-            self.currentWindowEnd += self.timestep
+            dates = self.data[self.dateCol]
+            curdata = self.data[(dates >= self.currentWindowStart) & (dates < self.currentWindowEnd)]
             for hook in self.logHooks:
-                hook(self)
+                logname, result = hook(curdata)
+                self.addLog(logname, self.currentWindowEnd, result)
             if self.Model.trigger(self.data):
                 self.Model.update(self.data)
                 # Add to log
+            self.currentWindowStart += self.timestep
+            self.currentWindowEnd += self.timestep
