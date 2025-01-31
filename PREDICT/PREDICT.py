@@ -2,38 +2,29 @@ import pandas as pd
 class PREDICT:
     """
     A class used to represent the PREDICT model.
+    
     Attributes
     ----------
-    data : any
+    data : pd.DataFrame
         The data to be used by the model.
-    model : any
+    model : PREDICTModel
         The model to be used for prediction.
     dateCol: str
         The column in the data that contains the date.
-    startDate : any
+    startDate : str, dt.datetime
         The start date for the prediction window.
-    endDate : any
+    endDate : str, pd.datetime
         The end date for the prediction window.
-    timestep : any
+    timestep : str, dt.timedelta
         The timestep for the prediction window.
-    currentWindowStart : any
+    currentWindowStart : pd.datetime
         The current start date of the prediction window.
-    currentWindowEnd : any
+    currentWindowEnd : pd.datetime
         The current end date of the prediction window.
     log : dict
         A dictionary to store logs.
     logHooks : list
         A list of hooks to be called during logging.
-    Methods
-    -------
-    addLogHook(hook)
-        Adds a hook to the logHooks list.
-    addLog(key, date, val)
-        Adds a log entry to the log dictionary.
-    getLog()
-        Returns the log dictionary.
-    run()
-        Runs the prediction model over the specified date range.
     """
     
     def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='week'):

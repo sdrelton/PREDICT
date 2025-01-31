@@ -1,21 +1,6 @@
 class PREDICTModel:
     """
     A class used to represent the PREDICT Model.
-
-    Methods
-    -------
-    __init__()
-        Initializes the model with pre and post prediction hooks.
-    predict(input_data)
-        Makes predictions based on the input data.
-    trigger(input_data)
-        Evaluates whether the model needs to be updated.
-    update(input_data)
-        Updates the model if required.
-    addPrePredictHook(hook)
-        Adds a hook to be executed before making predictions.
-    addPostPredictHook(hook)
-        Adds a hook to be executed after making predictions.
     """
 
     def __init__(self):
@@ -96,7 +81,7 @@ class EvaluatePredictions(PREDICTModel):
     """
     A class used to evaluate the predictions arising from another model which are already in the dataframe.
     
-    Fields
+    Attributes
     ------
     colName : str
         The name of the column in the dataframe containing the predictions (default='prediction').
