@@ -84,3 +84,25 @@ class PREDICTModel:
             A function to be executed after predictions.
         """
         self.postPredictHooks.append(hook)
+
+
+
+
+
+
+
+
+class EvaluatePredictions(PREDICTModel):
+    """
+    A class used to evaluate the predictions arising from another model which are already in the dataframe.
+    
+    Fields
+    ------
+    colName : str
+        The name of the column in the dataframe containing the predictions (default='prediction').
+    """
+    def __init__(self, colName='prediction'):
+        self.colName = colName
+        
+    def predict(self, input_data):
+        return input_data[self.colName]

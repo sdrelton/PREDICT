@@ -6,7 +6,7 @@ class PREDICT:
     ----------
     data : any
         The data to be used by the model.
-    Model : any
+    model : any
         The model to be used for prediction.
     dateCol: str
         The column in the data that contains the date.
@@ -36,12 +36,12 @@ class PREDICT:
         Runs the prediction model over the specified date range.
     """
     
-    def __init__(self, data, Model, dateCol = 'date', startDate='min', endDate='max', timestep='week'):
+    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='week'):
         """
         Initializes the PREDICT class with default values.
         """
         self.data = data
-        self.Model = Model
+        self.model = model
         self.dateCol = dateCol
         if startDate == 'min':
             self.startDate = self.data[self.dateCol].min()
@@ -101,14 +101,14 @@ class PREDICT:
         Runs the prediction model over the specified date range.
         """
         while self.currentWindowEnd <= self.endDate:
-            self.Model.predict(self.data)
+            self.model.predict(self.data)
             dates = self.data[self.dateCol]
             curdata = self.data[(dates >= self.currentWindowStart) & (dates < self.currentWindowEnd)]
             for hook in self.logHooks:
                 logname, result = hook(curdata)
                 self.addLog(logname, self.currentWindowEnd, result)
-            if self.Model.trigger(self.data):
-                self.Model.update(self.data)
+            if self.model.trigger(self.data):
+                self.model.update(self.data)
                 # Add to log
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
