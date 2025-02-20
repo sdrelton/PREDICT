@@ -1,3 +1,12 @@
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+
+def __sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def __inverse_sigmoid(y):
+    return np.log(y / (1 - y))
+
 class PREDICTModel:
     """
     A class used to represent the PREDICT Model.
@@ -69,12 +78,7 @@ class PREDICTModel:
             A function to be executed after predictions.
         """
         self.postPredictHooks.append(hook)
-
-
-
-
-
-
+        
 
 
 class EvaluatePredictions(PREDICTModel):
@@ -91,3 +95,50 @@ class EvaluatePredictions(PREDICTModel):
         
     def predict(self, input_data):
         return input_data[self.colName]
+    
+    
+class RecalibratePredictions(PREDICTModel):
+    """
+    A class which recalibrates the predictions arising from another model based on the trigger function.
+    
+    Recalibration involves using a logistic regression to adjust the model predictions.
+    
+    Attributes
+    ----------
+    colName: str
+        The name of the column in the dataframe containing the predictions (default='prediction').
+        
+    trigger: callable
+        A function which determines whether the model needs to be updated.
+    """
+    
+    def __init__(self, predictColName='prediction', outcomeColName='outcome', trigger=None):
+        super(RecalibratePredictions, self).__init__()
+        self.predictColName = predictColName
+        self.outcomeColName = outcomeColName
+        self.trigger = trigger
+        
+    def predict(self, input_data):
+        preds = input_data[self.predictColName]
+        # Recalibrate from any hooks that have been added
+        for hook in self.postPredictHooks:
+            preds = hook(preds)
+        return preds
+    
+    def update(self, input_data):
+        
+        # Get predictions
+        preds = self.predict(input_data)
+        
+        # Convert to linear predictor scale
+        lp = __inverse_sigmoid(preds)
+        
+        # Work out model calibration
+        logreg = LogisticRegression(penalty=None, max_iter=1000)
+        logreg.fit(lp.reshape(-1, 1), input_data[self.outcomeColName])
+        intercept = logreg.intercept_
+        scale = logreg.coef_[0]
+        
+        # Add hook to adjust predictions accordingly
+        recal = lambda p: __sigmoid(__inverse_sigmoid(p) * scale + intercept)
+        self.addPostPredictHook(recal)

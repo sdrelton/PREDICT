@@ -101,5 +101,6 @@ class PREDICT:
             if self.model.trigger(self.data):
                 self.model.update(self.data)
                 # Add to log
+                self.addLog('Model Updated', self.currentWindowEnd, True)
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
