@@ -1,9 +1,11 @@
 import numpy as np
+from types import MethodType
+from PREDICT.Models import PREDICTModel
 
-def accuracy_threshold(threshold, prediction_threshold=0.5):
-    return lambda x: _accuracy_threshold(x, threshold, prediction_threshold)
+def AccuracyThreshold(model, threshold, prediction_threshold=0.5):
+    return MethodType(lambda self, x: __AccuracyThreshold(self, x, threshold, prediction_threshold), model)
 
-def _accuracy_threshold(self, input_data, threshold, prediction_threshold):
+def __AccuracyThreshold(self, input_data, threshold, prediction_threshold):
     """
     Trigger function to update model if accuracy falls below a given threshold.
     

@@ -1,11 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 
-def __sigmoid(x):
-    return 1 / (1 + np.exp(-x))
 
-def __inverse_sigmoid(y):
-    return np.log(y / (1 - y))
 
 class PREDICTModel:
     """
@@ -103,20 +99,25 @@ class RecalibratePredictions(PREDICTModel):
     
     Recalibration involves using a logistic regression to adjust the model predictions.
     
+    Needs to be followed by setting a trigger function.
+    
     Attributes
     ----------
     colName: str
         The name of the column in the dataframe containing the predictions (default='prediction').
         
-    trigger: callable
-        A function which determines whether the model needs to be updated.
     """
     
-    def __init__(self, predictColName='prediction', outcomeColName='outcome', trigger=None):
+    def __init__(self, predictColName='prediction', outcomeColName='outcome'):
         super(RecalibratePredictions, self).__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
-        self.trigger = trigger
+        
+    def __sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def __inverse_sigmoid(self, y):
+        return np.log(y / (1 - y))
         
     def predict(self, input_data):
         preds = input_data[self.predictColName]
@@ -131,14 +132,14 @@ class RecalibratePredictions(PREDICTModel):
         preds = self.predict(input_data)
         
         # Convert to linear predictor scale
-        lp = __inverse_sigmoid(preds)
+        lp = self.__inverse_sigmoid(preds)
         
         # Work out model calibration
         logreg = LogisticRegression(penalty=None, max_iter=1000)
-        logreg.fit(lp.reshape(-1, 1), input_data[self.outcomeColName])
+        logreg.fit(lp, input_data[self.outcomeColName])
         intercept = logreg.intercept_
         scale = logreg.coef_[0]
         
         # Add hook to adjust predictions accordingly
-        recal = lambda p: __sigmoid(__inverse_sigmoid(p) * scale + intercept)
+        recal = lambda p: self.__sigmoid(self.__inverse_sigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
