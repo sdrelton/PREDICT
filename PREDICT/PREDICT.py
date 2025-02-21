@@ -98,8 +98,8 @@ class PREDICT:
             for hook in self.logHooks:
                 logname, result = hook(curdata)
                 self.addLog(logname, self.currentWindowEnd, result)
-            if self.model.trigger(self.data):
-                self.model.update(self.data)
+            if self.model.trigger(curdata):
+                self.model.update(curdata)
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
             self.currentWindowStart += self.timestep
