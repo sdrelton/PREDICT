@@ -62,6 +62,36 @@ def __AUROCComputation(model, df, outcomeCol):
     fpr, tpr, _ = skl.metrics.roc_curve(df[outcomeCol], predictions)
     return 'AUROC', skl.metrics.auc(fpr, tpr)
 
+def AUPRC(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the AUPRC of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the AUPRC of the model at each timestep when fed data.
+    """
+    return lambda df: __AUPRCComputation(model, df, outcomeCol)
+
+def __AUPRCComputation(model, df, outcomeCol):
+    """
+    Function to compute the AUPRC of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('AUPRC'), and the resulting AUPRC of the model.
+    """
+    predictions = model.predict(df)
+    precision, recall, _ = skl.metrics.precision_recall_curve(df[outcomeCol], predictions)
+    return 'AUPRC', skl.metrics.auc(recall, precision)
+
+
 def F1Score(model, outcomeCol='outcome', threshold=0.5):
     """
     LogHook to compute the F1 score of a model at each timestep.
@@ -232,4 +262,69 @@ def __SpecificityComputation(model, df, outcomeCol, threshold):
     tn = np.sum((classes == 0) & (outcomes == 0))
     fp = np.sum((classes == 1) & (outcomes == 0))
     return 'Specificity', tn / (tn + fp)
+
+
+def CalibrationSlope(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the calibration slope of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the calibration slope of the model at each timestep when fed data.
+    """
+    return lambda df: __CalibrationSlopeComputation(model, df, outcomeCol)
+
+def __CalibrationSlopeComputation(model, df, outcomeCol):
+    """
+    Function to compute the calibration slope of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
+    """
+    predictions = model.predict(df)
+    predictions_np = predictions.to_numpy().reshape(-1, 1)
+    probas = skl.preprocessing.StandardScaler().fit_transform(predictions_np)
+    slope = skl.linear_model.LinearRegression().fit(probas, df[outcomeCol].to_numpy()).coef_[0]
+    return 'CalibrationSlope', slope
+
+
+
+def CITL(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the Calibration-In-The-Large (CITL) of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the CITL of the model at each timestep when fed data.
+    """
+    return lambda df: __CITLComputation(model, df, outcomeCol)
+
+def __CITLComputation(model, df, outcomeCol):
+    """
+    Function to compute the Calibration-In-The-Large (CITL) of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('CITL'), and the resulting CITL of the model.
+    """
+    predictions = model.predict(df)
+    mean_pred = predictions.mean()
+    mean_outcome = df[outcomeCol].mean()
+    citl = mean_pred - mean_outcome
+    return 'CITL', citl
 
