@@ -19,10 +19,8 @@ class PREDICTModel:
         """
         Makes predictions based on the input data.
 
-        Parameters
-        ----------
-        input_data : any
-            The input data for making predictions.
+        Args:
+            input_data (any): The input data for making predictions.
         """
         pass
 
@@ -30,15 +28,11 @@ class PREDICTModel:
         """
         Evaluates whether the model needs to be updated based on the input data.
 
-        Parameters
-        ----------
-        input_data : any
-            The input data to evaluate the model update.
+        Args: 
+            input_data (any): The input data to evaluate the model update.
 
-        Returns
-        -------
-        bool
-            Returns False indicating no update is required.
+        Returns:
+            bool: Returns False indicating no update is required.
         """
         return False
 
@@ -46,10 +40,8 @@ class PREDICTModel:
         """
         Updates the model if required based on the input data.
 
-        Parameters
-        ----------
-        input_data : any
-            The input data for updating the model.
+        Args:
+            input_data (any): The input data for updating the model.
         """
         pass
 
@@ -57,10 +49,8 @@ class PREDICTModel:
         """
         Adds a hook to be executed before making predictions.
 
-        Parameters
-        ----------
-        hook : callable
-            A function to be executed before predictions.
+        Args:
+            hook (callable): A function to be executed before predictions.
         """
         self.prePredictHooks.append(hook)
         
@@ -68,10 +58,8 @@ class PREDICTModel:
         """
         Adds a hook to be executed after making predictions.
 
-        Parameters
-        ----------
-        hook : callable
-            A function to be executed after predictions.
+        Args:
+            hook (callable): A function to be executed after predictions.
         """
         self.postPredictHooks.append(hook)
         
@@ -81,10 +69,8 @@ class EvaluatePredictions(PREDICTModel):
     """
     A class used to evaluate the predictions arising from another model which are already in the dataframe.
     
-    Attributes
-    ------
-    colName : str
-        The name of the column in the dataframe containing the predictions (default='prediction').
+    Args:
+        colName (str): The name of the column in the dataframe containing the predictions (default='prediction').
     """
     def __init__(self, colName='prediction'):
         self.colName = colName
@@ -101,13 +87,9 @@ class RecalibratePredictions(PREDICTModel):
     
     Needs to be followed by setting a trigger function (see example).
     
-    Attributes
-    ----------
-    predictColName: str
-        The name of the column in the dataframe containing the predictions (default='prediction').
-        
-    outcomeColName: str
-        The name of the column in the dataframe containing the outcomes (default='outcome').
+    Args:
+        predictColName (str): The name of the column in the dataframe containing the predictions (default='prediction').
+        outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
         
     Examples
     --------
