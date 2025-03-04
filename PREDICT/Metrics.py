@@ -33,22 +33,22 @@ def __AccuracyComputation(model, df, outcomeCol, threshold):
     outcomes = df[outcomeCol].astype(int)
     return 'Accuracy', np.mean(classes == outcomes)
 
-def AUC(model, outcomeCol='outcome'):
+def AUROC(model, outcomeCol='outcome'):
     """
-    LogHook to compute the AUC of a model at each timestep.
+    LogHook to compute the AUROC of a model at each timestep.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        logHook: A hook to compute the AUC of the model at each timestep when fed data.
+        logHook: A hook to compute the AUROC of the model at each timestep when fed data.
     """
-    return lambda df: __AUCComputation(model, df, outcomeCol)
+    return lambda df: __AUROCComputation(model, df, outcomeCol)
 
-def __AUCComputation(model, df, outcomeCol):
+def __AUROCComputation(model, df, outcomeCol):
     """
-    Function to compute the AUC of a model on a given dataframe.
+    Function to compute the AUROC of a model on a given dataframe.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -56,11 +56,11 @@ def __AUCComputation(model, df, outcomeCol):
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        hookname (str), result (float): The name of the hook ('AUC'), and the resulting AUC of the model.
+        hookname (str), result (float): The name of the hook ('AUROC'), and the resulting AUROC of the model.
     """
     predictions = model.predict(df)
     fpr, tpr, _ = skl.metrics.roc_curve(df[outcomeCol], predictions)
-    return 'AUC', skl.metrics.auc(fpr, tpr)
+    return 'AUROC', skl.metrics.auc(fpr, tpr)
 
 def F1Score(model, outcomeCol='outcome', threshold=0.5):
     """
