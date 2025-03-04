@@ -84,12 +84,13 @@ def __F1scoreComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
 
     Returns:
         hookname (str), result (float): The name of the hook ('F1score'), and the resulting F1 score of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fp = np.sum((classes == 1) & (outcomes == 0))
@@ -118,12 +119,13 @@ def __PrecisionComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Precision'), and the resulting precision of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fp = np.sum((classes == 1) & (outcomes == 0))
@@ -151,12 +153,13 @@ def __RecallComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Recall'), and the resulting recall of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fn = np.sum((classes == 0) & (outcomes == 1))
@@ -184,12 +187,13 @@ def __SensitivityComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Sensitivity'), and the resulting sensitivity of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fn = np.sum((classes == 0) & (outcomes == 1))
@@ -217,12 +221,13 @@ def __SpecificityComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Specificity'), and the resulting specificity of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tn = np.sum((classes == 0) & (outcomes == 0))
     fp = np.sum((classes == 1) & (outcomes == 0))
