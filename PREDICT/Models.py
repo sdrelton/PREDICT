@@ -143,7 +143,7 @@ class RecalibratePredictions(PREDICTModel):
         lp = self.__inverseSigmoid(preds)
         
         # Work out model calibration
-        logreg = LogisticRegression(penalty='none', max_iter=1000)
+        logreg = LogisticRegression(penalty=None, max_iter=1000) # 'l1', 'elasticnet', 'l2' or None
         logreg.fit(np.array(lp).reshape(-1, 1), input_data[self.outcomeColName].astype(int))
         intercept = logreg.intercept_
         scale = logreg.coef_[0]
