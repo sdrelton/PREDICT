@@ -1,6 +1,7 @@
 import numpy as np
 import sklearn as skl
 from sklearn.linear_model import LogisticRegression
+import statsmodels.api as sm
 
 def Accuracy(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -368,9 +369,9 @@ def __OEComputation(model, df, outcomeCol):
     return 'O/E', oe_ratio
 
 
-def pseudoR2(model, outcomeCol='outcome'):
+def CoxSnellR2(model, outcomeCol='outcome'):
     """
-    LogHook to compute the pseudo R^2 value of a model at each timestep.
+    LogHook to compute the Cox and Snell R^2 value of a model at each timestep.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -379,26 +380,34 @@ def pseudoR2(model, outcomeCol='outcome'):
     Returns:
         logHook: A hook to compute the pseudo R^2 value of the model at each timestep when fed data.
     """
-    return lambda df: __pseudoR2Computation(model, df, outcomeCol)
+    return lambda df: __CoxSnellR2Computation(model, df, outcomeCol)
 
-def __pseudoR2Computation(model, df, outcomeCol):
+def __CoxSnellR2Computation(model, df, outcomeCol):
     """
-    Function to compute the pseudo (McFadden's) R^2 value of a model on a given dataframe.
+    Function to compute the pseudo (Cox and Snell's) R^2 value of a model on a given dataframe.
+    Cox & Snell's pseudo R², measures the proportion of the variation in the outcome variable that is explained by the predictor variable.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
-        df (pd.DataFrame): DataFrame to evaluate the model on, must have a column of the .
+        df (pd.DataFrame): DataFrame to evaluate the model on, must have a column of the probabilities.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        hookname (str), result (float): The name of the hook ('pseudoR2'), and the resulting pseudo R^2 value of the model.
+        hookname (str), result (float): The name of the hook ('CoxSnellR2'), and the resulting pseudo R^2 value of the model.
     """
-    predictions = model.predict(df)
-    actuals = df[outcomeCol]
-    
-    mean_outcome = actuals.mean()
-    ss_total = ((actuals - mean_outcome) ** 2).sum()
-    ss_residual = ((actuals - predictions) ** 2).sum()
-    
-    pseudo_r2 = 1 - (ss_residual / ss_total)
-    return 'pseudoR2', pseudo_r2
+    X = sm.add_constant(df['prediction'])  # Add constant term for intercept
+    y = df[outcomeCol]
+    logit_model = sm.Logit(y, X)
+    result = logit_model.fit(disp=False)
+
+    # Fit null model (model with only the intercept)
+    X_null = np.ones(len(y))  # Null model has only the intercept (no predictors)
+    logit_model_null = sm.Logit(y, X_null)
+    result_null = logit_model_null.fit(disp=False)
+
+    # Calculate Cox & Snell's pseudo R²
+    ll_full = result.llf  # Log-likelihood of the fitted model
+    ll_null = result_null.llf  # Log-likelihood of the null model
+
+    cox_snell_r2 = 1 - np.exp((ll_null - ll_full) * 2 / len(y))
+    return 'CoxSnellR2', cox_snell_r2
