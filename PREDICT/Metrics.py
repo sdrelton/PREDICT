@@ -1,5 +1,6 @@
 import numpy as np
 import sklearn as skl
+from sklearn.linear_model import LogisticRegression
 
 def Accuracy(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -290,10 +291,17 @@ def __CalibrationSlopeComputation(model, df, outcomeCol):
         hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
     """
     predictions = model.predict(df)
-    predictions_np = predictions.to_numpy().reshape(-1, 1)
-    probas = skl.preprocessing.StandardScaler().fit_transform(predictions_np)
-    slope = skl.linear_model.LinearRegression().fit(probas, df[outcomeCol].to_numpy()).coef_[0]
-    return 'CalibrationSlope', slope
+    lp_reshaped = predictions.to_numpy().reshape(-1, 1)
+
+    scaler = skl.preprocessing.StandardScaler()
+    lp_scaled = scaler.fit_transform(lp_reshaped)
+
+    LogRegModel = LogisticRegression()
+    LogRegModel.fit(lp_scaled, df[outcomeCol])
+
+    calibration_slope = LogRegModel.coef_[0][0]
+
+    return 'CalibrationSlope', calibration_slope
 
 
 
@@ -375,7 +383,7 @@ def pseudoR2(model, outcomeCol='outcome'):
 
 def __pseudoR2Computation(model, df, outcomeCol):
     """
-    Function to compute the pseudo R^2 value of a model on a given dataframe.
+    Function to compute the pseudo (McFadden's) R^2 value of a model on a given dataframe.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
