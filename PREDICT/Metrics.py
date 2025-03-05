@@ -297,7 +297,7 @@ def __CalibrationSlopeComputation(model, df, outcomeCol):
     scaler = skl.preprocessing.StandardScaler()
     probs_scaled = scaler.fit_transform(probs_reshaped)
 
-    LogRegModel = LogisticRegression()
+    LogRegModel = LogisticRegression(penalty=None)
     LogRegModel.fit(probs_scaled, df[outcomeCol])
 
     calibration_slope = LogRegModel.coef_[0][0]
@@ -331,10 +331,20 @@ def __CITLComputation(model, df, outcomeCol):
     Returns:
         hookname (str), result (float): The name of the hook ('CITL'), and the resulting CITL of the model.
     """
-    predictions = model.predict(df)
-    mean_pred = predictions.mean()
-    mean_outcome = df[outcomeCol].mean()
-    citl = mean_pred - mean_outcome
+
+    outcomes = df[outcomeCol] 
+
+    probs = df['prediction']
+    lp = np.log(probs / (1 - probs))
+
+    # Add an intercept to the model
+    X = np.ones(len(lp))
+    y = outcomes
+
+    model = sm.GLM(y, X, family=sm.families.Binomial(), offset=lp)
+    result = model.fit()
+
+    citl = result.params[0]
     return 'CITL', citl
 
 def OE(model, outcomeCol='outcome'):
