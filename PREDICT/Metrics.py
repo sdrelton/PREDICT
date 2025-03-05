@@ -328,3 +328,35 @@ def __CITLComputation(model, df, outcomeCol):
     citl = mean_pred - mean_outcome
     return 'CITL', citl
 
+def OE(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the Observed/Expected (O/E) ratio of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the O/E ratio of the model at each timestep when fed data.
+    """
+    return lambda df: __OEComputation(model, df, outcomeCol)
+
+def __OEComputation(model, df, outcomeCol):
+    """
+    Function to compute the Observed/Expected (O/E) ratio of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('O/E'), and the resulting O/E ratio of the model.
+    """
+    predictions = model.predict(df)
+    mean_pred = predictions.mean()
+    mean_outcome = df[outcomeCol].mean()
+    oe_ratio = mean_outcome / mean_pred if mean_pred != 0 else float('inf')
+    return 'O/E', oe_ratio
+
+
