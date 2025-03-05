@@ -291,13 +291,13 @@ def __CalibrationSlopeComputation(model, df, outcomeCol):
         hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
     """
     predictions = model.predict(df)
-    lp_reshaped = predictions.to_numpy().reshape(-1, 1)
+    probs_reshaped = predictions.to_numpy().reshape(-1, 1)
 
     scaler = skl.preprocessing.StandardScaler()
-    lp_scaled = scaler.fit_transform(lp_reshaped)
+    probs_scaled = scaler.fit_transform(probs_reshaped)
 
     LogRegModel = LogisticRegression()
-    LogRegModel.fit(lp_scaled, df[outcomeCol])
+    LogRegModel.fit(probs_scaled, df[outcomeCol])
 
     calibration_slope = LogRegModel.coef_[0][0]
 
@@ -387,7 +387,7 @@ def __pseudoR2Computation(model, df, outcomeCol):
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
-        df (pd.DataFrame): DataFrame to evaluate the model on.
+        df (pd.DataFrame): DataFrame to evaluate the model on, must have a column of the .
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
