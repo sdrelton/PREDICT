@@ -360,3 +360,37 @@ def __OEComputation(model, df, outcomeCol):
     return 'O/E', oe_ratio
 
 
+def pseudoR2(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the pseudo R^2 value of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the pseudo R^2 value of the model at each timestep when fed data.
+    """
+    return lambda df: __pseudoR2Computation(model, df, outcomeCol)
+
+def __pseudoR2Computation(model, df, outcomeCol):
+    """
+    Function to compute the pseudo R^2 value of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('pseudoR2'), and the resulting pseudo R^2 value of the model.
+    """
+    predictions = model.predict(df)
+    actuals = df[outcomeCol]
+    
+    mean_outcome = actuals.mean()
+    ss_total = ((actuals - mean_outcome) ** 2).sum()
+    ss_residual = ((actuals - predictions) ** 2).sum()
+    
+    pseudo_r2 = 1 - (ss_residual / ss_total)
+    return 'pseudoR2', pseudo_r2
