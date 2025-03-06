@@ -1,5 +1,7 @@
 import numpy as np
 import sklearn as skl
+from sklearn.linear_model import LogisticRegression
+import statsmodels.api as sm
 
 def Accuracy(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -33,22 +35,22 @@ def __AccuracyComputation(model, df, outcomeCol, threshold):
     outcomes = df[outcomeCol].astype(int)
     return 'Accuracy', np.mean(classes == outcomes)
 
-def AUC(model, outcomeCol='outcome'):
+def AUROC(model, outcomeCol='outcome'):
     """
-    LogHook to compute the AUC of a model at each timestep.
+    LogHook to compute the AUROC of a model at each timestep.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        logHook: A hook to compute the AUC of the model at each timestep when fed data.
+        logHook: A hook to compute the AUROC of the model at each timestep when fed data.
     """
-    return lambda df: __AUCComputation(model, df, outcomeCol)
+    return lambda df: __AUROCComputation(model, df, outcomeCol)
 
-def __AUCComputation(model, df, outcomeCol):
+def __AUROCComputation(model, df, outcomeCol):
     """
-    Function to compute the AUC of a model on a given dataframe.
+    Function to compute the AUROC of a model on a given dataframe.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -56,11 +58,41 @@ def __AUCComputation(model, df, outcomeCol):
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        hookname (str), result (float): The name of the hook ('AUC'), and the resulting AUC of the model.
+        hookname (str), result (float): The name of the hook ('AUROC'), and the resulting AUROC of the model.
     """
     predictions = model.predict(df)
     fpr, tpr, _ = skl.metrics.roc_curve(df[outcomeCol], predictions)
-    return 'AUC', skl.metrics.auc(fpr, tpr)
+    return 'AUROC', skl.metrics.auc(fpr, tpr)
+
+def AUPRC(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the AUPRC of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the AUPRC of the model at each timestep when fed data.
+    """
+    return lambda df: __AUPRCComputation(model, df, outcomeCol)
+
+def __AUPRCComputation(model, df, outcomeCol):
+    """
+    Function to compute the AUPRC of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('AUPRC'), and the resulting AUPRC of the model.
+    """
+    predictions = model.predict(df)
+    precision, recall, _ = skl.metrics.precision_recall_curve(df[outcomeCol], predictions)
+    return 'AUPRC', skl.metrics.auc(recall, precision)
+
 
 def F1Score(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -84,12 +116,13 @@ def __F1scoreComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
 
     Returns:
         hookname (str), result (float): The name of the hook ('F1score'), and the resulting F1 score of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fp = np.sum((classes == 1) & (outcomes == 0))
@@ -118,12 +151,13 @@ def __PrecisionComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Precision'), and the resulting precision of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fp = np.sum((classes == 1) & (outcomes == 0))
@@ -151,12 +185,13 @@ def __RecallComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Recall'), and the resulting recall of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fn = np.sum((classes == 0) & (outcomes == 1))
@@ -184,12 +219,13 @@ def __SensitivityComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Sensitivity'), and the resulting sensitivity of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tp = np.sum((classes == 1) & (outcomes == 1))
     fn = np.sum((classes == 0) & (outcomes == 1))
@@ -217,14 +253,171 @@ def __SpecificityComputation(model, df, outcomeCol, threshold):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         df (pd.DataFrame): DataFrame to evaluate the model on.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+        threshold (float, optional): Probability threshold at which to classify individuals.
 
     Returns:
         hookname (str), result (float): The name of the hook ('Specificity'), and the resulting specificity of the model.
     """
     predictions = model.predict(df)
-    classes = (predictions >= 0.5).astype(int)
+    classes = (predictions >= threshold).astype(int)
     outcomes = df[outcomeCol].astype(int)
     tn = np.sum((classes == 0) & (outcomes == 0))
     fp = np.sum((classes == 1) & (outcomes == 0))
     return 'Specificity', tn / (tn + fp)
 
+
+def CalibrationSlope(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the calibration slope of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the calibration slope of the model at each timestep when fed data.
+    """
+    return lambda df: __CalibrationSlopeComputation(model, df, outcomeCol)
+
+def __CalibrationSlopeComputation(model, df, outcomeCol):
+    """
+    Function to compute the calibration slope of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
+    """
+    predictions = model.predict(df)
+    probs_reshaped = predictions.to_numpy().reshape(-1, 1)
+
+    scaler = skl.preprocessing.StandardScaler()
+    probs_scaled = scaler.fit_transform(probs_reshaped)
+
+    LogRegModel = LogisticRegression(penalty=None)
+    LogRegModel.fit(probs_scaled, df[outcomeCol])
+
+    calibration_slope = LogRegModel.coef_[0][0]
+
+    return 'CalibrationSlope', calibration_slope
+
+
+
+def CITL(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the Calibration-In-The-Large (CITL) of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the CITL of the model at each timestep when fed data.
+    """
+    return lambda df: __CITLComputation(model, df, outcomeCol)
+
+def __CITLComputation(model, df, outcomeCol):
+    """
+    Function to compute the Calibration-In-The-Large (CITL) of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('CITL'), and the resulting CITL of the model.
+    """
+
+    outcomes = df[outcomeCol] 
+
+    probs = model.predict(df)
+    lp = np.log(probs / (1 - probs))
+
+    # Add an intercept to the model
+    X = np.ones(len(lp))
+    y = outcomes
+
+    model = sm.GLM(y, X, family=sm.families.Binomial(), offset=lp)
+    result = model.fit()
+
+    citl = result.params.iloc[0]
+    return 'CITL', citl
+
+def OE(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the Observed/Expected (O/E) ratio of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the O/E ratio of the model at each timestep when fed data.
+    """
+    return lambda df: __OEComputation(model, df, outcomeCol)
+
+def __OEComputation(model, df, outcomeCol):
+    """
+    Function to compute the Observed/Expected (O/E) ratio of a model on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('O/E'), and the resulting O/E ratio of the model.
+    """
+    predictions = model.predict(df)
+    mean_pred = predictions.mean()
+    mean_outcome = df[outcomeCol].mean()
+    oe_ratio = mean_outcome / mean_pred if mean_pred != 0 else float('inf')
+    return 'O/E', oe_ratio
+
+
+def CoxSnellR2(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the Cox and Snell R^2 value of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the pseudo R^2 value of the model at each timestep when fed data.
+    """
+    return lambda df: __CoxSnellR2Computation(model, df, outcomeCol)
+
+def __CoxSnellR2Computation(model, df, outcomeCol):
+    """
+    Function to compute the pseudo (Cox and Snell's) R^2 value of a model on a given dataframe.
+    Cox & Snell's pseudo R², measures the proportion of the variation in the outcome variable that is explained by the predictor variable.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on, must have a column of the probabilities.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('CoxSnellR2'), and the resulting pseudo R^2 value of the model.
+    """
+    X = sm.add_constant(model.predict(df))  # Add constant term for intercept
+    y = df[outcomeCol]
+    logit_model = sm.Logit(y, X)
+    result = logit_model.fit(disp=False)
+
+    # Fit null model (model with only the intercept)
+    X_null = np.ones(len(y))  # Null model has only the intercept (no predictors)
+    logit_model_null = sm.Logit(y, X_null)
+    result_null = logit_model_null.fit(disp=False)
+
+    # Calculate Cox & Snell's pseudo R²
+    ll_full = result.llf  # Log-likelihood of the fitted model
+    ll_null = result_null.llf  # Log-likelihood of the null model
+
+    cox_snell_r2 = 1 - np.exp((ll_null - ll_full) * 2 / len(y))
+    return 'CoxSnellR2', cox_snell_r2
