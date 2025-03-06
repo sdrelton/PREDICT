@@ -5,3 +5,5 @@ pytest
 statsmodels
 matplotlib
 ipykernel
+sphinx
+ghp-import
