@@ -1,6 +1,8 @@
 # PREDICT
 PREDICT - Pragmatic Recalibration and Evaluation of Drift In Clinical Tools
 
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
 The PREDICT library provides a way to assess, and test potential repairs,
 for binary prediction models that might drift over time.
 Although originally designed for use in healthtech application,
