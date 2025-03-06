@@ -344,7 +344,7 @@ def __CITLComputation(model, df, outcomeCol):
     model = sm.GLM(y, X, family=sm.families.Binomial(), offset=lp)
     result = model.fit()
 
-    citl = result.params[0]
+    citl = result.params.iloc[0]
     return 'CITL', citl
 
 def OE(model, outcomeCol='outcome'):
