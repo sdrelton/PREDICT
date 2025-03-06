@@ -3,3 +3,5 @@ pandas
 scikit-learn
 pytest
 statsmodels
+matplotlib
+ipykernel
