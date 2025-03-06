@@ -334,7 +334,7 @@ def __CITLComputation(model, df, outcomeCol):
 
     outcomes = df[outcomeCol] 
 
-    probs = df['prediction']
+    probs = model.predict(df)
     lp = np.log(probs / (1 - probs))
 
     # Add an intercept to the model
@@ -405,7 +405,7 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
     Returns:
         hookname (str), result (float): The name of the hook ('CoxSnellR2'), and the resulting pseudo R^2 value of the model.
     """
-    X = sm.add_constant(df['prediction'])  # Add constant term for intercept
+    X = sm.add_constant(model.predict(df))  # Add constant term for intercept
     y = df[outcomeCol]
     logit_model = sm.Logit(y, X)
     result = logit_model.fit(disp=False)
