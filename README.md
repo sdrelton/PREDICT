@@ -52,3 +52,7 @@ To run the tests, use the following command in PowerShell:
 ```powershell
 python -m pytest -v tests/
 ```
+
+The heart disease data used for testing this code can be found [here.]('https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data')
+
+Janosi, A., Steinbrunn, W., Pfisterer, M., & Detrano, R. (1989). Heart Disease [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52P4X.
