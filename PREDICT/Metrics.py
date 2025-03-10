@@ -291,14 +291,12 @@ def __CalibrationSlopeComputation(model, df, outcomeCol):
     Returns:
         hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
     """
+    from scipy.special import logit
     predictions = model.predict(df)
-    probs_reshaped = predictions.to_numpy().reshape(-1, 1)
-
-    scaler = skl.preprocessing.StandardScaler()
-    probs_scaled = scaler.fit_transform(probs_reshaped)
+    logit_predictions = logit(predictions.to_numpy().reshape(-1, 1))
 
     LogRegModel = LogisticRegression(penalty=None)
-    LogRegModel.fit(probs_scaled, df[outcomeCol])
+    LogRegModel.fit(logit_predictions, df[outcomeCol])
 
     calibration_slope = LogRegModel.coef_[0][0]
 
