@@ -2,6 +2,7 @@ import numpy as np
 import sklearn as skl
 from sklearn.linear_model import LogisticRegression
 import statsmodels.api as sm
+from scipy.special import logit
 
 def Accuracy(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -291,7 +292,6 @@ def __CalibrationSlopeComputation(model, df, outcomeCol):
     Returns:
         hookname (str), result (float): The name of the hook ('CalibrationSlope'), and the resulting calibration slope of the model.
     """
-    from scipy.special import logit
     predictions = model.predict(df)
     logit_predictions = logit(predictions.to_numpy().reshape(-1, 1))
 
@@ -403,19 +403,14 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
     Returns:
         hookname (str), result (float): The name of the hook ('CoxSnellR2'), and the resulting pseudo R^2 value of the model.
     """
-    X = sm.add_constant(model.predict(df))  # Add constant term for intercept
     y = df[outcomeCol]
-    logit_model = sm.Logit(y, X)
-    result = logit_model.fit(disp=False)
-
-    # Fit null model (model with only the intercept)
-    X_null = np.ones(len(y))  # Null model has only the intercept (no predictors)
-    logit_model_null = sm.Logit(y, X_null)
-    result_null = logit_model_null.fit(disp=False)
+    proba = model.predict(df)
+    
+    logit_model = sm.Logit(y, sm.add_constant(proba)).fit(disp=False)
 
     # Calculate Cox & Snell's pseudo R²
-    ll_full = result.llf  # Log-likelihood of the fitted model
-    ll_null = result_null.llf  # Log-likelihood of the null model
+    ll_full = logit_model.llf  # Log-likelihood of the fitted model
+    ll_null = logit_model.llnull  # Log-likelihood of the null model
 
-    cox_snell_r2 = 1 - np.exp((ll_null - ll_full) * 2 / len(y))
+    cox_snell_r2 = 1 - np.exp(((ll_null - ll_full) * 2) / len(y))
     return 'CoxSnellR2', cox_snell_r2
