@@ -5,6 +5,7 @@ import warnings
 
 from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
 
+hd_outcomes_df = pd.read_csv('tests\\hd_model_predictions.csv')
 
 class MockModel:
     def predict(self, df):
@@ -24,6 +25,14 @@ def test_accuracy_computation():
     assert hookname == 'Accuracy'
     assert result == 1.0
 
+def test_accuracy_computation2():
+    model = MockModel()
+    
+    accuracy = Metrics.Accuracy(model, 'outcome', 0.5)
+    _, result = accuracy(hd_outcomes_df)
+
+    assert round(result,2) == 0.88
+
 def test_auroc_computation():
     model = MockModel()
     data = {
@@ -37,6 +46,14 @@ def test_auroc_computation():
 
     assert hookname == 'AUROC'
     assert np.isclose(result, 1.0)
+
+def test_auroc_computation2():
+    model = MockModel()
+    
+    auc = Metrics.AUROC(model, 'outcome')
+    _, result = auc(hd_outcomes_df)
+
+    assert round(result,2) == 0.95
 
 def test_auprc_computation():
     model = MockModel()
@@ -52,6 +69,14 @@ def test_auprc_computation():
     assert hookname == 'AUPRC'
     assert np.isclose(result, 1.0)
 
+def test_auprc_computation2():
+    model = MockModel()
+    
+    auprc = Metrics.AUPRC(model, 'outcome')
+    _, result = auprc(hd_outcomes_df)
+
+    assert round(result,2) == 0.94
+
 def test_f1_computation():
     model = MockModel()
     data = {
@@ -65,6 +90,14 @@ def test_f1_computation():
 
     assert hookname == 'F1score'
     assert np.isclose(result, 1.0)
+
+def test_f1_computation2():
+    model = MockModel()
+    
+    f1 = Metrics.F1Score(model, 'outcome', 0.5)
+    _, result = f1(hd_outcomes_df)
+
+    assert round(result,2) == 0.86
 
 def test_precision_computation():
     model = MockModel()
@@ -80,6 +113,14 @@ def test_precision_computation():
     assert hookname == 'Precision'
     assert np.isclose(result, 1.0)
 
+def test_precision_computation2():
+    model = MockModel()
+    
+    precision = Metrics.Precision(model, 'outcome', 0.5)
+    _, result = precision(hd_outcomes_df)
+
+    assert round(result,2) == 0.89
+
 def test_recall_computation():
     model = MockModel()
     data = {
@@ -93,6 +134,14 @@ def test_recall_computation():
 
     assert hookname == 'Recall'
     assert np.isclose(result, 1.0)
+
+def test_recall_computation2():
+    model = MockModel()
+    
+    recall = Metrics.Recall(model, 'outcome', 0.5)
+    _, result = recall(hd_outcomes_df)
+
+    assert round(result,2) == 0.83
 
 def test_specificity_computation():
     model = MockModel()
@@ -108,6 +157,14 @@ def test_specificity_computation():
     assert hookname == 'Specificity'
     assert np.isclose(result, 1.0)
 
+def test_specificity_computation2():
+    model = MockModel()
+    
+    specificity = Metrics.Specificity(model, 'outcome', 0.5)
+    _, result = specificity(hd_outcomes_df)
+
+    assert round(result,2) == 0.92
+
 def test_sensitivity_computation():
     model = MockModel()
     data = {
@@ -121,6 +178,14 @@ def test_sensitivity_computation():
 
     assert hookname == 'Sensitivity'
     assert np.isclose(result, 1.0)
+
+def test_sensitivity_computation2():
+    model = MockModel()
+    
+    sensitivity = Metrics.Sensitivity(model, 'outcome', 0.5)
+    _, result = sensitivity(hd_outcomes_df)
+
+    assert round(result,2) == 0.83
 
 
 def test_c_slope_to_r():
@@ -146,6 +211,14 @@ def test_c_slope_to_r2():
     _, result = calibration(df)
 
     assert np.isclose(result, 0.468914472898616, atol=1e-3)
+
+def test_c_slope():
+    model = MockModel()
+    
+    calibration = Metrics.CalibrationSlope(model, 'outcome')
+    _, result = calibration(hd_outcomes_df)
+
+    assert round(result,2) == 1.36
 
 def test_CITL_calculation():
     model = MockModel()
@@ -173,6 +246,14 @@ def test_CITL_calculation2():
 
     assert np.isclose(result, -0.336888954901901, atol=1e-3)
 
+def test_CITL_calculation3():
+    model = MockModel()
+    
+    citl = Metrics.CITL(model, 'outcome')
+    _, result = citl(hd_outcomes_df)
+
+    assert np.isclose(result, 0.27, atol=1e-3), f"Expected -0.61, got {result}"
+
 def test_OE_calculation():
     model = MockModel()
     data = {
@@ -199,6 +280,14 @@ def test_OE_calculation2():
 
     assert np.isclose(result, 0.875)
 
+def test_OE_calculation3():
+    model = MockModel()
+    
+    oe = Metrics.OE(model, 'outcome')
+    _, result = oe(hd_outcomes_df)
+
+    assert round(result,2) == 1.08
+
 def test_coxsnell_R2_calculation():
     # A perfect model raises a a PerfectSeparationWarning due to LogReg overfitting.
     
@@ -223,3 +312,11 @@ def test_coxsnell_R2_calculation():
     hookname_edge, result_edge = coxsnell_edge(df_edge)
     assert hookname_edge == 'CoxSnellR2'
     assert result_edge == 0.0  # Should be 0 for no variability in predictions
+
+def test_coxsnell_R2_calculation2():
+    model = MockModel()
+    
+    coxsnell = Metrics.CoxSnellR2(model, 'outcome')
+    _, result = coxsnell(hd_outcomes_df)
+
+    assert np.isclose(result, 0.53, atol=1e-3), f"Expected 0.53, got {result}"
