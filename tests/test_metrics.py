@@ -8,12 +8,14 @@ from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
 hd_outcomes_df = pd.read_csv('tests\\hd_model_predictions.csv')
 
 class MockModel:
+    """Mock model class for testing.
+    """
     def predict(self, df):
         return df['probability']
 
 def test_accuracy_computation():
-    """_summary_ = Tests the computation of the accuracy metric 
-        on dummy data assuming a perfect model.
+    """Tests the computation of the accuracy metric 
+    on dummy data assuming a perfect model.
     """
     model = MockModel()
     data = {
@@ -29,8 +31,8 @@ def test_accuracy_computation():
     assert result == 1.0
 
 def test_accuracy_computation2():
-    """_summary_ = Tests the computation of the accuracy metric 
-        on a model trained on the heart disease dataset.
+    """Tests the computation of the accuracy metric 
+    on a model trained on the heart disease dataset.
     """
     model = MockModel()
     
@@ -40,8 +42,8 @@ def test_accuracy_computation2():
     assert round(result,2) == 0.88
 
 def test_auroc_computation():
-    """_summary_ = Tests the computation of the AUROC metric 
-        on dummy data assuming a perfect model.
+    """Tests the computation of the AUROC metric 
+    on dummy data assuming a perfect model.
     """
     model = MockModel()
     data = {
@@ -57,7 +59,7 @@ def test_auroc_computation():
     assert np.isclose(result, 1.0)
 
 def test_auroc_computation2():
-    """_summary_ = Tests the computation of the AUROC metric 
+    """Tests the computation of the AUROC metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -68,7 +70,7 @@ def test_auroc_computation2():
     assert round(result,2) == 0.95
 
 def test_auprc_computation():
-    """_summary_ = Tests the computation of the AUPRC 
+    """Tests the computation of the AUPRC 
         metric on dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -85,7 +87,7 @@ def test_auprc_computation():
     assert np.isclose(result, 1.0)
 
 def test_auprc_computation2():
-    """_summary_ = Tests the computation of the AUPRC metric
+    """Tests the computation of the AUPRC metric
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -96,7 +98,7 @@ def test_auprc_computation2():
     assert round(result,2) == 0.94
 
 def test_f1_computation():
-    """_summary_ = Tests the computation of the F1 score metric 
+    """Tests the computation of the F1 score metric 
         on dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -113,7 +115,7 @@ def test_f1_computation():
     assert np.isclose(result, 1.0)
 
 def test_f1_computation2():
-    """_summary_ = Tests the computation of the F1 score metric
+    """Tests the computation of the F1 score metric
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -124,7 +126,7 @@ def test_f1_computation2():
     assert round(result,2) == 0.86
 
 def test_precision_computation():
-    """_summary_ = Tests the computation of the precision metric 
+    """Tests the computation of the precision metric 
         on dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -141,7 +143,7 @@ def test_precision_computation():
     assert np.isclose(result, 1.0)
 
 def test_precision_computation2():
-    """_summary_ = Tests the computation of the precision metric 
+    """Tests the computation of the precision metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -152,7 +154,7 @@ def test_precision_computation2():
     assert round(result,2) == 0.89
 
 def test_recall_computation():
-    """_summary_ = Tests the computation of the recall metric on 
+    """Tests the computation of the recall metric on 
         dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -169,7 +171,7 @@ def test_recall_computation():
     assert np.isclose(result, 1.0)
 
 def test_recall_computation2():
-    """_summary_ = Tests the computation of the recall metric 
+    """Tests the computation of the recall metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -180,7 +182,7 @@ def test_recall_computation2():
     assert round(result,2) == 0.83
 
 def test_specificity_computation():
-    """_summary_ = Tests the computation of the specificity metric 
+    """Tests the computation of the specificity metric 
         on dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -197,7 +199,7 @@ def test_specificity_computation():
     assert np.isclose(result, 1.0)
 
 def test_specificity_computation2():
-    """_summary_ = Tests the computation of the specificity metric 
+    """Tests the computation of the specificity metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -208,7 +210,7 @@ def test_specificity_computation2():
     assert round(result,2) == 0.92
 
 def test_sensitivity_computation():
-    """_summary_ = Tests the computation of the sensitivity metric on 
+    """Tests the computation of the sensitivity metric on 
         dummy data assuming a perfect model.
     """
     model = MockModel()
@@ -225,7 +227,7 @@ def test_sensitivity_computation():
     assert np.isclose(result, 1.0)
 
 def test_sensitivity_computation2():
-    """_summary_ = Tests the computation of the sensitivity metric 
+    """Tests the computation of the sensitivity metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -237,7 +239,7 @@ def test_sensitivity_computation2():
 
 
 def test_c_slope_to_r():
-    """_summary_ = Tests the computation of the calibration slope metric on dummy data
+    """Tests the computation of the calibration slope metric on dummy data
         compared to the results on the same data using R.
     """
     model = MockModel()
@@ -252,7 +254,7 @@ def test_c_slope_to_r():
     assert np.isclose(result, 0.0365555720433193, atol=1e-3)
 
 def test_c_slope_to_r2():
-    """_summary_ = Tests the computation of the calibration slope metric 
+    """Tests the computation of the calibration slope metric 
         on dummy data compared to a result from R.
     """
     model = MockModel()
@@ -267,7 +269,7 @@ def test_c_slope_to_r2():
     assert np.isclose(result, 0.468914472898616, atol=1e-3)
 
 def test_c_slope():
-    """_summary_ = Tests the computation of the calibration slope metric on a 
+    """Tests the computation of the calibration slope metric on a 
         model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -278,7 +280,7 @@ def test_c_slope():
     assert round(result,2) == 1.36
 
 def test_CITL_calculation():
-    """_summary_ = Tests the computation of the calibration-in-the-large metric 
+    """Tests the computation of the calibration-in-the-large metric 
         on dummy data of a perfect model.
     """
     model = MockModel()
@@ -295,7 +297,7 @@ def test_CITL_calculation():
     assert np.isclose(result, 0.0)
 
 def test_CITL_calculation2():
-    """_summary_ = Tests the computation of the calibration-in-the-large metric on 
+    """Tests the computation of the calibration-in-the-large metric on 
         dummy data compared to a result from R.
     """
     model = MockModel()
@@ -310,7 +312,7 @@ def test_CITL_calculation2():
     assert np.isclose(result, -0.336888954901901, atol=1e-3)
 
 def test_CITL_calculation3():
-    """_summary_ = Tests the computation of the calibration-in-the-large metric 
+    """Tests the computation of the calibration-in-the-large metric 
         on a model trained on the heart disease dataset.
     """
     model = MockModel()
@@ -321,7 +323,7 @@ def test_CITL_calculation3():
     assert np.isclose(result, 0.27, atol=1e-3), f"Expected -0.61, got {result}"
 
 def test_OE_calculation():
-    """_summary_ = Tests the computation of the O/E metric for a perfect model on dummy data.
+    """Tests the computation of the O/E metric for a perfect model on dummy data.
     """
     model = MockModel()
     data = {
@@ -337,7 +339,7 @@ def test_OE_calculation():
     assert np.isclose(result, 1.0)
 
 def test_OE_calculation2():
-    """_summary_ = Tests the computation of the O/E metric on dummy data with the result compared to an R result.
+    """Tests the computation of the O/E metric on dummy data with the result compared to an R result.
     """
     model = MockModel()
     data = {
@@ -351,7 +353,7 @@ def test_OE_calculation2():
     assert np.isclose(result, 0.875)
 
 def test_OE_calculation3():
-    """_summary_ = Tests the computation of the O/E metric on a model trained on the heart disease dataset.
+    """Tests the computation of the O/E metric on a model trained on the heart disease dataset.
     """
     model = MockModel()
     
@@ -361,8 +363,8 @@ def test_OE_calculation3():
     assert round(result,2) == 1.08
 
 def test_coxsnell_R2_calculation():
-    """_summary_ = Tests the computation of the Cox-Snell R^2 metric for an imperfect 
-                    model and a model predicting all the same probabilities on dummy data.
+    """Tests the computation of the Cox-Snell R^2 metric for an imperfect 
+    model and a model predicting all the same probabilities on dummy data.
     """
     # A perfect model raises a a PerfectSeparationWarning due to LogReg overfitting.
     
@@ -389,8 +391,8 @@ def test_coxsnell_R2_calculation():
     assert result_edge == 0.0  # Should be 0 for no variability in predictions
 
 def test_coxsnell_R2_calculation2():
-    """_summary_ = Tests the computation of the Cox-Snell R^2 metric
-      on a model trained on the heart disease dataset."""
+    """Tests the computation of the Cox-Snell R^2 metric 
+    on a model trained on the heart disease dataset."""
     model = MockModel()
     
     coxsnell = Metrics.CoxSnellR2(model, 'outcome')

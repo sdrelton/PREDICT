@@ -1,9 +1,8 @@
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 from PREDICT import Models
 
 def test_add_hooks():
-    """_summary_ = Test that hooks can be added to the model.
+    """Test that hooks can be added to the model.
     """
     model = Models.PREDICTModel()
     pre_hook = lambda x: x
@@ -18,7 +17,7 @@ def test_add_hooks():
     assert model.postPredictHooks[0] == post_hook
 
 def test_evaluate_predictions():
-    """_summary_ = Test that the evaluate predictions model works.
+    """Test that the evaluate predictions model works.
     """
     data = {'prediction': np.array([1, 0, 1])}
     model = Models.EvaluatePredictions()
@@ -27,7 +26,7 @@ def test_evaluate_predictions():
     assert np.array_equal(predictions, data['prediction'])
 
 def test_recalibrate_predictions():
-    """_summary_ = Test that the recalibrate predictions model produces a non-None output
+    """Test that the recalibrate predictions model produces a non-None output
         and checking the recalibration hook is added.
     """
     data = {'prediction': np.array([0.2, 0.5, 0.8]), 'outcome': np.array([0, 1, 1])}

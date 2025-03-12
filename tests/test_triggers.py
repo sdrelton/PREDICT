@@ -6,6 +6,7 @@ from PREDICT.Triggers import AccuracyThreshold
 from sklearn.metrics import accuracy_score
 
 class MockModel:
+    """Mock model class for testing"""
     def __init__(self, preds):
         self.preds = preds
         self.outcomeColName = 'outcome'
@@ -15,15 +16,20 @@ class MockModel:
 
 @pytest.fixture
 def input_data():
+    """Create dummy binary outcome data for testing.
+
+    Returns:
+        pd.DataFrame: Dummy binary outcome data.
+    """
     return pd.DataFrame({
         'outcome': [0, 1, 0, 1, 1]
     })
 
 def test_accuracy_above_threshold(input_data):
-    """_summary_ = Test that the accuracy threshold trigger works when accuracy is above the threshold.
+    """Test that the accuracy threshold trigger works when accuracy is above the threshold.
 
     Args:
-        input_data (pd.Dataframe): Dummy binary outcome data.
+        input_data (pd.DataFrame): Dummy binary outcome data.
     """
     probs = np.array([0.6, 0.7, 0.4, 0.8, 0.9])
     model = MockModel(preds=probs)
@@ -36,10 +42,10 @@ def test_accuracy_above_threshold(input_data):
     assert bool_out == False, "Accuracy is above threshold, no update required."
 
 def test_accuracy_below_threshold(input_data):
-    """_summary_ = Test that the accuracy threshold trigger works when accuracy is below the threshold.
+    """Test that the accuracy threshold trigger works when accuracy is below the threshold.
 
     Args:
-        input_data (pd.Dataframe): Dummy binary outcome data.
+        input_data (pd.DataFrame): Dummy binary outcome data.
     """
     probs = np.array([0.4, 0.5, 0.9, 0.4, 0.4])
     model = MockModel(preds=probs)
@@ -52,10 +58,10 @@ def test_accuracy_below_threshold(input_data):
     assert bool_out == True, "Accuracy is below threshold, update required."
 
 def test_accuracy_same_as_threshold(input_data):
-    """_summary_ = Test that the accuracy threshold trigger works when accuracy is equal to the threshold.
+    """Test that the accuracy threshold trigger works when accuracy is equal to the threshold.
 
     Args:
-        input_data (pd.Dataframe): Dummy binary outcome data.
+        input_data (pd.DataFrame): Dummy binary outcome data.
     """
     probs = np.array([0.5, 0.5, 0.5, 0.5, 0.5])
     model = MockModel(preds=probs)
