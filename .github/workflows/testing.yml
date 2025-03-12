@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ add_pytest ]
+    branches: [ main ]
 
 jobs:
   test:
