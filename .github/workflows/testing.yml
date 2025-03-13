@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@main
+      - name: Set up Python 3.10
+        uses: actions/setup-python@main
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Add PREDICT to PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$env:PYTHONPATH;$($PWD.Path)/PREDICT" >> $env:GITHUB_ENV
+
+      - name: Test with pytest
+        run: pytest tests/
