@@ -5,7 +5,7 @@ import warnings
 
 from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
 
-hd_outcomes_df = pd.read_csv('tests\\hd_model_predictions.csv')
+hd_outcomes_df = pd.read_csv('tests/hd_model_predictions.csv')
 
 class MockModel:
     """Mock model class for testing.
