@@ -44,15 +44,20 @@ class PREDICT:
             self.endDate = self.data[self.dateCol].max()
         else:
             self.endDate = endDate
-
-        if timestep == 'week':
+        try:
+            if timestep == 'week':
+                self.timestep = pd.Timedelta(weeks=1)
+            elif timestep == 'day':
+                self.timestep = pd.Timedelta(days=1)
+            elif timestep == 'month':
+                self.timestep = pd.Timedelta(weeks=4)
+            elif isinstance(timestep, int):
+                self.timestep = pd.Timedelta(weeks=timestep)
+            else:
+                raise TypeError
+        except (ValueError, TypeError):
+            print("Invalid timestep value, timestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
             self.timestep = pd.Timedelta(weeks=1)
-        elif timestep == 'day':
-            self.timestep = pd.Timedelta(days=1)
-        elif timestep == 'month':
-            self.timestep = pd.Timedelta(weeks=4)
-        else:
-            self.timestep = pd.Timedelta(weeks=timestep)
 
         self.currentWindowStart = self.startDate
         self.currentWindowEnd = self.startDate + self.timestep
