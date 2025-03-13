@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ add_regular_updates ]
+    branches: [ add_regular_updates ] # change this back to main when ready to merge
 
 jobs:
   test-windows:
@@ -27,9 +27,9 @@ jobs:
   test-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@main
-      - name: Set up Python 3.10
-        uses: actions/setup-python@main
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.10.4
+        uses: actions/setup-python@v2
         with:
           python-version: 3.10
 
