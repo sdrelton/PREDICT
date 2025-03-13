@@ -15,8 +15,9 @@ class PREDICT:
         The start date for the prediction window.
     endDate : str, pd.datetime
         The end date for the prediction window.
-    timestep : str, dt.timedelta
-        The timestep for the prediction window.
+    timestep : str, int
+        The timestep for the prediction window. Must be 'week', 'day', 'month', 
+        or an integer representing the number of days.
     currentWindowStart : pd.datetime
         The current start date of the prediction window.
     currentWindowEnd : pd.datetime
@@ -38,14 +39,21 @@ class PREDICT:
             self.startDate = self.data[self.dateCol].min()
         else:
             self.startDate = startDate
+
         if endDate == 'max':
             self.endDate = self.data[self.dateCol].max()
         else:
             self.endDate = endDate
+
         if timestep == 'week':
             self.timestep = pd.Timedelta(weeks=1)
+        elif timestep == 'day':
+            self.timestep = pd.Timedelta(days=1)
+        elif timestep == 'month':
+            self.timestep = pd.Timedelta(weeks=4)
         else:
-            self.timestep = timestep
+            self.timestep = pd.Timedelta(weeks=timestep)
+
         self.currentWindowStart = self.startDate
         self.currentWindowEnd = self.startDate + self.timestep
         self.log = dict()
