@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ add_regular_updates ] # change this back to main when ready to merge
+    branches: [ main ] # change this back to main when ready to merge
 
 jobs:
   test-windows:
