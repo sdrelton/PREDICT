@@ -56,7 +56,8 @@ def __TimeframeTrigger(self, input_data, updateTimestep, dataStart, dataEnd):
         print("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
         self.updateTimestep = pd.Timedelta(weeks=1)
 
-    update_dates = pd.date_range(start=dataStart, end=dataEnd, freq=self.updateTimestep)
+    # List of dates to update the model excluding the first window
+    update_dates = pd.date_range(start=dataStart+self.updateTimestep, end=dataEnd, freq=self.updateTimestep)
 
     # Check if current period is in the list of update dates
     if any(date in input_data[self.dateCol].values for date in update_dates):
