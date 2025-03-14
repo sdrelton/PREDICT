@@ -17,7 +17,7 @@ class PREDICT:
         The end date for the prediction window.
     timestep : str, int
         The timestep for the prediction window. Must be 'week', 'day', 'month', 
-        or an integer representing the number of days.
+        or an integer representing the number of days. Note: One month is considered 28 days.
     currentWindowStart : pd.datetime
         The current start date of the prediction window.
     currentWindowEnd : pd.datetime
