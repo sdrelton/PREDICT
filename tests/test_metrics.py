@@ -167,7 +167,7 @@ def test_recall_computation():
     recall = Metrics.Recall(model, 'outcome', 0.5)
     hookname, result = recall(df)
 
-    assert hookname == 'Recall'
+    assert hookname == 'Sensitivity'
     assert np.isclose(result, 1.0)
 
 def test_recall_computation2():

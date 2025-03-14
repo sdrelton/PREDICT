@@ -176,27 +176,11 @@ def Recall(model, outcomeCol='outcome', threshold=0.5):
     Returns:
         logHook: A hook to compute the recall of the model at each timestep when fed data.
     """
-    return lambda df: __RecallComputation(model, df, outcomeCol, threshold)
+    return Sensitivity(model, outcomeCol='outcome', threshold=0.5)
 
-def __RecallComputation(model, df, outcomeCol, threshold):
-    """
-    Function to compute the recall of a model on a given dataframe.
+    
 
-    Args:
-        model (PREDICTModel): The model to evaluate, must have a predict method.
-        df (pd.DataFrame): DataFrame to evaluate the model on.
-        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
-        threshold (float, optional): Probability threshold at which to classify individuals.
 
-    Returns:
-        hookname (str), result (float): The name of the hook ('Recall'), and the resulting recall of the model.
-    """
-    predictions = model.predict(df)
-    classes = (predictions >= threshold).astype(int)
-    outcomes = df[outcomeCol].astype(int)
-    tp = np.sum((classes == 1) & (outcomes == 1))
-    fn = np.sum((classes == 0) & (outcomes == 1))
-    return 'Recall', tp / (tp + fn)
 
 def Sensitivity(model, outcomeCol='outcome', threshold=0.5):
     """
