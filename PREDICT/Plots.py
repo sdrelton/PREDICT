@@ -25,6 +25,7 @@ def AccuracyPlot(log, recalthreshold=None):
         plt.legend(['Accuracy', 'Model Updated'], loc='lower right')
     plt.xlabel('Timesteps')
     plt.ylabel('Accuracy')
+    plt.xticks(rotation=90)
     plt.show()
 
 
@@ -54,6 +55,7 @@ def CalibrationSlopePlot(log):
         plt.legend(['Calibration Slope', 'Model Updated'], loc='upper right')
     else:
         plt.legend(['Calibration Slope'], loc='upper right')
+    plt.xticks(rotation=90)
     plt.show()
 
 def CoxSnellPlot(log):
@@ -69,6 +71,7 @@ def CoxSnellPlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('Cox and Snell R2')
     plt.legend(['Cox and Snell R2', 'Model Updated'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def CITLPlot(log):
@@ -96,6 +99,7 @@ def CITLPlot(log):
         plt.legend(['CITL', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['CITL'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def AUROCPlot(log):
@@ -113,6 +117,7 @@ def AUROCPlot(log):
         plt.legend(['AUROC', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['AUROC'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def AUPRCPlot(log):
@@ -130,6 +135,7 @@ def AUPRCPlot(log):
         plt.legend(['AUPRC', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['AUPRC'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def F1ScorePlot(log):
@@ -147,6 +153,7 @@ def F1ScorePlot(log):
         plt.legend(['F1 Score', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['F1 Score'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def PrecisionPlot(log):
@@ -164,6 +171,7 @@ def PrecisionPlot(log):
         plt.legend(['Precision', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['Precision'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def SensitivityPlot(log):
@@ -181,6 +189,7 @@ def SensitivityPlot(log):
         plt.legend(['Sensitivity', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['Sensitivity'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def SpecificityPlot(log):
@@ -198,6 +207,7 @@ def SpecificityPlot(log):
         plt.legend(['Specificity', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['Specificity'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
 
 def OEPlot(log):
@@ -215,4 +225,5 @@ def OEPlot(log):
         plt.legend(['Odds Error', 'Model Updated'], loc='lower left')
     else:
         plt.legend(['Odds Error'], loc='lower left')
+    plt.xticks(rotation=90)
     plt.show()
