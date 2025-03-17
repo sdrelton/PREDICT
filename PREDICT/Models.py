@@ -144,6 +144,7 @@ class RegularRecalibration(PREDICTModel):
     Args:
         predictColName (str): The name of the column in the dataframe containing the predictions (default='prediction').
         outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
+        dateCol (str): The name of the column in the dataframe containing the dates (default='date').
         
     Examples
     --------
