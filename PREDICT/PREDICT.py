@@ -1,4 +1,6 @@
 import pandas as pd
+from dateutil.relativedelta import relativedelta
+
 class PREDICT:
     """
     A class used to represent the PREDICT model.
@@ -50,7 +52,7 @@ class PREDICT:
             elif timestep == 'day':
                 self.timestep = pd.Timedelta(days=1)
             elif timestep == 'month':
-                self.timestep = pd.Timedelta(weeks=4)
+                self.timestep = relativedelta(months=1)
             elif isinstance(timestep, int):
                 self.timestep = pd.Timedelta(weeks=timestep)
             else:

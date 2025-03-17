@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from types import MethodType
 from PREDICT.Models import PREDICTModel
+from dateutil.relativedelta import relativedelta
 
 def AccuracyThreshold(model, threshold, prediction_threshold=0.5):
     return MethodType(lambda self, x: __AccuracyThreshold(self, x, threshold, prediction_threshold), model)
@@ -52,7 +53,8 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
         elif updateTimestep == 'day':
             updateTimestep = pd.Timedelta(days=1)
         elif updateTimestep == 'month':
-            updateTimestep = pd.Timedelta(weeks=4)
+            #updateTimestep = pd.Timedelta(weeks=4)
+            updateTimestep = relativedelta(months=1)
         elif isinstance(updateTimestep, int):
             updateTimestep = pd.Timedelta(days=updateTimestep)
         else:
@@ -62,7 +64,11 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
         updateTimestep = pd.Timedelta(weeks=1)
 
     # List of dates to update the model excluding the first window
-    update_dates = pd.date_range(start=dataStart+updateTimestep, end=dataEnd, freq=updateTimestep)
+    update_dates = []
+    current_date = dataStart + updateTimestep
+    while current_date <= dataEnd:
+        update_dates.append(current_date)
+        current_date += updateTimestep
 
     return MethodType(lambda self, x: __TimeframeTrigger(self, x, update_dates), model)
     
