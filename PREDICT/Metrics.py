@@ -176,7 +176,7 @@ def Recall(model, outcomeCol='outcome', threshold=0.5):
     Returns:
         logHook: A hook to compute the recall of the model at each timestep when fed data.
     """
-    return Sensitivity(model, outcomeCol='outcome', threshold=threshold)
+    return Sensitivity(model, outcomeCol=outcomeCol, threshold=threshold)
 
     
 
