@@ -13,6 +13,8 @@ Welcome to PREDICT's documentation!
    PREDICT
    Models
    Metrics
+   Plots
+   Tests
 
 Indices and tables
 ==================

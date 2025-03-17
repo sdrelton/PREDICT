@@ -40,7 +40,7 @@ The core PREDICT team is:
 - Zoe Hancox (z.l.hancox@leeds.ac.uk)
 - Kate Best (k.e.best@leeds.ac.uk)
 - Oliver Todd (o.todd@leeds.ac.uk)
-- Barabara Hartley
+- Barbara Hartley
 
 The PREDICT project is funded by the National Institute for Health and Social Care Research (Grant NIHR206843).
 

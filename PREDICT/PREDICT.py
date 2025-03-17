@@ -1,4 +1,6 @@
 import pandas as pd
+from dateutil.relativedelta import relativedelta
+
 class PREDICT:
     """
     A class used to represent the PREDICT model.
@@ -15,8 +17,9 @@ class PREDICT:
         The start date for the prediction window.
     endDate : str, pd.datetime
         The end date for the prediction window.
-    timestep : str, dt.timedelta
-        The timestep for the prediction window.
+    timestep : str, int
+        The timestep for the prediction window. Must be 'week', 'day', 'month', 
+        or an integer representing the number of days. Note: One month is considered 28 days.
     currentWindowStart : pd.datetime
         The current start date of the prediction window.
     currentWindowEnd : pd.datetime
@@ -38,14 +41,26 @@ class PREDICT:
             self.startDate = self.data[self.dateCol].min()
         else:
             self.startDate = startDate
+
         if endDate == 'max':
             self.endDate = self.data[self.dateCol].max()
         else:
             self.endDate = endDate
-        if timestep == 'week':
+        try:
+            if timestep == 'week':
+                self.timestep = pd.Timedelta(weeks=1)
+            elif timestep == 'day':
+                self.timestep = pd.Timedelta(days=1)
+            elif timestep == 'month':
+                self.timestep = relativedelta(months=1)
+            elif isinstance(timestep, int):
+                self.timestep = pd.Timedelta(weeks=timestep)
+            else:
+                raise TypeError
+        except (ValueError, TypeError):
+            print("Invalid timestep value, timestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
             self.timestep = pd.Timedelta(weeks=1)
-        else:
-            self.timestep = timestep
+
         self.currentWindowStart = self.startDate
         self.currentWindowEnd = self.startDate + self.timestep
         self.log = dict()

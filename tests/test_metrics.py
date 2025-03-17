@@ -5,7 +5,7 @@ import warnings
 
 from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
 
-hd_outcomes_df = pd.read_csv('tests\\hd_model_predictions.csv')
+hd_outcomes_df = pd.read_csv('tests/hd_model_predictions.csv')
 
 class MockModel:
     """Mock model class for testing.
@@ -167,7 +167,7 @@ def test_recall_computation():
     recall = Metrics.Recall(model, 'outcome', 0.5)
     hookname, result = recall(df)
 
-    assert hookname == 'Recall'
+    assert hookname == 'Sensitivity'
     assert np.isclose(result, 1.0)
 
 def test_recall_computation2():

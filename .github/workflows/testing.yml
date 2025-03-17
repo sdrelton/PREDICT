@@ -2,12 +2,11 @@ name: Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # change this back to main when ready to merge
 
 jobs:
-  test:
+  test-windows:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@main
       - name: Set up Python 3.10
@@ -21,6 +20,25 @@ jobs:
       - name: Add PREDICT to PYTHONPATH
         run: |
           echo "PYTHONPATH=$env:PYTHONPATH;$($PWD.Path)/PREDICT" >> $env:GITHUB_ENV
+
+      - name: Test with pytest
+        run: pytest tests/
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.11.0
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11.0
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Add PREDICT to PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$PYTHONPATH:$PWD/PREDICT" >> $GITHUB_ENV
 
       - name: Test with pytest
         run: pytest tests/

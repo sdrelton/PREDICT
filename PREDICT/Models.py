@@ -133,3 +133,59 @@ class RecalibratePredictions(PREDICTModel):
         # Add hook to adjust predictions accordingly
         recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
+
+
+class RegularRecalibration(PREDICTModel):
+    """
+    A class which recalibrates the predictions regularly after a specified period of time.
+    
+    Recalibration involves using a logistic regression to adjust the model predictions.
+    
+    Args:
+        predictColName (str): The name of the column in the dataframe containing the predictions (default='prediction').
+        outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
+        dateCol (str): The name of the column in the dataframe containing the dates (default='date').
+        
+    Examples
+    --------
+    # Create a model which recalibrates predictions after x amount of time
+    # Full example can be found in Examples/regular_recalibration_example.ipynb
+    model = RegularRecalibration()
+    model.trigger = TimeframeTrigger(model=model, timestep=pd.Timedelta(weeks=4))       
+    """
+    
+    def __init__(self, predictColName='prediction', outcomeColName='outcome', dateCol='date'):
+        super(RegularRecalibration, self).__init__()
+        self.predictColName = predictColName
+        self.outcomeColName = outcomeColName
+        self.dateCol = dateCol
+        
+    def __sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def __inverseSigmoid(self, y):
+        return np.log(y / (1 - y))
+        
+    def predict(self, input_data):
+        preds = input_data[self.predictColName]
+        # Recalibrate from any hooks that have been added
+        for hook in self.postPredictHooks:
+            preds = hook(preds)
+        return preds
+    
+    def update(self, input_data):
+        # Get predictions
+        preds = self.predict(input_data)
+        
+        # Convert to linear predictor scale
+        lp = self.__inverseSigmoid(preds)
+        
+        # Work out model calibration
+        logreg = LogisticRegression(penalty=None, max_iter=1000) # 'l1', 'elasticnet', 'l2' or None
+        logreg.fit(np.array(lp).reshape(-1, 1), input_data[self.outcomeColName].astype(int))
+        intercept = logreg.intercept_
+        scale = logreg.coef_[0]
+        
+        # Add hook to adjust predictions accordingly
+        recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
+        self.addPostPredictHook(recal)
