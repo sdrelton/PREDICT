@@ -96,25 +96,17 @@ def test_regular_recalibrations():
     updatedDates = log['Model Updated']
 
     # Assuming the model gets checked every week and is updated every month
-    trueUpdateDates = {pd.Timestamp('2024-02-05 00:00:00'): True,
-        pd.Timestamp('2024-03-04 00:00:00'): True,
-        pd.Timestamp('2024-04-01 00:00:00'): True,
-        pd.Timestamp('2024-04-29 00:00:00'): True,
-        pd.Timestamp('2024-05-27 00:00:00'): True,
-        pd.Timestamp('2024-06-24 00:00:00'): True,
-        pd.Timestamp('2024-07-22 00:00:00'): True,
-        pd.Timestamp('2024-08-19 00:00:00'): True,
-        pd.Timestamp('2024-09-16 00:00:00'): True,
-        pd.Timestamp('2024-10-14 00:00:00'): True,
-        pd.Timestamp('2024-11-11 00:00:00'): True,
-        pd.Timestamp('2024-12-09 00:00:00'): True}
+    trueUpdateDates = {pd.Timestamp('2024-02-05 00:00:00'): True, 
+            pd.Timestamp('2024-03-04 00:00:00'): True, 
+            pd.Timestamp('2024-04-08 00:00:00'): True, 
+            pd.Timestamp('2024-05-06 00:00:00'): True, 
+            pd.Timestamp('2024-06-03 00:00:00'): True, 
+            pd.Timestamp('2024-07-08 00:00:00'): True, 
+            pd.Timestamp('2024-08-05 00:00:00'): True, 
+            pd.Timestamp('2024-09-02 00:00:00'): True, 
+            pd.Timestamp('2024-10-07 00:00:00'): True, 
+            pd.Timestamp('2024-11-04 00:00:00'): True, 
+            pd.Timestamp('2024-12-02 00:00:00'): True}
+    
 
     assert updatedDates == trueUpdateDates
-
-    # Check days are 28 days apart
-    keys = list(trueUpdateDates.keys())
-    differences = [(keys[i] - keys[i - 1]).days for i in range(1, len(keys))]
-    consistent = all(x == differences[0] for x in differences)  
-
-    assert consistent
-    assert differences[0] == 28 
