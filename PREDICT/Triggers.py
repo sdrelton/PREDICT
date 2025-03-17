@@ -27,37 +27,55 @@ def __AccuracyThreshold(self, input_data, threshold, prediction_threshold):
         return True
     
 def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
-    return MethodType(lambda self, x: __TimeframeTrigger(self, x, updateTimestep, dataStart, dataEnd), model)
-    
-def __TimeframeTrigger(self, input_data, updateTimestep, dataStart, dataEnd):
-    """Trigger function to update model based on a fixed time interval.
+    """Create a list of dates to update the model based on a fixed time interval.
 
     Args:
-        input_data (dataframe): DataFrame with column of the predicted outcome.
+        model (PREDICTModel): The model to evaluate, must have a predict method.
         updateTimestep (pd.Timedelta): Time interval at which to update the model. Note: The model 
         can only be recalibrated at the end of the time interval. If the prediction window is less 
         than the updateTimestep, the model will not be recalibrated.
+        dataStart (pd.Timedelta): Date of when to start regular recalibration.
+        dataEnd (pd.Timedelta): Date of when to end regular recalibration.
+
+    Raises:
+        TypeError: If updateTimestep is not a valid input.
 
     Returns:
-        bool: Returns True if model update is required.
+        tuple: A tuple containing:
+        - pd.Timedelta: The calculated time interval for updating the model.
+        - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
     """
+
     try:
         if updateTimestep == 'week':
-            self.updateTimestep = pd.Timedelta(weeks=1)
+            updateTimestep = pd.Timedelta(weeks=1)
         elif updateTimestep == 'day':
-            self.updateTimestep = pd.Timedelta(days=1)
+            updateTimestep = pd.Timedelta(days=1)
         elif updateTimestep == 'month':
-            self.updateTimestep = pd.Timedelta(weeks=4)
+            updateTimestep = pd.Timedelta(weeks=4)
         elif isinstance(updateTimestep, int):
-            self.updateTimestep = pd.Timedelta(days=updateTimestep)
+            updateTimestep = pd.Timedelta(days=updateTimestep)
         else:
             raise TypeError
     except (ValueError, TypeError):
         print("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
-        self.updateTimestep = pd.Timedelta(weeks=1)
+        updateTimestep = pd.Timedelta(weeks=1)
 
     # List of dates to update the model excluding the first window
-    update_dates = pd.date_range(start=dataStart+self.updateTimestep, end=dataEnd, freq=self.updateTimestep)
+    update_dates = pd.date_range(start=dataStart+updateTimestep, end=dataEnd, freq=updateTimestep)
+
+    return MethodType(lambda self, x: __TimeframeTrigger(self, x, update_dates), model)
+    
+def __TimeframeTrigger(self, input_data, update_dates):
+    """Trigger function to update model based on a fixed time interval.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        update_dates (list): List of dates to update the model.
+
+    Returns:
+        bool: Returns True if model update is required.
+    """
 
     # Check if current period is in the list of update dates
     if any(date in input_data[self.dateCol].values for date in update_dates):
