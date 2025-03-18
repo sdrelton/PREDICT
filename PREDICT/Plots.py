@@ -14,15 +14,22 @@ def AccuracyPlot(log, recalthreshold=None):
         log (dict): Log of model metrics over time and when the model was updated.
         recalthreshold (float, int): Threshold to trigger recalibration. Defaults to None.
     """
-    # Plot the accuracy in a linegraph
+    legend_items = ['Accuracy']
     plt.plot(log['Accuracy'].keys(), log['Accuracy'].values())
+
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), 0, 1, colors='r', linestyles='dashed')
-    if recalthreshold != None:
-        plt.text(min(log['Accuracy'].keys()), recalthreshold+0.01, f'Recalibration Threshold: {recalthreshold*100}%', fontsize=10, color='grey')
-    if 'Model Updated' in log:
-        plt.legend(['Accuracy', 'Model Updated'], loc='lower right')
+        legend_items.append('Model Updated')
+
+    # Add recalibration threshold details
+    if recalthreshold is not None:
+        plt.text(min(log['Accuracy'].keys()), recalthreshold + 0.01, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
+        plt.hlines(recalthreshold, min(log['Accuracy'].keys()), max(log['Accuracy'].keys()), colors='grey', linestyles='dashed')
+        legend_items.append('Recalibration Threshold')
+
+    plt.legend(legend_items, loc='lower right')
+
     plt.xlabel('Timesteps')
     plt.ylabel('Accuracy')
     plt.xticks(rotation=90)
@@ -221,8 +228,8 @@ def OEPlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('O/E')
     if 'Model Updated' in log:
-        plt.legend(['Odds Error', 'Model Updated'], loc='lower left')
+        plt.legend(['O/E', 'Model Updated'], loc='lower left')
     else:
-        plt.legend(['Odds Error'], loc='lower left')
+        plt.legend(['O/E'], loc='lower left')
     plt.xticks(rotation=90)
     plt.show()
