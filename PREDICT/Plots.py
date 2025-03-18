@@ -95,9 +95,9 @@ def CITLPlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('CITL')
     if 'Model Updated' in log:
-        plt.legend(['CITL', 'Model Updated'], loc='lower left')
+        plt.legend(['CITL', 'Ideal CITL', 'Model Updated'], loc='lower left')
     else:
-        plt.legend(['CITL'], loc='lower left')
+        plt.legend(['CITL', 'Ideal CITL'], loc='lower left')
     plt.xticks(rotation=90)
     plt.show()
 
