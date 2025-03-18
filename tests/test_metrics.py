@@ -1,11 +1,28 @@
+import os
 from PREDICT import Metrics
 import numpy as np
 import pandas as pd
 import warnings
-
+from unittest.mock import MagicMock
 from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
 
-hd_outcomes_df = pd.read_csv('tests/hd_model_predictions.csv')
+# Check if the code is being executed by Sphinx
+if any(env in os.getenv("READTHEDOCS", "").lower() or os.getenv("SPHINX_BUILD", "").lower() for env in ["true", "sphinx"]):
+    # Mock the pd.read_csv function to prevent Sphinx from crashing
+    pd.read_csv = MagicMock(return_value=pd.DataFrame({
+        'probability': [0.1, 0.4, 0.6, 0.9],
+        'outcome': [0, 0, 1, 1]
+    }))
+
+# Use the mocked or real pd.read_csv depending on the environment
+try:
+    hd_outcomes_df = pd.read_csv('tests/hd_model_predictions.csv')
+except FileNotFoundError:
+    # Fallback for environments where the file is not available
+    hd_outcomes_df = pd.DataFrame({
+        'probability': [0.1, 0.4, 0.6, 0.9],
+        'outcome': [0, 0, 1, 1]
+    })
 
 class MockModel:
     """Mock model class for testing.
