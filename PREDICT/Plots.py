@@ -38,23 +38,22 @@ def CalibrationSlopePlot(log):
     plt.plot(log['CalibrationSlope'].keys(), log['CalibrationSlope'].values())
 
     plt.axhline(y=1, color='black', linestyle='--')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), 1.35), xytext=(max(log['CalibrationSlope'].keys()), 1.1),
+    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), max(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 1.0001),
                 arrowprops=dict(facecolor='green', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), 1.1, 'Overestimation', fontsize=10, color='green')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), 0.65), xytext=(max(log['CalibrationSlope'].keys()), 0.9),
+    plt.text(min(log['CalibrationSlope'].keys()), ((max(log['CalibrationSlope'].values())+1)/2), 'Overestimation', fontsize=10, color='green')
+    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), min(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 0.9999),
                 arrowprops=dict(facecolor='red', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), 0.85, 'Underestimation', fontsize=10, color='red')
+    plt.text(min(log['CalibrationSlope'].keys()), ((min(log['CalibrationSlope'].values())+1)/2), 'Underestimation', fontsize=10, color='red')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), 0, 5, colors='r', linestyles='dashed')
-    plt.ylim(0, 3)
+        plt.vlines(log['Model Updated'].keys(), min(log['CalibrationSlope'].values()), max(log['CalibrationSlope'].values()), colors='r', linestyles='dashed')
     plt.xlabel('Timesteps')
     plt.ylabel('Calibration Slope')
     if 'Model Updated' in log:
-        plt.legend(['Calibration Slope', 'Model Updated'], loc='upper right')
+        plt.legend(['Calibration Slope', 'Ideal Calibration', 'Model Updated'], loc='upper right')
     else:
-        plt.legend(['Calibration Slope'], loc='upper right')
+        plt.legend(['Calibration Slope', 'Ideal Calibration'], loc='upper right')
     plt.xticks(rotation=90)
     plt.show()
 
