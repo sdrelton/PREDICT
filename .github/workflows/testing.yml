@@ -3,6 +3,9 @@ name: Tests
 on:
   push:
     branches: [ main ] # change this back to main when ready to merge
+  
+  pull_request:
+    branches: [ main ]
 
 jobs:
   test-windows:
