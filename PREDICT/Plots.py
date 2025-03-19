@@ -207,4 +207,14 @@ def OEPlot(log):
     plt.show()
 
 
+def LogRegErrorPlot(log):
 
+    plt.plot(log['LogRegError'].keys(), log['LogRegError'].values(), label='LogRegError')
+    if 'Model Updated' in log:
+        plt.vlines(log['Model Updated'].keys(), min(log['LogRegError'].values())-0.2, max(log['LogRegError'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
+    plt.xlabel('Timesteps')
+    plt.ylabel('LogRegError')
+    plt.hlines(0, min(log['LogRegError'].keys()), max(log['LogRegError'].keys()), colors='black', linestyles='dashed', label='No error')
+    plt.legend(loc='upper right')
+    plt.xticks(rotation=90)
+    plt.show()

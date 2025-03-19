@@ -416,3 +416,37 @@ def test_coxsnell_R2_calculation2():
     _, result = coxsnell(hd_outcomes_df)
 
     assert np.isclose(result, 0.53, atol=1e-3), f"Expected 0.53, got {result}"
+
+def test_log_reg_calculation():
+    """Tests the computation of the logistic regression error metric 
+    on dummy data assuming a perfect model.
+    """
+    model = MockModel()
+    data = {
+        'probability': [0.1, 0.4, 0.6, 0.9],
+        'outcome': [0, 0, 1, 1]
+    }
+    df = pd.DataFrame(data)
+    
+    log_reg = Metrics.LogRegError(model, 'outcome')
+    hookname, result = log_reg(df)
+
+    assert hookname == 'LogRegError'
+    assert np.isclose(result, 0.0)
+
+def test_log_reg_calculation2():
+    """Tests the computation of the logistic regression error metric 
+    on dummy data assuming a model that gets predictions right
+    50% of the time.
+    """
+    model = MockModel()
+    data = {
+        'probability': [0.1, 0.4, 0.6, 0.9],
+        'outcome': [0, 1, 1, 0]
+    }
+    df = pd.DataFrame(data)
+    
+    log_reg = Metrics.LogRegError(model, 'outcome')
+    _, result = log_reg(df)
+
+    assert np.isclose(result, 0.5)
