@@ -218,3 +218,26 @@ def LogRegErrorPlot(log):
     plt.legend(loc='upper right')
     plt.xticks(rotation=90)
     plt.show()
+
+def ErrorSPCPlot(log, model):
+    error_df = pd.DataFrame(list(log['LogRegError'].items()), columns=['Date', 'LogRegError'])
+    plt.plot(error_df['Date'], error_df['LogRegError'], marker='o', label='Data')
+
+    ucl = error_df['LogRegError'].mean() + 4 * error_df['LogRegError'].std()
+
+    plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
+    plt.axhline(model.u2sdl, color='black', linestyle='-')
+    plt.axhline(model.u3sdl, color='black', linestyle='-')
+    if 'Model Updated' in log:
+        plt.vlines(log['Model Updated'].keys(), model.lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
+    plt.fill_between(error_df['Date'], model.u2sdl, model.lcl, color='green', alpha=0.2, label='Safe zone')
+    plt.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
+    plt.fill_between(error_df['Date'], ucl, model.u3sdl, color='red', alpha=0.2, label='Danger zone')
+
+    plt.title('SPC Chart for Error')
+    plt.xlabel('Date')
+    plt.ylabel('Error')
+    plt.xticks(rotation=90)
+    plt.legend()
+    plt.grid(False)
+    plt.show()

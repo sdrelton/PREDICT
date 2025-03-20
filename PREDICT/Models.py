@@ -1,5 +1,6 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
+from scipy.special import logit
 
 
 
@@ -135,3 +136,27 @@ class RecalibratePredictions(PREDICTModel):
         # Add hook to adjust predictions accordingly
         recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
+
+
+    def CalculateControlLimits(self, input_data, startCLDate, endCLDate):
+        # Get the logreg error at each timestep within the control limit determination period
+        createCLdf = input_data[(input_data[self.dateCol] >= startCLDate) & (input_data[self.dateCol] <= endCLDate)].copy()
+        
+        # Predictions column
+        createCLdf['predictions'] = self.predict(createCLdf)
+
+        def CalculateError(group):
+            logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
+            LogRegModel = LogisticRegression(penalty=None)
+            LogRegModel.fit(logit_predictions, group[self.outcomeColName])
+            logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
+            return logreg_error
+
+        errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
+        self.mean_error = errors_by_date.mean()
+        std_dev_error = errors_by_date.std()
+        
+        self.u2sdl = self.mean_error + 2 * std_dev_error
+        self.u3sdl = self.mean_error + 3 * std_dev_error
+        self.lcl = min(self.mean_error - 4 * std_dev_error, errors_by_date.min())
+        return self.u2sdl, self.u3sdl, self.lcl

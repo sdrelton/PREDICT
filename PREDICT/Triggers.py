@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
 from types import MethodType
-from PREDICT.Models import PREDICTModel
+from PREDICT.Models import PREDICTModel, RecalibratePredictions
 from dateutil.relativedelta import relativedelta
+from sklearn.linear_model import LogisticRegression
+from scipy.special import logit
+from PREDICT import Metrics
 
 def AccuracyThreshold(model, threshold, prediction_threshold=0.5):
     return MethodType(lambda self, x: __AccuracyThreshold(self, x, threshold, prediction_threshold), model)
@@ -90,5 +93,57 @@ def __TimeframeTrigger(self, input_data, update_dates):
         return False
     
     
+def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, numMonths=None):
+    """Trigger function to update the model if the error enters an upper control limit.
+        The control limits can be set using one of the following methods:
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
+            limits using the error mean and std during this period.
+        - Enter the number of months (numMonths) to base the control limits on from the start of the period.
+        - Manually set the control limits by entering the float values for the 'warning' and 'recalibration' zones.
+        - Enter the number of standard deviations for the start of the warning zone (u2sdl) and the start of the 
+            recalibration zone (u3sdl).
 
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        clStartDate (str): Start date to determine control limits from. Defaults to None.
+        clEndDate (str): End date to determine control limits from. Defaults to None.
+        numMonths (int): The number of months to base the control limits on. Defaults to None.
+
+    Returns:
+        tuple: A tuple containing:
+        - pd.Timedelta: The calculated time interval for updating the model.
+        - pd.DatetimeIndex: A range of dates specifying the update schedule.
+    """
+
+    if clStartDate is not None and clEndDate is not None and numMonths is None:
+        startCLDate = pd.to_datetime(clStartDate, dayfirst=True)
+        endCLDate = pd.to_datetime(clEndDate, dayfirst=True)
+    # Use the first X months of data to determine the control limits
+    elif numMonths is not None and clStartDate is None and clEndDate is None:
+        startCLDate = input_data[dateCol].min() 
+        endCLDate = startCLDate + relativedelta(months=numMonths)
+    else:
+        raise ValueError("Either 'clStartDate' and 'clEndDate' must be supplied or 'numMonths' must be supplied.")
+
+
+    u2sdl, u3sdl, lcl = model.CalculateControlLimits(input_data=input_data, startCLDate=startCLDate, endCLDate=endCLDate)
+
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl), model)
+
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl):
+
+    _, error = Metrics.__LogRegErrorComputation(model, input_data, self.outcomeColName)
+    # if error enter yellow zone (between 2SD and 3SD) then print warning message
+    if error > u2sdl and error < u3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the warning zone (+2 standard deviations from the mean). \nInvestigate the cause of the increase in error.\n')
+        return False
+    # if error enter red zone (above 3SD) then recalibrate the model
+    elif error > u3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the danger zone (+3 standard deviations from the mean). \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        return True
+    
+    else:
+        return False
     
