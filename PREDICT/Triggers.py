@@ -93,21 +93,26 @@ def __TimeframeTrigger(self, input_data, update_dates):
         return False
     
     
-def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, numMonths=None):
+def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
+            numMonths=None, warningCL=None, recalCL=None, warningSDs=None, recalSDs=None):
     """Trigger function to update the model if the error enters an upper control limit.
         The control limits can be set using one of the following methods:
         - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
             limits using the error mean and std during this period.
         - Enter the number of months (numMonths) to base the control limits on from the start of the period.
-        - Manually set the control limits by entering the float values for the 'warning' and 'recalibration' zones.
-        - Enter the number of standard deviations for the start of the warning zone (u2sdl) and the start of the 
-            recalibration zone (u3sdl).
+        - Manually set the control limits by entering the float values for the 'warning' (warningCL) and 'recalibration' (recalCL) zones.
+        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the 
+            recalibration zone (recalSDs).
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         clStartDate (str): Start date to determine control limits from. Defaults to None.
         clEndDate (str): End date to determine control limits from. Defaults to None.
         numMonths (int): The number of months to base the control limits on. Defaults to None.
+        warningCL (float): A manually set control limit for the warning control limit.
+        recalCL (float): A manually set control limit for the recalibration trigger limit.
+        warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to.
+        recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
 
     Returns:
         tuple: A tuple containing:
@@ -115,18 +120,37 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         - pd.DatetimeIndex: A range of dates specifying the update schedule.
     """
 
-    if clStartDate is not None and clEndDate is not None and numMonths is None:
+    if clStartDate is not None and clEndDate is not None and numMonths is None and warningCL is None and recalCL is None and warningSDs is None and recalSDs is None:
         startCLDate = pd.to_datetime(clStartDate, dayfirst=True)
         endCLDate = pd.to_datetime(clEndDate, dayfirst=True)
     # Use the first X months of data to determine the control limits
-    elif numMonths is not None and clStartDate is None and clEndDate is None:
+    elif numMonths is not None and clStartDate is None and clEndDate is None and warningCL is None and recalCL is None and warningSDs is None and recalSDs is None:
         startCLDate = input_data[dateCol].min() 
         endCLDate = startCLDate + relativedelta(months=numMonths)
+    elif warningCL is not None and recalCL is not None and numMonths is None and clStartDate is None and clEndDate is None and warningSDs is None and recalSDs is None:
+        if warningCL > recalCL:
+            raise ValueError("Warning control limit must be lower than the recalibration control limit.")
+        startCLDate = None
+        endCLDate = None
+    elif warningSDs is not None and recalSDs is not None and numMonths is None and clStartDate is None and clEndDate is None and warningCL is None and recalCL is None:
+        if warningSDs > recalSDs:
+            raise ValueError("Warning control limit must be lower than the recalibration control limit (warningSDs > recalSDs). ")
+        startCLDate = None
+        endCLDate = None
+    
     else:
-        raise ValueError("Either 'clStartDate' and 'clEndDate' must be supplied or 'numMonths' must be supplied.")
+        raise ValueError("""The control limits must be set using ONE of the following methods:\n
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
+            limits using the error mean and std during this period. \n
+        - Enter the number of months (numMonths) to base the control limits on from the 
+            start of the period.\n
+        - Manually set the control limits by entering the float values for the 'warning' 
+            (warningCL) and 'recalibration' (recalCL) zones.\n
+        - Enter the number of standard deviations from the mean for the start of the 
+            warning zone (warningSDs) and the start of the recalibration zone (recalSDs).""")
 
 
-    u2sdl, u3sdl, lcl = model.CalculateControlLimits(input_data=input_data, startCLDate=startCLDate, endCLDate=endCLDate)
+    u2sdl, u3sdl= model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
 
     return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl), model)
 

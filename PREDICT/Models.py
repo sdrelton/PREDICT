@@ -138,25 +138,62 @@ class RecalibratePredictions(PREDICTModel):
         self.addPostPredictHook(recal)
 
 
-    def CalculateControlLimits(self, input_data, startCLDate, endCLDate):
-        # Get the logreg error at each timestep within the control limit determination period
-        createCLdf = input_data[(input_data[self.dateCol] >= startCLDate) & (input_data[self.dateCol] <= endCLDate)].copy()
-        
-        # Predictions column
-        createCLdf['predictions'] = self.predict(createCLdf)
+    def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
 
-        def CalculateError(group):
-            logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
-            LogRegModel = LogisticRegression(penalty=None)
-            LogRegModel.fit(logit_predictions, group[self.outcomeColName])
-            logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
-            return logreg_error
+        if startCLDate is not None and endCLDate is not None:
+            # Get the logreg error at each timestep within the control limit determination period
+            createCLdf = input_data[(input_data[self.dateCol] >= startCLDate) & (input_data[self.dateCol] <= endCLDate)].copy()
+            
+            # Predictions column
+            createCLdf['predictions'] = self.predict(createCLdf)
 
-        errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
-        self.mean_error = errors_by_date.mean()
-        std_dev_error = errors_by_date.std()
-        
-        self.u2sdl = self.mean_error + 2 * std_dev_error
-        self.u3sdl = self.mean_error + 3 * std_dev_error
-        self.lcl = min(self.mean_error - 4 * std_dev_error, errors_by_date.min())
-        return self.u2sdl, self.u3sdl, self.lcl
+            def CalculateError(group):
+                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
+                LogRegModel = LogisticRegression(penalty=None)
+                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
+                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
+                return logreg_error
+
+            errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
+            self.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std()
+            
+            self.u2sdl = self.mean_error + 2 * std_dev_error
+            self.u3sdl = self.mean_error + 3 * std_dev_error
+
+        elif warningCL is not None and recalCL is not None:
+            # Predictions column
+            input_data['predictions'] = self.predict(input_data)
+
+            def CalculateError(group):
+                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
+                LogRegModel = LogisticRegression(penalty=None)
+                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
+                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
+                return logreg_error
+
+            errors_by_date = input_data.groupby(self.dateCol).apply(CalculateError)
+            self.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std()
+            self.u3sdl = recalCL
+            self.u2sdl = warningCL
+
+        elif warningSDs is not None and recalSDs is not None:
+            # Predictions column
+            input_data['predictions'] = self.predict(input_data)
+
+            def CalculateError(group):
+                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
+                LogRegModel = LogisticRegression(penalty=None)
+                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
+                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
+                return logreg_error
+
+            errors_by_date = input_data.groupby(self.dateCol).apply(CalculateError)
+            self.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std()
+            
+            self.u2sdl = self.mean_error + warningSDs * std_dev_error
+            self.u3sdl = self.mean_error + recalSDs * std_dev_error
+    
+        return self.u2sdl, self.u3sdl

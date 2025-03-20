@@ -223,14 +223,15 @@ def ErrorSPCPlot(log, model):
     error_df = pd.DataFrame(list(log['LogRegError'].items()), columns=['Date', 'LogRegError'])
     plt.plot(error_df['Date'], error_df['LogRegError'], marker='o', label='Data')
 
-    ucl = error_df['LogRegError'].mean() + 4 * error_df['LogRegError'].std()
+    ucl = max(error_df['LogRegError'].mean() + 4 * error_df['LogRegError'].std(), model.u3sdl+0.1)
+    lcl = min(error_df['LogRegError'].mean() - 4 * error_df['LogRegError'].std(), model.u2sdl-0.1)
 
     plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
     plt.axhline(model.u2sdl, color='black', linestyle='-')
     plt.axhline(model.u3sdl, color='black', linestyle='-')
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), model.lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
-    plt.fill_between(error_df['Date'], model.u2sdl, model.lcl, color='green', alpha=0.2, label='Safe zone')
+        plt.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
+    plt.fill_between(error_df['Date'], model.u2sdl, lcl, color='green', alpha=0.2, label='Safe zone')
     plt.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
     plt.fill_between(error_df['Date'], ucl, model.u3sdl, color='red', alpha=0.2, label='Danger zone')
 
