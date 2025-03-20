@@ -120,21 +120,23 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         - pd.DatetimeIndex: A range of dates specifying the update schedule.
     """
 
-    if clStartDate is not None and clEndDate is not None and numMonths is None and warningCL is None and recalCL is None and warningSDs is None and recalSDs is None:
+    if clStartDate and clEndDate and not any([numMonths, warningCL, recalCL, warningSDs, recalSDs]):
         startCLDate = pd.to_datetime(clStartDate, dayfirst=True)
         endCLDate = pd.to_datetime(clEndDate, dayfirst=True)
-    # Use the first X months of data to determine the control limits
-    elif numMonths is not None and clStartDate is None and clEndDate is None and warningCL is None and recalCL is None and warningSDs is None and recalSDs is None:
-        startCLDate = input_data[dateCol].min() 
+
+    elif numMonths and not any([clStartDate, clEndDate, warningCL, recalCL, warningSDs, recalSDs]):
+        startCLDate = input_data[dateCol].min()
         endCLDate = startCLDate + relativedelta(months=numMonths)
-    elif warningCL is not None and recalCL is not None and numMonths is None and clStartDate is None and clEndDate is None and warningSDs is None and recalSDs is None:
+
+    elif warningCL and recalCL and not any([numMonths, clStartDate, clEndDate, warningSDs, recalSDs]):
         if warningCL > recalCL:
             raise ValueError("Warning control limit must be lower than the recalibration control limit.")
         startCLDate = None
         endCLDate = None
-    elif warningSDs is not None and recalSDs is not None and numMonths is None and clStartDate is None and clEndDate is None and warningCL is None and recalCL is None:
+
+    elif warningSDs and recalSDs and not any([numMonths, clStartDate, clEndDate, warningCL, recalCL]):
         if warningSDs > recalSDs:
-            raise ValueError("Warning control limit must be lower than the recalibration control limit (warningSDs > recalSDs). ")
+            raise ValueError("Warning control limit must be lower than the recalibration control limit (warningSDs > recalSDs).")
         startCLDate = None
         endCLDate = None
     
