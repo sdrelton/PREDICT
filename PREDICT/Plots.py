@@ -242,3 +242,83 @@ def ErrorSPCPlot(log, model):
     plt.legend()
     plt.grid(False)
     plt.show()
+
+def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize):
+    """Generate a statistical process control chart to observe data changes over time.
+    Plot shows prevalence or mean of a dataframe column over time with control limits for +- 2 and 3 
+    standard deviations from the mean.
+    This function is useful for tracking changes that might control to model error increasing.
+
+    Args:
+        input_data (pd.DataFrame): The input data to monitor data changes.
+        trackCol (str): Column of input data to monitor.
+        timeframe (str): How often to plot the data points of the tracked variable. Can be 'Day', 'Week', 'Month' or 'Year'.
+        windowSize (int): How many timeframes to use as a the rolling control limit window size e.g. if timeframe is 'week' and 
+            the window_size = 4 then the window covers 4 weeks.
+
+    Raises:
+        ValueError: If timeframe variable is not 'Day', 'Week', 'Month', or 'Year'.
+        ValueError: If trackType is not 'P-bar' to track prevalence over time or 'X-bar' to track averages over time.
+    """
+    # Group data by date and calculate the mean of the variable at each date
+    data_prev = input_data.groupby('date').agg({trackCol: 'mean'}).reset_index()
+    data_prev.rename(columns={trackCol: 'daily_mean'}, inplace=True) 
+
+    if timeframe == 'Week':
+        period = 'W'
+    elif timeframe == 'Day':
+        period = 'D'
+    elif timeframe == 'Month':
+        period = 'M'
+    elif timeframe == 'Year':
+        period = 'Y'
+    else:
+        raise ValueError("timeframe variable must be 'Day', 'Week', 'Month', or 'Year'")
+
+    # Assign time period (e.g., start of the week) for each date
+    data_prev[timeframe] = data_prev['date'].dt.to_period(period).apply(lambda r: r.start_time)
+
+    # Group by the defined timeframe and calculate the mean for each group
+    data_time_grouped = data_prev.groupby(timeframe).agg({
+        'daily_mean': 'mean' 
+    }).reset_index()
+
+    data_time_grouped['rolling_mean'] = None
+    data_time_grouped['ucl'] = None
+    data_time_grouped['lcl'] = None
+    data_time_grouped['ucl2sd'] = None
+    data_time_grouped['lcl2sd'] = None
+
+    for i in range(len(data_time_grouped)):
+        # Use a rolling window for control limit calculations
+        start_index = max(0, i - windowSize + 1)
+        subset = data_time_grouped.iloc[start_index:i+1]
+
+        # Calculate rolling mean and standard deviation
+        rolling_mean = subset['daily_mean'].mean()
+        rolling_std_dev = subset['daily_mean'].std(ddof=0)
+
+        # Update control limits
+        data_time_grouped.loc[i, 'rolling_mean'] = rolling_mean
+        data_time_grouped.loc[i, 'ucl'] = rolling_mean + 3 * rolling_std_dev
+        data_time_grouped.loc[i, 'lcl'] = max(rolling_mean - 3 * rolling_std_dev, 0)
+        data_time_grouped.loc[i, 'ucl2sd'] = rolling_mean + 2 * rolling_std_dev
+        data_time_grouped.loc[i, 'lcl2sd'] = max(rolling_mean - 2 * rolling_std_dev, 0)
+
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['rolling_mean'], color='black', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl'], color='red', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl'], color='red', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl2sd'], color='orange', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl2sd'], color='orange', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['daily_mean'], marker='o', label=f'{timeframe} Average')
+
+    plt.title(f'Moving Control Chart for {trackCol.capitalize()} Over Time')
+    plt.xlabel('Date')
+    if input_data[trackCol].isin([0, 1]).all():
+        plt.ylabel(f'Prevalence of {trackCol.capitalize()}')
+    else:
+        plt.ylabel(f'Mean of {trackCol.capitalize()}')
+    plt.xticks(rotation=90)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
