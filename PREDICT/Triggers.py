@@ -106,6 +106,8 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        dateCol (str): Column containing the dates.
         clStartDate (str): Start date to determine control limits from. Defaults to None.
         clEndDate (str): End date to determine control limits from. Defaults to None.
         numMonths (int): The number of months to base the control limits on. Defaults to None.
@@ -157,17 +159,29 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
     return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl), model)
 
 def __SPCTrigger(self, input_data, model, u2sdl, u3sdl):
+    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
+    displayed prompting the user to investigate increasing errors in the model.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        u2sdl (float): First upper control limit above the mean.
+        u3sdl (float): Uppermost control limit above the mean.
+
+    Returns:
+        bool: True to trigger model recalibration.
+    """
 
     _, error = Metrics.__LogRegErrorComputation(model, input_data, self.outcomeColName)
-    # if error enter yellow zone (between 2SD and 3SD) then print warning message
+    # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
     if error > u2sdl and error < u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the warning zone (+2 standard deviations from the mean). \nInvestigate the cause of the increase in error.\n')
+        print(f'{curDate}: Error is in the warning zone. \nInvestigate the cause of the increase in error.\n')
         return False
-    # if error enter red zone (above 3SD) then recalibrate the model
+    # if error enter red zone (usally above 3SD) then recalibrate the model
     elif error > u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the danger zone (+3 standard deviations from the mean). \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        print(f'{curDate}: Error is in the danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
         return True
     
     else:

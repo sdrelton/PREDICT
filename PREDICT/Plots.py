@@ -208,6 +208,11 @@ def OEPlot(log):
 
 
 def LogRegErrorPlot(log):
+    """Plot the error of the logistic regression model over time.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+    """
 
     plt.plot(log['LogRegError'].keys(), log['LogRegError'].values(), label='LogRegError')
     if 'Model Updated' in log:
@@ -220,6 +225,13 @@ def LogRegErrorPlot(log):
     plt.show()
 
 def ErrorSPCPlot(log, model):
+    """Plots the error over time as a statistical process control chart with upper control 
+    limits indicating warning and danger zones when model performance drops.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+    """
     error_df = pd.DataFrame(list(log['LogRegError'].items()), columns=['Date', 'LogRegError'])
     plt.plot(error_df['Date'], error_df['LogRegError'], marker='o', label='Data')
 
