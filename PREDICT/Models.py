@@ -139,6 +139,22 @@ class RecalibratePredictions(PREDICTModel):
 
 
     def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
+        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate), 
+        the inputted control limits (warningCL, recalCL), or the first X months (nummMonths) since the start of the 
+        data.
+
+        Args:
+            input_data (pd.DataFrame): The input data for updating the model.
+            startCLDate (str): Start date to determine control limits from. Defaults to None.
+            endCLDate (str): End date to determine control limits from. Defaults to None.
+            warningCL (float): A manually set control limit for the warning control limit.
+            recalCL (float): A manually set control limit for the recalibration trigger limit.
+            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to. Defaults to 2.
+            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to. Defaults to 3.
+
+        Returns:
+            float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
+        """
 
         if startCLDate is not None and endCLDate is not None:
             # Get the logreg error at each timestep within the control limit determination period
@@ -158,10 +174,11 @@ class RecalibratePredictions(PREDICTModel):
             self.mean_error = errors_by_date.mean()
             std_dev_error = errors_by_date.std()
             
-            self.u2sdl = self.mean_error + 2 * std_dev_error
-            self.u3sdl = self.mean_error + 3 * std_dev_error
+            self.u2sdl = self.mean_error + warningSDs * std_dev_error
+            self.u3sdl = self.mean_error + recalSDs * std_dev_error
 
-        elif warningCL is not None and recalCL is not None:
+        #elif warningCL is not None and recalCL is not None:
+        else:
             # Predictions column
             input_data['predictions'] = self.predict(input_data)
 
@@ -177,23 +194,5 @@ class RecalibratePredictions(PREDICTModel):
             std_dev_error = errors_by_date.std()
             self.u3sdl = recalCL
             self.u2sdl = warningCL
-
-        elif warningSDs is not None and recalSDs is not None:
-            # Predictions column
-            input_data['predictions'] = self.predict(input_data)
-
-            def CalculateError(group):
-                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
-                LogRegModel = LogisticRegression(penalty=None)
-                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
-                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
-                return logreg_error
-
-            errors_by_date = input_data.groupby(self.dateCol).apply(CalculateError)
-            self.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std()
-            
-            self.u2sdl = self.mean_error + warningSDs * std_dev_error
-            self.u3sdl = self.mean_error + recalSDs * std_dev_error
     
         return self.u2sdl, self.u3sdl

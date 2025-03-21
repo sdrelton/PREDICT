@@ -94,7 +94,7 @@ def __TimeframeTrigger(self, input_data, update_dates):
     
     
 def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
-            numMonths=None, warningCL=None, recalCL=None, warningSDs=None, recalSDs=None):
+            numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3):
     """Trigger function to update the model if the error enters an upper control limit.
         The control limits can be set using one of the following methods:
         - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
@@ -111,36 +111,33 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         clStartDate (str): Start date to determine control limits from. Defaults to None.
         clEndDate (str): End date to determine control limits from. Defaults to None.
         numMonths (int): The number of months to base the control limits on. Defaults to None.
-        warningCL (float): A manually set control limit for the warning control limit.
-        recalCL (float): A manually set control limit for the recalibration trigger limit.
-        warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to.
-        recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
+        warningCL (float): A manually set control limit for the warning control limit. Defaults to None.
+        recalCL (float): A manually set control limit for the recalibration trigger limit. Defaults to None.
+        warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to. Defaults to 2.
+        recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to. Defaults to 3.
 
     Returns:
         tuple: A tuple containing:
         - pd.Timedelta: The calculated time interval for updating the model.
         - pd.DatetimeIndex: A range of dates specifying the update schedule.
     """
-
-    if clStartDate and clEndDate and not any([numMonths, warningCL, recalCL, warningSDs, recalSDs]):
+    if warningSDs > recalSDs:
+        raise ValueError(f"warningSDs must be lower than recalSDs. recalSDs {recalSDs} is > warningSDs {warningSDs}")
+        
+    if clStartDate and clEndDate and not any([numMonths, warningCL, recalCL]):
         startCLDate = pd.to_datetime(clStartDate, dayfirst=True)
         endCLDate = pd.to_datetime(clEndDate, dayfirst=True)
 
-    elif numMonths and not any([clStartDate, clEndDate, warningCL, recalCL, warningSDs, recalSDs]):
+    elif numMonths and not any([clStartDate, clEndDate, warningCL, recalCL]):
         startCLDate = input_data[dateCol].min()
         endCLDate = startCLDate + relativedelta(months=numMonths)
 
-    elif warningCL and recalCL and not any([numMonths, clStartDate, clEndDate, warningSDs, recalSDs]):
+    elif warningCL and recalCL and not any([numMonths, clStartDate, clEndDate]):
         if warningCL > recalCL:
-            raise ValueError("Warning control limit must be lower than the recalibration control limit.")
+            raise ValueError(f"Warning control limit must be lower than the recalibration control limit. recalCL {recalCL} is > warningCL {warningCL}")
         startCLDate = None
         endCLDate = None
 
-    elif warningSDs and recalSDs and not any([numMonths, clStartDate, clEndDate, warningCL, recalCL]):
-        if warningSDs > recalSDs:
-            raise ValueError("Warning control limit must be lower than the recalibration control limit (warningSDs > recalSDs).")
-        startCLDate = None
-        endCLDate = None
     
     else:
         raise ValueError("""The control limits must be set using ONE of the following methods:\n
@@ -151,7 +148,8 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         - Manually set the control limits by entering the float values for the 'warning' 
             (warningCL) and 'recalibration' (recalCL) zones.\n
         - Enter the number of standard deviations from the mean for the start of the 
-            warning zone (warningSDs) and the start of the recalibration zone (recalSDs).""")
+            warning zone (warningSDs) and the start of the recalibration zone (recalSDs), 
+            alongside either numMonths or clStartDate and clEndDate.""")
 
 
     u2sdl, u3sdl= model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
