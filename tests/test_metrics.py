@@ -417,7 +417,7 @@ def test_coxsnell_R2_calculation2():
 
     assert np.isclose(result, 0.53, atol=1e-3), f"Expected 0.53, got {result}"
 
-def test_log_reg_calculation():
+def test_sum_of_diff_calculation():
     """Tests the computation of the logistic regression error metric 
     on dummy data assuming a perfect model.
     """
@@ -428,25 +428,41 @@ def test_log_reg_calculation():
     }
     df = pd.DataFrame(data)
     
-    log_reg = Metrics.LogRegError(model, 'outcome')
-    hookname, result = log_reg(df)
+    SumOfDiff = Metrics.SumOfDiff(model, 'outcome')
+    hookname, result = SumOfDiff(df)
 
-    assert hookname == 'LogRegError'
+    assert hookname == 'SumOfDifferences'
     assert np.isclose(result, 0.0)
 
-def test_log_reg_calculation2():
+def test_sum_of_diff_calculation2():
     """Tests the computation of the logistic regression error metric 
     on dummy data assuming a model that gets predictions right
-    50% of the time.
+    25% of the time.
     """
     model = MockModel()
     data = {
         'probability': [0.1, 0.4, 0.6, 0.9],
-        'outcome': [0, 1, 1, 0]
+        'outcome': [0, 1, 0, 0]
     }
     df = pd.DataFrame(data)
     
-    log_reg = Metrics.LogRegError(model, 'outcome')
-    _, result = log_reg(df)
+    SumOfDiff = Metrics.SumOfDiff(model, 'outcome')
+    _, result = SumOfDiff(df)
 
-    assert np.isclose(result, 0.5)
+    assert np.isclose(result, -0.25)
+
+def test_sum_of_diff_calculation3():
+    """Tests the computation of the logistic regression error metric 
+    on dummy data assuming a model that never gets predictions right.
+    """
+    model = MockModel()
+    data = {
+        'probability': [0.8, 0.6, 0.1, 0.4],
+        'outcome': [0, 0, 1, 1]
+    }
+    df = pd.DataFrame(data)
+    
+    SumOfDiff = Metrics.SumOfDiff(model, 'outcome')
+    _, result = SumOfDiff(df)
+
+    assert np.isclose(result, 0.025)
