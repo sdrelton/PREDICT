@@ -152,11 +152,11 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
             alongside either numMonths or clStartDate and clEndDate.""")
 
 
-    u2sdl, u3sdl= model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+    u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
 
-    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl), model)
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl), model)
 
-def __SPCTrigger(self, input_data, model, u2sdl, u3sdl):
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
     """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
     displayed prompting the user to investigate increasing errors in the model.
 
@@ -165,21 +165,33 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl):
         model (PREDICTModel): The model to evaluate, must have a predict method.
         u2sdl (float): First upper control limit above the mean.
         u3sdl (float): Uppermost control limit above the mean.
+        l2sdl (float): First lower control limit beneath the mean.
+        l3sdl (float): Lowest control limit beneath the mean.
 
     Returns:
         bool: True to trigger model recalibration.
     """
 
-    _, error = Metrics.__LogRegErrorComputation(model, input_data, self.outcomeColName)
+    _, error = Metrics.__SumOfDiffComputation(model, input_data, self.outcomeColName)
     # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
     if error > u2sdl and error < u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the warning zone. \nInvestigate the cause of the increase in error.\n')
+        print(f'{curDate}: Error is in the upper warning zone. \nInvestigate the cause of the increase in error.\n')
         return False
     # if error enter red zone (usally above 3SD) then recalibrate the model
     elif error > u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        print(f'{curDate}: Error is in the upper danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        return True
+    
+    elif error < l2sdl and error > l3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the lower warning zone. \nInvestigate the cause of the increase in error.\n')
+        return False
+
+    elif error < l3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the lower danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
         return True
     
     else:

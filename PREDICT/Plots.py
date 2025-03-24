@@ -207,19 +207,19 @@ def OEPlot(log):
     plt.show()
 
 
-def LogRegErrorPlot(log):
+def SumOfDiffPlot(log):
     """Plot the error of the logistic regression model over time.
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
 
-    plt.plot(log['LogRegError'].keys(), log['LogRegError'].values(), label='LogRegError')
+    plt.plot(log['SumOfDifferences'].keys(), log['SumOfDifferences'].values(), label='SumOfDifferences')
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), min(log['LogRegError'].values())-0.2, max(log['LogRegError'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
+        plt.vlines(log['Model Updated'].keys(), min(log['SumOfDifferences'].values())-0.2, max(log['SumOfDifferences'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
-    plt.ylabel('LogRegError')
-    plt.hlines(0, min(log['LogRegError'].keys()), max(log['LogRegError'].keys()), colors='black', linestyles='dashed', label='No error')
+    plt.ylabel('Sum of Differences Error')
+    plt.hlines(0, min(log['SumOfDifferences'].keys()), max(log['SumOfDifferences'].keys()), colors='black', linestyles='dashed', label='No error')
     plt.legend(loc='upper right')
     plt.xticks(rotation=90)
     plt.show()
@@ -232,24 +232,33 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
-    error_df = pd.DataFrame(list(log['LogRegError'].items()), columns=['Date', 'LogRegError'])
-    plt.plot(error_df['Date'], error_df['LogRegError'], marker='o', label='Data')
+    error_df = pd.DataFrame(list(log['SumOfDifferences'].items()), columns=['Date', 'SumOfDifferences'])
+    plt.plot(error_df['Date'], error_df['SumOfDifferences'], marker='o', label='Data')
 
-    ucl = max(error_df['LogRegError'].mean() + 4 * error_df['LogRegError'].std(), model.u3sdl+0.1)
-    lcl = min(error_df['LogRegError'].mean() - 4 * error_df['LogRegError'].std(), model.u2sdl-0.1)
+    # set where the recalibration zones end for plot aesthetics
+    ucl = error_df['SumOfDifferences'].max()+(0.1*error_df['SumOfDifferences'].max())
+    lcl = error_df['SumOfDifferences'].min()+(0.1*error_df['SumOfDifferences'].min())
 
     plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
     plt.axhline(model.u2sdl, color='black', linestyle='-')
     plt.axhline(model.u3sdl, color='black', linestyle='-')
+    plt.axhline(model.l2sdl, color='black', linestyle='-')
+    plt.axhline(model.l3sdl, color='black', linestyle='-')
+
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
-    plt.fill_between(error_df['Date'], model.u2sdl, lcl, color='green', alpha=0.2, label='Safe zone')
+
+    plt.fill_between(error_df['Date'], model.u3sdl, ucl, color='red', alpha=0.2, label='Recalibration zone')
     plt.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
-    plt.fill_between(error_df['Date'], ucl, model.u3sdl, color='red', alpha=0.2, label='Danger zone')
+    plt.fill_between(error_df['Date'], model.l2sdl, model.u2sdl, color='green', alpha=0.2, label='Safe zone')
+    plt.fill_between(error_df['Date'], model.l2sdl, model.l3sdl, color='yellow', alpha=0.2)
+    plt.fill_between(error_df['Date'], model.l3sdl, lcl, color='red', alpha=0.2)
+
+
 
     plt.title('SPC Chart for Error')
     plt.xlabel('Date')
-    plt.ylabel('Error')
+    plt.ylabel('Scaled Error')
     plt.xticks(rotation=90)
     plt.legend()
     plt.grid(False)
@@ -318,9 +327,9 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize):
         data_time_grouped.loc[i, 'lcl2sd'] = max(rolling_mean - 2 * rolling_std_dev, 0)
 
     plt.plot(data_time_grouped[timeframe], data_time_grouped['rolling_mean'], color='black', linestyle='-', alpha=0.6)
-    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl'], color='red', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl'], color='red', linestyle='-', alpha=0.6, label='±3σ from the mean (Recalibration Zone)')
     plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl'], color='red', linestyle='-', alpha=0.6)
-    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl2sd'], color='orange', linestyle='-', alpha=0.6)
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl2sd'], color='orange', linestyle='-', alpha=0.6, label='±2σ from the mean (Warning Zone)')
     plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl2sd'], color='orange', linestyle='-', alpha=0.6)
     plt.plot(data_time_grouped[timeframe], data_time_grouped['daily_mean'], marker='o', label=f'{timeframe} Average')
 

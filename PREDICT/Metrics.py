@@ -399,22 +399,23 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
     cox_snell_r2 = 1 - np.exp(((ll_null - ll_full) * 2) / len(y))
     return 'CoxSnellR2', cox_snell_r2
 
-def LogRegError(model, outcomeCol='outcome'):
+def SumOfDiff(model, outcomeCol='outcome'):
     """
-    LogHook to compute the LogRegError of a model at each timestep.
+    LogHook to compute the sum of differences error of a model at each timestep.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        logHook: A hook to compute the LogRegError of the model at each timestep when fed data.
+        logHook: A hook to compute the sum of differences error of the model at each timestep when fed data.
     """
-    return lambda df: __LogRegErrorComputation(model, df, outcomeCol)
+    return lambda df: __SumOfDiffComputation(model, df, outcomeCol)
 
-def __LogRegErrorComputation(model, df, outcomeCol):
+def __SumOfDiffComputation(model, df, outcomeCol):
     """
-    Function to compute the LogRegError of a model on a given dataframe.
+    Function to compute the sum of differences error of a model on a given dataframe. The error is scaled by dividing the 
+    sum of difference by the number of predictions within the timeframe.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -422,14 +423,12 @@ def __LogRegErrorComputation(model, df, outcomeCol):
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        hookname (str), result (float): The name of the hook ('LogRegError'), and the resulting LogRegError of the model.
+        hookname (str), result (float): The name of the hook ('SumOfDifferences'), and the resulting sum of differences error of the model.
     """
     predictions = model.predict(df) # Prediction probabilities
-    logit_predictions = logit(predictions.to_numpy().reshape(-1, 1))
 
-    LogRegModel = LogisticRegression(penalty=None)
-    LogRegModel.fit(logit_predictions, df[outcomeCol])
+    differences = df[outcomeCol] - predictions
 
-    logreg_error = 1 - LogRegModel.score(logit_predictions, df[outcomeCol])
+    sum_of_differences = np.sum(differences)/len(df[outcomeCol])
 
-    return 'LogRegError', logreg_error
+    return 'SumOfDifferences', sum_of_differences

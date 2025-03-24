@@ -155,7 +155,12 @@ class RecalibratePredictions(PREDICTModel):
         Returns:
             float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
         """
-
+        def CalculateError(group):
+            predictions = group['predictions']
+            differences = group[self.outcomeColName] - predictions
+            sum_of_differences = np.sum(differences)/len(group[self.outcomeColName])
+            return sum_of_differences
+        
         if startCLDate is not None and endCLDate is not None:
             # Get the logreg error at each timestep within the control limit determination period
             createCLdf = input_data[(input_data[self.dateCol] >= startCLDate) & (input_data[self.dateCol] <= endCLDate)].copy()
@@ -163,36 +168,25 @@ class RecalibratePredictions(PREDICTModel):
             # Predictions column
             createCLdf['predictions'] = self.predict(createCLdf)
 
-            def CalculateError(group):
-                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
-                LogRegModel = LogisticRegression(penalty=None)
-                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
-                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
-                return logreg_error
-
             errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
             self.mean_error = errors_by_date.mean()
             std_dev_error = errors_by_date.std()
             
             self.u2sdl = self.mean_error + warningSDs * std_dev_error
             self.u3sdl = self.mean_error + recalSDs * std_dev_error
+            self.l2sdl = self.mean_error - warningSDs * std_dev_error
+            self.l3sdl = self.mean_error - recalSDs * std_dev_error
 
         #elif warningCL is not None and recalCL is not None:
         else:
             # Predictions column
             input_data['predictions'] = self.predict(input_data)
-
-            def CalculateError(group):
-                logit_predictions = logit(group['predictions'].to_numpy().reshape(-1, 1))
-                LogRegModel = LogisticRegression(penalty=None)
-                LogRegModel.fit(logit_predictions, group[self.outcomeColName])
-                logreg_error = 1 - LogRegModel.score(logit_predictions, group[self.outcomeColName])
-                return logreg_error
-
             errors_by_date = input_data.groupby(self.dateCol).apply(CalculateError)
             self.mean_error = errors_by_date.mean()
             std_dev_error = errors_by_date.std()
             self.u3sdl = recalCL
             self.u2sdl = warningCL
+            self.l3sdl = -recalCL
+            self.l2sdl = -warningCL
     
-        return self.u2sdl, self.u3sdl
+        return self.u2sdl, self.u3sdl, self.l2sdl, self.l3sdl
