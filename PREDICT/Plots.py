@@ -264,10 +264,10 @@ def ErrorSPCPlot(log, model):
     plt.grid(False)
     plt.show()
 
-def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize):
+def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, smallerSD=2):
     """Generate a statistical process control chart to observe data changes over time.
-    Plot shows prevalence or mean of a dataframe column over time with control limits for +- 2 and 3 
-    standard deviations from the mean.
+    Plot shows prevalence or mean of a dataframe column over time with control limits for ± x and y 
+    standard deviations from the mean (where x and y default to 2 and 3 respectively).
     This function is useful for tracking changes that might control to model error increasing.
 
     Args:
@@ -276,11 +276,18 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize):
         timeframe (str): How often to plot the data points of the tracked variable. Can be 'Day', 'Week', 'Month' or 'Year'.
         windowSize (int): How many timeframes to use as a the rolling control limit window size e.g. if timeframe is 'week' and 
             the window_size = 4 then the window covers 4 weeks.
+        largerSD (float): Red line upper and lower most control limits. Defaults to 3.
+        smallerSD (float): Yellow line inner control limts. Defaults to 2.
+        
 
     Raises:
         ValueError: If timeframe variable is not 'Day', 'Week', 'Month', or 'Year'.
         ValueError: If trackType is not 'P-bar' to track prevalence over time or 'X-bar' to track averages over time.
     """
+
+    if smallerSD > largerSD:
+        raise ValueError(f"smallerSD must be smaller than largerSD. smallerSD: {smallerSD} > largerSD: {largerSD}")
+
     # Group data by date and calculate the mean of the variable at each date
     data_prev = input_data.groupby('date').agg({trackCol: 'mean'}).reset_index()
     data_prev.rename(columns={trackCol: 'daily_mean'}, inplace=True) 
@@ -321,15 +328,15 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize):
 
         # Update control limits
         data_time_grouped.loc[i, 'rolling_mean'] = rolling_mean
-        data_time_grouped.loc[i, 'ucl'] = rolling_mean + 3 * rolling_std_dev
-        data_time_grouped.loc[i, 'lcl'] = max(rolling_mean - 3 * rolling_std_dev, 0)
-        data_time_grouped.loc[i, 'ucl2sd'] = rolling_mean + 2 * rolling_std_dev
-        data_time_grouped.loc[i, 'lcl2sd'] = max(rolling_mean - 2 * rolling_std_dev, 0)
+        data_time_grouped.loc[i, 'ucl'] = rolling_mean + largerSD * rolling_std_dev
+        data_time_grouped.loc[i, 'lcl'] = max(rolling_mean - largerSD * rolling_std_dev, 0)
+        data_time_grouped.loc[i, 'ucl2sd'] = rolling_mean + smallerSD * rolling_std_dev
+        data_time_grouped.loc[i, 'lcl2sd'] = max(rolling_mean - smallerSD * rolling_std_dev, 0)
 
     plt.plot(data_time_grouped[timeframe], data_time_grouped['rolling_mean'], color='black', linestyle='-', alpha=0.6)
-    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl'], color='red', linestyle='-', alpha=0.6, label='±3σ from the mean (Recalibration Zone)')
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl'], color='red', linestyle='-', alpha=0.6, label=f'±{largerSD}σ from the mean')
     plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl'], color='red', linestyle='-', alpha=0.6)
-    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl2sd'], color='orange', linestyle='-', alpha=0.6, label='±2σ from the mean (Warning Zone)')
+    plt.plot(data_time_grouped[timeframe], data_time_grouped['ucl2sd'], color='orange', linestyle='-', alpha=0.6, label=f'±{smallerSD}σ from the mean')
     plt.plot(data_time_grouped[timeframe], data_time_grouped['lcl2sd'], color='orange', linestyle='-', alpha=0.6)
     plt.plot(data_time_grouped[timeframe], data_time_grouped['daily_mean'], marker='o', label=f'{timeframe} Average')
 
