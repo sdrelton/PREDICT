@@ -423,7 +423,7 @@ def __SumOfDiffComputation(model, df, outcomeCol):
         outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
 
     Returns:
-        hookname (str), result (float): The name of the hook ('SumOfDifferences'), and the resulting sum of differences error of the model.
+        hookname (str), result (float): The name of the hook ('NormSumOfDifferences'), and the resulting sum of differences error of the model.
     """
     predictions = model.predict(df) # Prediction probabilities
 
@@ -431,4 +431,4 @@ def __SumOfDiffComputation(model, df, outcomeCol):
 
     sum_of_differences = np.sum(differences)/len(df[outcomeCol])
 
-    return 'SumOfDifferences', sum_of_differences
+    return 'NormSumOfDifferences', sum_of_differences

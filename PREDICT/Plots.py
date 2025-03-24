@@ -207,19 +207,19 @@ def OEPlot(log):
     plt.show()
 
 
-def SumOfDiffPlot(log):
-    """Plot the error of the logistic regression model over time.
+def NormalisedSumOfDiffPlot(log):
+    """Plot the error of the model over time.
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
 
-    plt.plot(log['SumOfDifferences'].keys(), log['SumOfDifferences'].values(), label='SumOfDifferences')
+    plt.plot(log['NormSumOfDifferences'].keys(), log['NormSumOfDifferences'].values(), label='Normalised Sum Of Differences')
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), min(log['SumOfDifferences'].values())-0.2, max(log['SumOfDifferences'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
+        plt.vlines(log['Model Updated'].keys(), min(log['NormSumOfDifferences'].values())-0.2, max(log['NormSumOfDifferences'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Sum of Differences Error')
-    plt.hlines(0, min(log['SumOfDifferences'].keys()), max(log['SumOfDifferences'].keys()), colors='black', linestyles='dashed', label='No error')
+    plt.hlines(0, min(log['NormSumOfDifferences'].keys()), max(log['NormSumOfDifferences'].keys()), colors='black', linestyles='dashed', label='No error')
     plt.legend(loc='upper right')
     plt.xticks(rotation=90)
     plt.show()
@@ -232,12 +232,12 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
-    error_df = pd.DataFrame(list(log['SumOfDifferences'].items()), columns=['Date', 'SumOfDifferences'])
-    plt.plot(error_df['Date'], error_df['SumOfDifferences'], marker='o', label='Data')
+    error_df = pd.DataFrame(list(log['NormSumOfDifferences'].items()), columns=['Date', 'NormSumOfDifferences'])
+    plt.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
 
     # set where the recalibration zones end for plot aesthetics
-    ucl = error_df['SumOfDifferences'].max()+(0.1*error_df['SumOfDifferences'].max())
-    lcl = error_df['SumOfDifferences'].min()+(0.1*error_df['SumOfDifferences'].min())
+    ucl = error_df['NormSumOfDifferences'].max()+(0.1*error_df['NormSumOfDifferences'].max())
+    lcl = error_df['NormSumOfDifferences'].min()+(0.1*error_df['NormSumOfDifferences'].min())
 
     plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
     plt.axhline(model.u2sdl, color='black', linestyle='-')
@@ -258,7 +258,7 @@ def ErrorSPCPlot(log, model):
 
     plt.title('SPC Chart for Error')
     plt.xlabel('Date')
-    plt.ylabel('Scaled Error')
+    plt.ylabel('Normalised Error')
     plt.xticks(rotation=90)
     plt.legend()
     plt.grid(False)

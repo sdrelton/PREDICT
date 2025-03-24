@@ -431,7 +431,7 @@ def test_sum_of_diff_calculation():
     SumOfDiff = Metrics.SumOfDiff(model, 'outcome')
     hookname, result = SumOfDiff(df)
 
-    assert hookname == 'SumOfDifferences'
+    assert hookname == 'NormSumOfDifferences'
     assert np.isclose(result, 0.0)
 
 def test_sum_of_diff_calculation2():
