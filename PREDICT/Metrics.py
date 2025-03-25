@@ -398,3 +398,37 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
 
     cox_snell_r2 = 1 - np.exp(((ll_null - ll_full) * 2) / len(y))
     return 'CoxSnellR2', cox_snell_r2
+
+def SumOfDiff(model, outcomeCol='outcome'):
+    """
+    LogHook to compute the sum of differences error of a model at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the sum of differences error of the model at each timestep when fed data.
+    """
+    return lambda df: __SumOfDiffComputation(model, df, outcomeCol)
+
+def __SumOfDiffComputation(model, df, outcomeCol):
+    """
+    Function to compute the sum of differences error of a model on a given dataframe. The error is scaled by dividing the 
+    sum of difference by the number of predictions within the timeframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('NormSumOfDifferences'), and the resulting sum of differences error of the model.
+    """
+    predictions = model.predict(df) # Prediction probabilities
+
+    differences = df[outcomeCol] - predictions
+
+    sum_of_differences = np.sum(differences)/len(df[outcomeCol])
+
+    return 'NormSumOfDifferences', sum_of_differences

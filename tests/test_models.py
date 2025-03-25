@@ -86,7 +86,7 @@ def test_regular_recalibrations():
 
     df = pd.DataFrame(mydict)
 
-    model = Models.RegularRecalibration()
+    model = Models.RecalibratePredictions()
     model.trigger = Triggers.TimeframeTrigger(model=model, updateTimestep='month', dataStart=df['date'].min(), dataEnd=df['date'].max())
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='week')
     mytest.addLogHook(Accuracy(model))

@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
 from types import MethodType
-from PREDICT.Models import PREDICTModel
+from PREDICT.Models import PREDICTModel, RecalibratePredictions
 from dateutil.relativedelta import relativedelta
+from sklearn.linear_model import LogisticRegression
+from scipy.special import logit
+from PREDICT import Metrics
 
 def AccuracyThreshold(model, threshold, prediction_threshold=0.5):
     return MethodType(lambda self, x: __AccuracyThreshold(self, x, threshold, prediction_threshold), model)
@@ -90,5 +93,107 @@ def __TimeframeTrigger(self, input_data, update_dates):
         return False
     
     
+def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
+            numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3):
+    """Trigger function to update the model if the error enters an upper control limit.
+        The control limits can be set using one of the following methods:
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
+            limits using the error mean and std during this period.
+        - Enter the number of months (numMonths) to base the control limits on from the start of the period.
+        - Manually set the control limits by entering the float values for the 'warning' (warningCL) and 'recalibration' (recalCL) zones.
+        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the 
+            recalibration zone (recalSDs).
 
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        dateCol (str): Column containing the dates.
+        clStartDate (str): Start date to determine control limits from. Defaults to None.
+        clEndDate (str): End date to determine control limits from. Defaults to None.
+        numMonths (int): The number of months to base the control limits on. Defaults to None.
+        warningCL (float): A manually set control limit for the warning control limit. Defaults to None.
+        recalCL (float): A manually set control limit for the recalibration trigger limit. Defaults to None.
+        warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to. Defaults to 2.
+        recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to. Defaults to 3.
+
+    Returns:
+        tuple: A tuple containing:
+        - pd.Timedelta: The calculated time interval for updating the model.
+        - pd.DatetimeIndex: A range of dates specifying the update schedule.
+    """
+    if warningSDs > recalSDs:
+        raise ValueError(f"warningSDs must be lower than recalSDs. recalSDs {recalSDs} is > warningSDs {warningSDs}")
+        
+    if clStartDate and clEndDate and not any([numMonths, warningCL, recalCL]):
+        startCLDate = pd.to_datetime(clStartDate, dayfirst=True)
+        endCLDate = pd.to_datetime(clEndDate, dayfirst=True)
+
+    elif numMonths and not any([clStartDate, clEndDate, warningCL, recalCL]):
+        startCLDate = input_data[dateCol].min()
+        endCLDate = startCLDate + relativedelta(months=numMonths)
+
+    elif warningCL and recalCL and not any([numMonths, clStartDate, clEndDate]):
+        if warningCL > recalCL:
+            raise ValueError(f"Warning control limit must be lower than the recalibration control limit. recalCL {recalCL} is > warningCL {warningCL}")
+        startCLDate = None
+        endCLDate = None
+
+    
+    else:
+        raise ValueError("""The control limits must be set using ONE of the following methods:\n
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
+            limits using the error mean and std during this period. \n
+        - Enter the number of months (numMonths) to base the control limits on from the 
+            start of the period.\n
+        - Manually set the control limits by entering the float values for the 'warning' 
+            (warningCL) and 'recalibration' (recalCL) zones.\n
+        - Enter the number of standard deviations from the mean for the start of the 
+            warning zone (warningSDs) and the start of the recalibration zone (recalSDs), 
+            alongside either numMonths or clStartDate and clEndDate.""")
+
+
+    u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl), model)
+
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
+    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
+    displayed prompting the user to investigate increasing errors in the model.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        u2sdl (float): First upper control limit above the mean.
+        u3sdl (float): Uppermost control limit above the mean.
+        l2sdl (float): First lower control limit beneath the mean.
+        l3sdl (float): Lowest control limit beneath the mean.
+
+    Returns:
+        bool: True to trigger model recalibration.
+    """
+
+    _, error = Metrics.__SumOfDiffComputation(model, input_data, self.outcomeColName)
+    # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
+    if error > u2sdl and error < u3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the upper warning zone. \nInvestigate the cause of the increase in error.\n')
+        return False
+    # if error enter red zone (usally above 3SD) then recalibrate the model
+    elif error > u3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the upper danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        return True
+    
+    elif error < l2sdl and error > l3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the lower warning zone. \nInvestigate the cause of the increase in error.\n')
+        return False
+
+    elif error < l3sdl:
+        curDate = input_data[self.dateCol].max()
+        print(f'{curDate}: Error is in the lower danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        return True
+    
+    else:
+        return False
     

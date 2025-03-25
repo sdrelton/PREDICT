@@ -1,8 +1,8 @@
 import pytest
 import pandas as pd
 import numpy as np
-from PREDICT.Models import PREDICTModel
-from PREDICT.Triggers import AccuracyThreshold
+from PREDICT.Models import PREDICTModel, RecalibratePredictions
+from PREDICT.Triggers import AccuracyThreshold, SPCTrigger
 from sklearn.metrics import accuracy_score
 
 class MockModel:
@@ -72,4 +72,14 @@ def test_accuracy_same_as_threshold(input_data):
     model.trigger = AccuracyThreshold(model, threshold, prediction_threshold)
     bool_out = model.trigger(input_data)
     assert bool_out == False, "Accuracy is at threshold, no update required."
+
+def test_control_limit_input():
+    probs = np.array([0.4, 0.5, 0.9, 0.4, 0.4])
+    model = MockModel(preds=probs)
+    with pytest.raises(ValueError):
+        model.trigger = SPCTrigger(model=model, input_data=input_data, warningSDs=3, recalSDs=4, recalCL=0.5)
+    with pytest.raises(ValueError):
+        model.trigger = SPCTrigger(model=model, input_data=input_data, warningSDs=3, clEndDate='31-01-2025')
+    with pytest.raises(ValueError):
+        model.trigger = SPCTrigger(model=model, input_data=input_data, recalCL=0.5, numMonths=6)
 
