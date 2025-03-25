@@ -7,3 +7,4 @@ matplotlib
 ipykernel
 sphinx
 ghp-import
+pymc
