@@ -282,7 +282,6 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
 
     Raises:
         ValueError: If timeframe variable is not 'Day', 'Week', 'Month', or 'Year'.
-        ValueError: If trackType is not 'P-bar' to track prevalence over time or 'X-bar' to track averages over time.
     """
 
     if smallerSD > largerSD:
