@@ -197,3 +197,32 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
     else:
         return False
     
+
+def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=6):
+    """Work out the days when the refit the Bayesian model by selecting after how many months to refit the model.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        dateCol (str, optional): _description_. Defaults to 'date'.
+        refitFrequency (int, optional): Number of months between refitting the model. Defaults to 6.
+
+    Returns:
+        bool: True to trigger Bayesian model refitting.
+    """
+    
+    # Work out the days when the model will be refitted
+    numMonths = relativedelta(months=refitFrequency)
+    refit_dates = []
+    current_date = input_data[dateCol].min() + numMonths
+    while current_date <= input_data[dateCol].max():
+        refit_dates.append(current_date)
+        current_date += numMonths
+
+    return MethodType(lambda self, x: __BayesianRefitTrigger(self, x, refit_dates), model)
+
+def __BayesianRefitTrigger(self, input_data, refit_dates):
+    if any(date in input_data[self.dateCol].values for date in refit_dates):
+        return True
+    else:
+        return False
