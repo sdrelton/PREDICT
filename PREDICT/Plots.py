@@ -5,6 +5,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import expit
 
 
 def AccuracyPlot(log, recalthreshold=None):
@@ -359,5 +360,50 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
         plt.ylabel(f'Mean of {trackCol.capitalize()}')
     plt.xticks(rotation=90)
     plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outcome="outcome"):
+    """Plots the probability of an outcome given a specific predictor.
+    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+        x_axis_min (float, optional): Minimum value for the x axis representing the predictor. Defaults to None.
+        x_axis_max (float, optional): Maximum value for the x axis representing the predictor. Defaults to None.
+        predictor (str, optional): Name of the predictor to assess. Defaults to None.
+        outcome (str, optional): Name of the outcome being predicted. Defaults to "outcome".
+
+    Raises:
+        ValueError: Raises error if x_axis_min is not provided.
+        ValueError: Raises error if x_axis_max is not provided.
+        ValueError: Raises error if predictor is not provided.
+    """
+    if x_axis_min is None:
+        raise ValueError("x_axis_min is None, minimum x axis value required for the plot.")
+    if x_axis_max is None:
+        raise ValueError("x_axis_max is None, maximum x axis value required for the plot.")
+    if predictor is None:
+        raise ValueError("predictor is None, a predictor is required to determine probability of the outcome.")
+
+    plt.figure()
+    bayesianCoefs = log["BayesianCoefficients"]
+    timestamps = list(bayesianCoefs.keys())
+    x_axis_values = list(range(x_axis_min, x_axis_max+1))
+    for timestamp in timestamps:
+        specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+        if specific_coefs[predictor] is not None:
+            mean_coef = specific_coefs[predictor][0]
+            intercept = specific_coefs["Intercept"][0]
+            probs = []
+            for value in x_axis_values:
+                linear_function = intercept + mean_coef * value
+                prob = expit(linear_function)
+                probs.append(prob)
+            plt.plot(x_axis_values, probs, label=timestamp)
+
+    plt.xlabel(f"{predictor}")
+    plt.ylabel(f"Probability of {outcome}")
+    plt.legend(title="Time")
     plt.grid(True)
     plt.show()
