@@ -1,7 +1,11 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
-from scipy.special import logit
-
+import bambi as bmb
+import bambi.priors as priors
+from scipy.special import expit
+import arviz as az
+from statsmodels.formula.api import logit as bayes_logit
+import matplotlib.pyplot as plt
 
 
 class PREDICTModel:
@@ -190,3 +194,133 @@ class RecalibratePredictions(PREDICTModel):
             self.l2sdl = -warningCL
     
         return self.u2sdl, self.u3sdl, self.l2sdl, self.l3sdl
+
+class BayesianModel(PREDICTModel):
+    """_summary_
+
+    Args:
+
+        priors (dict): Dictionary of predictors (key) and their mean and stds of the coefficients (values) e.g. {"blood_pressure": (2.193, 0.12)}, 
+            this must include "Intercept" as a dictionary key.
+            If any of the prior keys are None then the prior coefficients are estimated using a logistic regression model.
+    """
+    def __init__(self, priors, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True):
+        super(BayesianModel, self).__init__()
+        self.predictColName = predictColName
+        self.outcomeColName = outcomeColName
+        self.dateCol = dateCol
+        self.priors = priors
+        self.verbose = verbose
+        
+    def predict(self, input_data):
+        if "new_predictions" in input_data.columns:
+            coef_names = list(self.priors.keys())
+            predictors = coef_names.copy()
+            predictors.remove("Intercept")
+            for hook in self.postPredictHooks:
+                preds = hook(predictors)
+        else:
+            # if no 'new_predictions' column then use the predictCol
+            preds = input_data[self.predictColName]
+        
+        return preds
+
+
+    
+    def update(self, input_data):
+
+        if not isinstance(self.priors, dict):
+                raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
+        
+        # Get predictions
+        preds = self.predict(input_data)
+        
+        coef_names = list(self.priors.keys())
+        predictors = coef_names.copy()
+        predictors.remove("Intercept")
+        if "Intercept" not in coef_names:
+            raise ValueError("The required 'Intercept' is missing from the priors.keys().")
+        model_formula = self.outcomeColName + "~" + "+".join(predictors)
+
+        generate_priors = False
+        for _, value in self.priors.items():
+            if value is None:
+                generate_priors = True
+
+
+        if generate_priors:
+            faux_model = bayes_logit(model_formula, data=input_data).fit()
+
+            if self.verbose:
+                print("\n*** PRIORS ***")
+
+
+            faux_priors = {}
+            for idx in range(0, len(coef_names)):
+                faux_priors[faux_model.params.index[idx]] = bmb.Prior("Normal", mu=faux_model.params[idx], sigma=faux_model.bse[idx])
+                if self.verbose:
+                    print(f"{faux_model.params.index[idx]} mean coef:  {faux_model.params[idx]:.2f} ± {faux_model.bse[idx]:.2f}")
+
+            bayes_model = bmb.Model(model_formula, data=input_data, family="bernoulli", priors=faux_priors)
+
+            
+
+        else:
+            
+            if self.verbose:
+                print("\n*** PRIORS ***")
+            bmb_priors = {}
+            for prior_key, prior_values in self.priors.items():
+                prior_mean, prior_std = prior_values
+                bmb_priors[prior_key] = bmb.Prior("Normal", mu=prior_mean, sigma=prior_std)
+
+                if self.verbose:
+                    print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
+
+            bayes_model = bmb.Model(model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
+            
+
+        idata = bayes_model.fit(draws=100, tune=100, cores=12, chains=4)
+        posterior_samples = idata.posterior 
+
+        if self.verbose:
+            print("\n*** POSTERIORS ***")
+            az.plot_trace(idata, figsize=(10, 7), )
+        
+
+        # Update the priors for the next run of the Bayesian model
+        self.priors = {
+            predictor: (
+                posterior_samples[predictor].values.flatten().mean(),
+                posterior_samples[predictor].values.flatten().std()
+            )
+            for predictor in coef_names
+        }
+
+        self.posterior_samples = {
+            predictor: (
+                posterior_samples[predictor].values.flatten()
+            )
+            for predictor in coef_names
+        }
+
+
+        if self.verbose:
+            print(f"Intercept mean coef: {posterior_samples["Intercept"].values.flatten().mean():.2f} ± {posterior_samples["Intercept"].values.flatten().std():.2f}")
+            for predictor in predictors:
+                coef_mean = posterior_samples[predictor].values.flatten().mean()
+                coef_std = posterior_samples[predictor].values.flatten().std()
+                print(f"{predictor} mean coef: {coef_mean:.2f} ± {coef_std:.2f}")
+
+        def get_new_probs(predictors):
+            for index, row in input_data[predictors].iterrows():
+                lin_function = 0
+                for predictor in predictors:
+                    lin_function += self.posterior_samples[predictor] * row[predictor]
+
+                predicted_probs = expit(lin_function + self.posterior_samples["Intercept"])
+                mean_pred_probs = np.mean(predicted_probs)
+                input_data.at[index, "new_predictions"] = mean_pred_probs
+            return input_data
+            
+        self.addPostPredictHook(get_new_probs(predictors))
