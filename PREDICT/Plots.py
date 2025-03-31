@@ -14,6 +14,7 @@ def AccuracyPlot(log, recalthreshold=None):
         log (dict): Log of model metrics over time and when the model was updated.
         recalthreshold (float, int): Threshold to trigger recalibration. Defaults to None.
     """
+    plt.figure()
     plt.plot(log['Accuracy'].keys(), log['Accuracy'].values(), label='Accuracy')
 
     # Add dashed line to indicate when the model was recalibrated
@@ -39,6 +40,7 @@ def CalibrationSlopePlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['CalibrationSlope'].keys(), log['CalibrationSlope'].values(), label='Calibration Slope')
 
     plt.axhline(y=1, color='black', linestyle='--', label='Ideal Calibration Slope')
@@ -65,6 +67,7 @@ def CoxSnellPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['CoxSnellR2'].keys(), log['CoxSnellR2'].values(), label='Cox and Snell R2')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['CoxSnellR2'].values())-0.2, max(log['CoxSnellR2'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -106,6 +109,7 @@ def AUROCPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['AUROC'].keys(), log['AUROC'].values(), label='AUROC')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['AUROC'].values())-0.2, max(log['AUROC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -121,6 +125,7 @@ def AUPRCPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['AUPRC'].keys(), log['AUPRC'].values(), label='AUPRC')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['AUPRC'].values())-0.2, max(log['AUPRC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -136,6 +141,7 @@ def F1ScorePlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['F1score'].keys(), log['F1score'].values(), label='F1 Score')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['F1score'].values())-0.2, max(log['F1score'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -151,6 +157,7 @@ def PrecisionPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Precision'].keys(), log['Precision'].values(), label='Precision')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Precision'].values())-0.2, max(log['Precision'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -166,6 +173,7 @@ def SensitivityPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Sensitivity'].keys(), log['Sensitivity'].values(), label='Sensitivity')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Sensitivity'].values())-0.2, max(log['Sensitivity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -181,6 +189,7 @@ def SpecificityPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Specificity'].keys(), log['Specificity'].values(), label='Specificity')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Specificity'].values())-0.2, max(log['Specificity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -196,6 +205,7 @@ def OEPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['O/E'].keys(), log['O/E'].values(), label='O/E')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['O/E'].values())-0.2, max(log['O/E'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -213,7 +223,7 @@ def NormalisedSumOfDiffPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
-
+    plt.figure()
     plt.plot(log['NormSumOfDifferences'].keys(), log['NormSumOfDifferences'].values(), label='Normalised Sum Of Differences')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['NormSumOfDifferences'].values())-0.2, max(log['NormSumOfDifferences'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
@@ -232,6 +242,7 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
+    plt.figure()
     error_df = pd.DataFrame(list(log['NormSumOfDifferences'].items()), columns=['Date', 'NormSumOfDifferences'])
     plt.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
 
@@ -283,6 +294,7 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
     Raises:
         ValueError: If timeframe variable is not 'Day', 'Week', 'Month', or 'Year'.
     """
+    plt.figure()
 
     if smallerSD > largerSD:
         raise ValueError(f"smallerSD must be smaller than largerSD. smallerSD: {smallerSD} > largerSD: {largerSD}")
