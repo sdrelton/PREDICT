@@ -3,6 +3,7 @@ PREDICT - Pragmatic Recalibration and Evaluation of Drift In Clinical Tools
 
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 ![Tests](https://github.com/sdrelton/PREDICT/actions/workflows/testing.yml/badge.svg)
+[![DOI](https://zenodo.org/badge/916557863.svg)](https://doi.org/10.5281/zenodo.15114705)
 
 
 
