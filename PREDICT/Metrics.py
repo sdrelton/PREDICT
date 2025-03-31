@@ -432,3 +432,14 @@ def __SumOfDiffComputation(model, df, outcomeCol):
     sum_of_differences = np.sum(differences)/len(df[outcomeCol])
 
     return 'NormSumOfDifferences', sum_of_differences
+
+def TrackBayesianCoefs(model):
+
+    return lambda df: __TrackBayesianCoefs(model)
+
+def __TrackBayesianCoefs(model):
+
+    priors = model.get_coefs()
+    print(priors)
+
+    return 'BayesianCoefficients', priors

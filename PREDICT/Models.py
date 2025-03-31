@@ -204,13 +204,14 @@ class BayesianModel(PREDICTModel):
             this must include "Intercept" as a dictionary key.
             If any of the prior keys are None then the prior coefficients are estimated using a logistic regression model.
     """
-    def __init__(self, priors, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True):
+    def __init__(self, priors, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False):
         super(BayesianModel, self).__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
         self.dateCol = dateCol
         self.priors = priors
         self.verbose = verbose
+        self.plot_idata = plot_idata
         
     def predict(self, input_data):
         if "new_predictions" in input_data.columns:
@@ -230,7 +231,7 @@ class BayesianModel(PREDICTModel):
     def update(self, input_data):
 
         if not isinstance(self.priors, dict):
-                raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
+            raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
         
         # Get predictions
         preds = self.predict(input_data)
@@ -256,10 +257,12 @@ class BayesianModel(PREDICTModel):
 
 
             faux_priors = {}
+            self.priors = {}
             for idx in range(0, len(coef_names)):
                 faux_priors[faux_model.params.index[idx]] = bmb.Prior("Normal", mu=faux_model.params[idx], sigma=faux_model.bse[idx])
                 if self.verbose:
                     print(f"{faux_model.params.index[idx]} mean coef:  {faux_model.params[idx]:.2f} ± {faux_model.bse[idx]:.2f}")
+                self.priors[faux_model.params.index[idx]] = (faux_model.params[idx], faux_model.bse[idx])
 
             bayes_model = bmb.Model(model_formula, data=input_data, family="bernoulli", priors=faux_priors)
 
@@ -285,6 +288,7 @@ class BayesianModel(PREDICTModel):
 
         if self.verbose:
             print("\n*** POSTERIORS ***")
+        if self.plot_idata:
             az.plot_trace(idata, figsize=(10, 7), )
         
 
@@ -324,3 +328,6 @@ class BayesianModel(PREDICTModel):
             return input_data
             
         self.addPostPredictHook(get_new_probs(predictors))
+        
+    def get_coefs(self):
+        return self.priors
