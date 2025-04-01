@@ -19,6 +19,10 @@ National Insitute for Health and Care Research (NIHR206843) which aims to:
 To contact the team, please email the project lead
 Dr Samuel Relton (s.d.relton@leeds.ac.uk)
 
+.. image:: images/temporal_drift_comic_strip_with_typed_text.png
+   :width: 100%
+   :align: center
+   :alt: Comic strip showing the problem of temporal drift in clinical prediction models
 
 Links
 -----
