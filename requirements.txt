@@ -9,4 +9,4 @@ sphinx
 ghp-import
 pymc
 bambi
-scipy
+scipy==1.10.1
