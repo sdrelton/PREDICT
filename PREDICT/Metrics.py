@@ -434,12 +434,26 @@ def __SumOfDiffComputation(model, df, outcomeCol):
     return 'NormSumOfDifferences', sum_of_differences
 
 def TrackBayesianCoefs(model):
+    """
+    LogHook to track the Bayesian coefficients of a model at each timestep.
 
+    Args:
+        model (BayesianModel): The model to evaluate, must use the BayesianModel predict method.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('BayesianCoefficients'), and the current priors for the Bayesian model coefficients.
+    """
     return lambda df: __TrackBayesianCoefs(model)
 
 def __TrackBayesianCoefs(model):
+    """
+    LogHook to track the Bayesian coefficients of a model at each timestep.
 
+    Args:
+        model (BayesianModel): The model to evaluate, must use the BayesianModel predict method.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('BayesianCoefficients'), and the current priors for the Bayesian model coefficients.
+    """
     priors = model.get_coefs()
-    print(priors)
-
     return 'BayesianCoefficients', priors
