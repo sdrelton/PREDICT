@@ -216,10 +216,10 @@ class BayesianModel(PREDICTModel):
     def predict(self, input_data):
         if "new_predictions" in input_data.columns:
             coef_names = list(self.priors.keys())
-            predictors = coef_names.copy()
-            predictors.remove("Intercept")
+            preds = coef_names.copy()
+            preds.remove("Intercept")
             for hook in self.postPredictHooks:
-                preds = hook(predictors)
+                preds = hook(preds)
         else:
             # if no 'new_predictions' column then use the predictCol
             preds = input_data[self.predictColName]
@@ -310,7 +310,7 @@ class BayesianModel(PREDICTModel):
 
 
         if self.verbose:
-            print(f"Intercept mean coef: {posterior_samples["Intercept"].values.flatten().mean():.2f} ± {posterior_samples["Intercept"].values.flatten().std():.2f}")
+            print(f'Intercept mean coef: {posterior_samples["Intercept"].values.flatten().mean():.2f} ± {posterior_samples["Intercept"].values.flatten().std():.2f}')
             for predictor in predictors:
                 coef_mean = posterior_samples[predictor].values.flatten().mean()
                 coef_std = posterior_samples[predictor].values.flatten().std()
