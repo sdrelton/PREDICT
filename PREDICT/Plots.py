@@ -6,6 +6,7 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import expit
+import itertools
 
 
 def AccuracyPlot(log, recalthreshold=None):
@@ -408,6 +409,8 @@ def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outc
     plt.grid(True)
     plt.show()
 
+
+
 def BayesianCoefsPlot(log):
     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
@@ -418,17 +421,28 @@ def BayesianCoefsPlot(log):
     plt.figure()
     bayesianCoefs = log["BayesianCoefficients"]
     timestamps = list(bayesianCoefs.keys())
+
+    # Generate unique colors for predictors
+    predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
+    color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
+    color_map = {predictor: next(color_cycle) for predictor in predictors} 
+
+    used_labels = set()  # Keep track of labels already used
+
     for timestamp in timestamps:
         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
-        predictors = list(specific_coefs.keys())
-        for predictor in predictors:
-            mean_coef = specific_coefs[predictor][0]
-            std_coef = specific_coefs[predictor][1]
-            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=predictor)
-
+        for predictor, (mean_coef, std_coef) in specific_coefs.items():
+            label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
+            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=label, color=color_map[predictor], alpha=0.5)
+            used_labels.add(predictor)  # Mark label as used
 
     plt.xlabel("Time")
+    plt.title("Bayesian Priors Over Time")
     plt.ylabel("Coefficient")
-    plt.legend(title="Predictor")
+    plt.yscale('symlog', linthresh=1)
+    legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+    legend.get_frame().set_edgecolor("black")
+    legend.get_frame().set_facecolor("white")
+    plt.xticks(timestamps, rotation=90)
     plt.grid(True)
     plt.show()
