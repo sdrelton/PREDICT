@@ -28,7 +28,7 @@ def AccuracyPlot(log, recalthreshold=None):
         plt.text(min(log['Accuracy'].keys()), recalthreshold + 0.01, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
         plt.hlines(recalthreshold, min(log['Accuracy'].keys()), max(log['Accuracy'].keys()), colors='grey', linestyles='dashed', label='Recalibration Threshold')
 
-    plt.legend(loc='lower right')
+    plt.legend(loc='lower right', fontsize=8, markerscale=0.8, frameon=True)
 
     plt.xlabel('Timesteps')
     plt.ylabel('Accuracy')
@@ -59,7 +59,7 @@ def CalibrationSlopePlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('Calibration Slope')
     
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -76,7 +76,7 @@ def CoxSnellPlot(log):
     plt.ylim(min(log['CoxSnellR2'].values())-0.01, max(log['CoxSnellR2'].values())+0.01)
     plt.xlabel('Timesteps')
     plt.ylabel('Cox and Snell R2')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -101,7 +101,7 @@ def CITLPlot(log):
     plt.title('CITL')
     plt.xlabel('Timesteps')
     plt.ylabel('CITL')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -117,7 +117,7 @@ def AUROCPlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['AUROC'].values())-0.2, max(log['AUROC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('AUROC')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -133,7 +133,7 @@ def AUPRCPlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['AUPRC'].values())-0.2, max(log['AUPRC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('AUPRC')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -149,7 +149,7 @@ def F1ScorePlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['F1score'].values())-0.2, max(log['F1score'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('F1 Score')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -165,7 +165,7 @@ def PrecisionPlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['Precision'].values())-0.2, max(log['Precision'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Precision')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -181,7 +181,7 @@ def SensitivityPlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['Sensitivity'].values())-0.2, max(log['Sensitivity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Sensitivity')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -197,7 +197,7 @@ def SpecificityPlot(log):
         plt.vlines(log['Model Updated'].keys(), min(log['Specificity'].values())-0.2, max(log['Specificity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Specificity')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -214,7 +214,7 @@ def OEPlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('O/E')
     
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -232,7 +232,7 @@ def NormalisedSumOfDiffPlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('Sum of Differences Error')
     plt.hlines(0, min(log['NormSumOfDifferences'].keys()), max(log['NormSumOfDifferences'].keys()), colors='black', linestyles='dashed', label='No error')
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -273,7 +273,7 @@ def ErrorSPCPlot(log, model):
     plt.xlabel('Date')
     plt.ylabel('Normalised Error')
     plt.xticks(rotation=90)
-    plt.legend()
+    plt.legend(fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(False)
     plt.show()
 
@@ -360,7 +360,7 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
     else:
         plt.ylabel(f'Mean of {trackCol.capitalize()}')
     plt.xticks(rotation=90)
-    plt.legend()
+    plt.legend(fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(True)
     plt.show()
 
@@ -405,7 +405,7 @@ def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outc
 
     plt.xlabel(f"{predictor}")
     plt.ylabel(f"Probability of {outcome}")
-    plt.legend(title="Time")
+    plt.legend(title="Time", fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(True)
     plt.show()
 
