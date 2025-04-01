@@ -204,7 +204,7 @@ class BayesianModel(PREDICTModel):
             this must include "Intercept" as a dictionary key.
             If any of the prior keys are None then the prior coefficients are estimated using a logistic regression model.
     """
-    def __init__(self, priors, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False):
+    def __init__(self, priors, input_data, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False):
         super(BayesianModel, self).__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
@@ -212,6 +212,36 @@ class BayesianModel(PREDICTModel):
         self.priors = priors
         self.verbose = verbose
         self.plot_idata = plot_idata
+
+        if not isinstance(self.priors, dict):
+            raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
+        
+        
+        self.coef_names = list(self.priors.keys())
+        self.predictors = self.coef_names.copy()
+        self.predictors.remove("Intercept")
+        if "Intercept" not in self.coef_names:
+            raise ValueError("The required 'Intercept' is missing from the priors.keys().")
+        self.model_formula = self.outcomeColName + "~" + "+".join(self.predictors)
+
+        generate_priors = False
+        for _, value in self.priors.items():
+            if value is None:
+                generate_priors = True
+
+
+        if generate_priors:
+            faux_model = bayes_logit(self.model_formula, data=input_data).fit()
+
+            if self.verbose:
+                print("\n*** PRIORS ***")
+
+            self.priors = {}
+            for idx in range(0, len(self.coef_names)):
+                if self.verbose:
+                    print(f"{faux_model.params.index[idx]} mean coef:  {faux_model.params[idx]:.2f} ± {faux_model.bse[idx]:.2f}")
+                self.priors[faux_model.params.index[idx]] = (faux_model.params[idx], faux_model.bse[idx])
+
         
     def predict(self, input_data):
         if "new_predictions" in input_data.columns:
@@ -229,58 +259,18 @@ class BayesianModel(PREDICTModel):
 
     
     def update(self, input_data):
-
-        if not isinstance(self.priors, dict):
-            raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
-        
-        # Get predictions
-        preds = self.predict(input_data)
-        
-        coef_names = list(self.priors.keys())
-        predictors = coef_names.copy()
-        predictors.remove("Intercept")
-        if "Intercept" not in coef_names:
-            raise ValueError("The required 'Intercept' is missing from the priors.keys().")
-        model_formula = self.outcomeColName + "~" + "+".join(predictors)
-
-        generate_priors = False
-        for _, value in self.priors.items():
-            if value is None:
-                generate_priors = True
-
-
-        if generate_priors:
-            faux_model = bayes_logit(model_formula, data=input_data).fit()
+            
+        if self.verbose:
+            print("\n*** PRIORS ***")
+        bmb_priors = {}
+        for prior_key, prior_values in self.priors.items():
+            prior_mean, prior_std = prior_values
+            bmb_priors[prior_key] = bmb.Prior("Normal", mu=prior_mean, sigma=prior_std)
 
             if self.verbose:
-                print("\n*** PRIORS ***")
+                print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
 
-
-            faux_priors = {}
-            self.priors = {}
-            for idx in range(0, len(coef_names)):
-                faux_priors[faux_model.params.index[idx]] = bmb.Prior("Normal", mu=faux_model.params[idx], sigma=faux_model.bse[idx])
-                if self.verbose:
-                    print(f"{faux_model.params.index[idx]} mean coef:  {faux_model.params[idx]:.2f} ± {faux_model.bse[idx]:.2f}")
-                self.priors[faux_model.params.index[idx]] = (faux_model.params[idx], faux_model.bse[idx])
-
-            bayes_model = bmb.Model(model_formula, data=input_data, family="bernoulli", priors=faux_priors)
-
-            
-
-        else:
-            
-            if self.verbose:
-                print("\n*** PRIORS ***")
-            bmb_priors = {}
-            for prior_key, prior_values in self.priors.items():
-                prior_mean, prior_std = prior_values
-                bmb_priors[prior_key] = bmb.Prior("Normal", mu=prior_mean, sigma=prior_std)
-
-                if self.verbose:
-                    print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
-
-            bayes_model = bmb.Model(model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
+        bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
         idata = bayes_model.fit(draws=100, tune=100, cores=12, chains=4)
@@ -298,20 +288,20 @@ class BayesianModel(PREDICTModel):
                 posterior_samples[predictor].values.flatten().mean(),
                 posterior_samples[predictor].values.flatten().std()
             )
-            for predictor in coef_names
+            for predictor in self.coef_names
         }
 
         self.posterior_samples = {
             predictor: (
                 posterior_samples[predictor].values.flatten()
             )
-            for predictor in coef_names
+            for predictor in self.coef_names
         }
 
 
         if self.verbose:
             print(f'Intercept mean coef: {posterior_samples["Intercept"].values.flatten().mean():.2f} ± {posterior_samples["Intercept"].values.flatten().std():.2f}')
-            for predictor in predictors:
+            for predictor in self.predictors:
                 coef_mean = posterior_samples[predictor].values.flatten().mean()
                 coef_std = posterior_samples[predictor].values.flatten().std()
                 print(f"{predictor} mean coef: {coef_mean:.2f} ± {coef_std:.2f}")
@@ -327,7 +317,7 @@ class BayesianModel(PREDICTModel):
                 input_data.at[index, "new_predictions"] = mean_pred_probs
             return input_data
             
-        self.addPostPredictHook(get_new_probs(predictors))
+        self.addPostPredictHook(get_new_probs(self.predictors))
         
     def get_coefs(self):
         return self.priors
