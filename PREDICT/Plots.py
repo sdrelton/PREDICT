@@ -17,7 +17,7 @@ def AccuracyPlot(log, recalthreshold=None):
         recalthreshold (float, int): Threshold to trigger recalibration. Defaults to None.
     """
     plt.figure()
-    plt.plot(log['Accuracy'].keys(), log['Accuracy'].values(), label='Accuracy')
+    plt.plot(log['Accuracy'].keys(), log['Accuracy'].values()*100, label='Accuracy')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
@@ -31,7 +31,7 @@ def AccuracyPlot(log, recalthreshold=None):
     plt.legend(loc='lower right', fontsize=8, markerscale=0.8, frameon=True)
 
     plt.xlabel('Timesteps')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Accuracy (%)')
     plt.xticks(rotation=90)
     plt.show()
 
