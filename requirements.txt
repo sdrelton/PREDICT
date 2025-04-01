@@ -9,3 +9,4 @@ sphinx
 ghp-import
 pymc
 bambi
+scipy
