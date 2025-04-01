@@ -407,3 +407,28 @@ def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outc
     plt.legend(title="Time")
     plt.grid(True)
     plt.show()
+
+def BayesianCoefsPlot(log):
+    """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
+    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+    """
+    plt.figure()
+    bayesianCoefs = log["BayesianCoefficients"]
+    timestamps = list(bayesianCoefs.keys())
+    for timestamp in timestamps:
+        specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+        predictors = list(specific_coefs.keys())
+        for predictor in predictors:
+            mean_coef = specific_coefs[predictor][0]
+            std_coef = specific_coefs[predictor][1]
+            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=predictor)
+
+
+    plt.xlabel("Time")
+    plt.ylabel("Coefficient")
+    plt.legend(title="Predictor")
+    plt.grid(True)
+    plt.show()
