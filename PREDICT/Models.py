@@ -207,7 +207,7 @@ class BayesianModel(PREDICTModel):
         outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
         dateCol (str): The name of the column in the dataframe containing the dates (default='date').
         verbose (bool): Whether to print the priors and posteriors of the model (default=True).
-        plot_idata (bool): Whether to plot the idata trace plot (default=False).
+        plot_idata (bool): Whether to plot the inference_data trace plot (default=False).
         draws (int): Number of draws to use in the Bayesian model (default=1000).
         tune (int): Number of tuning steps to use in the Bayesian model (default=1000).
         cores (int): Number of cores to use in the Bayesian model (default=1).
@@ -298,13 +298,13 @@ class BayesianModel(PREDICTModel):
         bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
-        idata = bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
-        posterior_samples = idata.posterior 
+        inference_data = bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
+        posterior_samples = inference_data.posterior 
 
         if self.verbose:
             print("\n*** POSTERIORS ***")
         if self.plot_idata:
-            az.plot_trace(idata, figsize=(10, 7), )
+            az.plot_trace(inference_data, figsize=(10, 7), )
         
 
         # Update the priors for the next run of the Bayesian model
