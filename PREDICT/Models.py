@@ -208,9 +208,9 @@ class BayesianModel(PREDICTModel):
         dateCol (str): The name of the column in the dataframe containing the dates (default='date').
         verbose (bool): Whether to print the priors and posteriors of the model (default=True).
         plot_idata (bool): Whether to plot the idata trace plot (default=False).
-        draws (int): Number of draws to use in the Bayesian model (default=100).
-        tune (int): Number of tuning steps to use in the Bayesian model (default=100).
-        cores (int): Number of cores to use in the Bayesian model (default=12).
+        draws (int): Number of draws to use in the Bayesian model (default=1000).
+        tune (int): Number of tuning steps to use in the Bayesian model (default=1000).
+        cores (int): Number of cores to use in the Bayesian model (default=1).
         chains (int): Number of chains to use in the Bayesian model (default=4).
         model_formula (str): The formula to use in the Bayesian model (default=None, if None then a standard linear model formula is used without interactions).
 
@@ -226,8 +226,8 @@ class BayesianModel(PREDICTModel):
     model = BayesianModel(input_data=df, priors={"Intercept": (0.34, 0.1), "age": (1.56, 0.4), "systolic_bp": (5.34, 0.2)})
     model.trigger = BayesianRefitTrigger(model=model, input_data=df, refitFrequency=1)
     """
-    def __init__(self, priors, input_data=None, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False, draws=100,
-                tune=100, cores=12, chains=4, model_formula=None):
+    def __init__(self, priors, input_data=None, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False, draws=1000,
+                tune=1000, cores=1, chains=4, model_formula=None):
         super(BayesianModel, self).__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
@@ -264,13 +264,8 @@ class BayesianModel(PREDICTModel):
                 raise ValueError("No input data provided to generate priors from.")
             faux_model = bayes_logit(self.model_formula, data=input_data).fit()
 
-            if self.verbose:
-                print("\n*** PRIORS ***")
-
             self.priors = {}
             for idx in range(0, len(self.coef_names)):
-                if self.verbose:
-                    print(f"{faux_model.params.index[idx]} mean coef:  {faux_model.params[idx]:.2f} ± {faux_model.bse[idx]:.2f}")
                 self.priors[faux_model.params.index[idx]] = (faux_model.params[idx], faux_model.bse[idx])
 
         
