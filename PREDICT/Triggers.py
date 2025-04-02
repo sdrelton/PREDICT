@@ -222,7 +222,14 @@ def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=6):
     return MethodType(lambda self, x: __BayesianRefitTrigger(self, x, refit_dates), model)
 
 def __BayesianRefitTrigger(self, input_data, refit_dates):
-    if any(date in input_data[self.dateCol].values for date in refit_dates):
+    existing_dates = set(input_data[self.dateCol].dt.date.values)
+
+    # Get min and max dates from the dataset
+    min_date = input_data[self.dateCol].min().date()
+    max_date = input_data[self.dateCol].max().date()
+
+    # Check if any refit date exists in the data or falls within min/max range
+    if any(date.date() in existing_dates or min_date <= date.date() <= max_date for date in refit_dates):
         return True
     else:
         return False
