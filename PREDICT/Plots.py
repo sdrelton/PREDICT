@@ -14,25 +14,30 @@ def AccuracyPlot(log, recalthreshold=None):
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
-        recalthreshold (float, int): Threshold to trigger recalibration. Defaults to None.
+        recalthreshold (float, int, optional): Threshold to trigger recalibration.
     """
     plt.figure()
-    plt.plot(log['Accuracy'].keys(), log['Accuracy'].values()*100, label='Accuracy')
+    timesteps = list(log['Accuracy'].keys())
+    accuracy_values = list(log['Accuracy'].values())
+
+    plt.plot(timesteps, [acc * 100 for acc in accuracy_values], label='Accuracy', marker='o')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), 0, 1, colors='r', linestyles='dashed', label='Model Updated')
+        plt.vlines(list(log['Model Updated'].keys()), ymin=min(accuracy_values) * 100, ymax=max(accuracy_values) * 100, 
+                colors='r', linestyles='dashed', label='Model Updated')
 
     # Add recalibration threshold details
     if recalthreshold is not None:
-        plt.text(min(log['Accuracy'].keys()), recalthreshold + 0.01, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
-        plt.hlines(recalthreshold, min(log['Accuracy'].keys()), max(log['Accuracy'].keys()), colors='grey', linestyles='dashed', label='Recalibration Threshold')
+        plt.text(timesteps[0], recalthreshold * 100 + 1, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
+        plt.hlines(recalthreshold * 100, min(timesteps), max(timesteps), colors='grey', linestyles='dashed', label='Recalibration Threshold')
 
     plt.legend(loc='lower right', fontsize=8, markerscale=0.8, frameon=True)
 
     plt.xlabel('Timesteps')
     plt.ylabel('Accuracy (%)')
     plt.xticks(rotation=90)
+    plt.grid(True, linestyle='--', alpha=0.7)
     plt.show()
 
 
