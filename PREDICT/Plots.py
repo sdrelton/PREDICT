@@ -369,7 +369,7 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
     plt.grid(True)
     plt.show()
 
-def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outcome="outcome"):
+def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outcome="outcome", show_legend=True):
     """Plots the probability of an outcome given a specific predictor.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
@@ -379,6 +379,7 @@ def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outc
         x_axis_max (float, optional): Maximum value for the x axis representing the predictor. Defaults to None.
         predictor (str, optional): Name of the predictor to assess. Defaults to None.
         outcome (str, optional): Name of the outcome being predicted. Defaults to "outcome".
+        show_legend (bool, optional): Whether to show the legend. Defaults to True.
 
     Raises:
         ValueError: Raises error if x_axis_min is not provided.
@@ -406,11 +407,12 @@ def ProbOverTimePlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outc
                 linear_function = intercept + mean_coef * value
                 prob = expit(linear_function)
                 probs.append(prob)
-            plt.plot(x_axis_values, probs, label=timestamp)
+            plt.plot(x_axis_values, probs, label=timestamp, alpha=0.5)
 
     plt.xlabel(f"{predictor}")
     plt.ylabel(f"Probability of {outcome}")
-    plt.legend(title="Time", fontsize=8, markerscale=0.8, frameon=True)
+    legend = plt.legend(title="Time", fontsize=8, markerscale=0.8, frameon=True)
+    legend.set_visible(show_legend)
     plt.grid(True)
     plt.show()
 
