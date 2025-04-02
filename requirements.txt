@@ -10,3 +10,4 @@ ghp-import
 pymc
 bambi
 scipy==1.10.1
+gxx
