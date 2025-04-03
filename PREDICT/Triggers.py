@@ -199,37 +199,38 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
     
 
 def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=6):
-    """Work out the days when the refit the Bayesian model by selecting after how many months to refit the model.
+    """Determine the trigger dates for refitting the Bayesian model.
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         input_data (dataframe): DataFrame with column of the predicted outcome.
-        dateCol (str, optional): _description_. Defaults to 'date'.
+        dateCol (str, optional): Column name for date values. Defaults to 'date'.
         refitFrequency (int, optional): Number of months between refitting the model. Defaults to 6.
 
     Returns:
-        bool: True to trigger Bayesian model refitting.
+        MethodType: A bound method to determine when to trigger model refitting.
     """
     
-    # Work out the days when the model will be refitted
     numMonths = relativedelta(months=refitFrequency)
     refit_dates = []
     current_date = input_data[dateCol].min() + numMonths
     while current_date <= input_data[dateCol].max():
-        refit_dates.append(current_date)
+        refit_dates.append(current_date.date())
         current_date += numMonths
 
-    return MethodType(lambda self, x: __BayesianRefitTrigger(self, x, refit_dates), model)
+    activated_triggers = set()  # Use a set for tracking activated triggers efficiently
 
-def __BayesianRefitTrigger(self, input_data, refit_dates):
-    existing_dates = set(input_data[self.dateCol].dt.date.values)
+    return MethodType(lambda self, x: __BayesianRefitTrigger(self, x, refit_dates, activated_triggers), model)
 
-    # Get min and max dates from the dataset
-    min_date = input_data[self.dateCol].min().date()
+def __BayesianRefitTrigger(self, input_data, refit_dates, activated_triggers):
+    """Determine whether the model should be refitted based on trigger dates."""
+    
     max_date = input_data[self.dateCol].max().date()
 
-    # Check if any refit date exists in the data or falls within min/max range
-    if any(date.date() in existing_dates or min_date <= date.date() <= max_date for date in refit_dates):
-        return True
-    else:
-        return False
+    # If max_date surpasses the next trigger date, activate the refitting
+    for date in refit_dates:
+        if date <= max_date and date not in activated_triggers:
+            activated_triggers.add(date)  # Keep track of activated triggers
+            return True
+
+    return False
