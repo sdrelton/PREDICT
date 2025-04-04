@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Metrics &#8212; PREDICT  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plots" href="Plots.html" />
+    <link rel="prev" title="Models" href="Models.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-PREDICT.Metrics">
+<span id="metrics"></span><h1>Metrics<a class="headerlink" href="#module-PREDICT.Metrics" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.AUPRC">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">AUPRC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.AUPRC" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the AUPRC of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the AUPRC of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.AUROC">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">AUROC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.AUROC" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the AUROC of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the AUROC of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.Accuracy">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">Accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.Accuracy" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the accuracy of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the accuracy of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.CITL">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">CITL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.CITL" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the Calibration-In-The-Large (CITL) of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the CITL of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.CalibrationSlope">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">CalibrationSlope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.CalibrationSlope" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the calibration slope of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the calibration slope of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.CoxSnellR2">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">CoxSnellR2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.CoxSnellR2" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the Cox and Snell R^2 value of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the pseudo R^2 value of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.F1Score">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">F1Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.F1Score" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the F1 score of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the F1 score of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.OE">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">OE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.OE" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the Observed/Expected (O/E) ratio of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the O/E ratio of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.Precision">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">Precision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.Precision" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the precision of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the precision of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.Recall">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">Recall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.Recall" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the recall of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the recall of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.Sensitivity">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">Sensitivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.Sensitivity" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the sensitivity of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the sensitivity of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.Specificity">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">Specificity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.Specificity" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the specificity of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability threshold at which to classify individuals. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the specificity of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.SumOfDiff">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">SumOfDiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomeCol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'outcome'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.SumOfDiff" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to compute the sum of differences error of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.PREDICTModel" title="PREDICT.Models.PREDICTModel"><em>PREDICTModel</em></a>) – The model to evaluate, must have a predict method.</p></li>
+<li><p><strong>outcomeCol</strong> (<em>str</em><em>, </em><em>optional</em>) – The column in the dataframe containing the actual outcomes. Defaults to ‘outcome’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A hook to compute the sum of differences error of the model at each timestep when fed data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>logHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="PREDICT.Metrics.TrackBayesianCoefs">
+<span class="sig-prename descclassname"><span class="pre">PREDICT.Metrics.</span></span><span class="sig-name descname"><span class="pre">TrackBayesianCoefs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PREDICT.Metrics.TrackBayesianCoefs" title="Link to this definition">¶</a></dt>
+<dd><p>LogHook to track the Bayesian coefficients of a model at each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<a class="reference internal" href="Models.html#PREDICT.Models.BayesianModel" title="PREDICT.Models.BayesianModel"><em>BayesianModel</em></a>) – The model to evaluate, must use the BayesianModel predict method.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The name of the hook (‘BayesianCoefficients’), and the current priors for the Bayesian model coefficients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>hookname (str), result (float)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">PREDICT</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PREDICT.html">PREDICT Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Models.html">Models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.AUPRC"><code class="docutils literal notranslate"><span class="pre">AUPRC()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.AUROC"><code class="docutils literal notranslate"><span class="pre">AUROC()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.Accuracy"><code class="docutils literal notranslate"><span class="pre">Accuracy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.CITL"><code class="docutils literal notranslate"><span class="pre">CITL()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.CalibrationSlope"><code class="docutils literal notranslate"><span class="pre">CalibrationSlope()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.CoxSnellR2"><code class="docutils literal notranslate"><span class="pre">CoxSnellR2()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.F1Score"><code class="docutils literal notranslate"><span class="pre">F1Score()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.OE"><code class="docutils literal notranslate"><span class="pre">OE()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.Precision"><code class="docutils literal notranslate"><span class="pre">Precision()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.Recall"><code class="docutils literal notranslate"><span class="pre">Recall()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.Sensitivity"><code class="docutils literal notranslate"><span class="pre">Sensitivity()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.Specificity"><code class="docutils literal notranslate"><span class="pre">Specificity()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.SumOfDiff"><code class="docutils literal notranslate"><span class="pre">SumOfDiff()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#PREDICT.Metrics.TrackBayesianCoefs"><code class="docutils literal notranslate"><span class="pre">TrackBayesianCoefs()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Plots.html">Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Tests.html">Tests</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="Models.html" title="previous chapter">Models</a></li>
+      <li>Next: <a href="Plots.html" title="next chapter">Plots</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Dr Samuel D. Relton, Dr Zoe L. Hancox, Dr Kate E. Best, Dr Oliver Todd, Barbara Hartley.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/Metrics.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
