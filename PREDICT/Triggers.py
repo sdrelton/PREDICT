@@ -226,11 +226,11 @@ def __BayesianRefitTrigger(self, input_data, refit_dates, activated_triggers):
     """Determine whether the model should be refitted based on trigger dates."""
     
     max_date = input_data[self.dateCol].max().date()
-
+    activate_trigger = False
     # If max_date surpasses the next trigger date, activate the refitting
     for date in refit_dates:
         if date <= max_date and date not in activated_triggers:
             activated_triggers.add(date)  # Keep track of activated triggers
-            return True
+            activate_trigger = True
 
-    return False
+    return activate_trigger
