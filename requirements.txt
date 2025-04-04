@@ -8,6 +8,6 @@ ipykernel
 sphinx
 ghp-import
 pymc
-bambi
+bambi==0.15.0
 scipy==1.10.1
 gxx

@@ -276,8 +276,12 @@ class BayesianModel(PREDICTModel):
         if self.bayes_model is None:
             preds = input_data[self.predictColName]
         else:
-            preds = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
-            preds = az.summary(preds.posterior["outcome_mean"])["mean"].values.flatten()
+            idata = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
+            mean_results = az.summary(idata.posterior)
+            number_coefs = len(self.coef_names)
+            df_filtered = mean_results.iloc[number_coefs:]
+            preds = df_filtered["mean"].values.flatten()
+            # preds = az.summary(preds.posterior["outcome_mean"])["mean"].values.flatten()
             preds = pd.Series(preds, index=input_data[self.predictColName].index)
             preds = preds.clip(1e-10, 1 - 1e-10) # clip to prevent log(0) or log(1) errors
         return preds
