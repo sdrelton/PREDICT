@@ -1,5 +1,6 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
+import pandas as pd
 import bambi as bmb
 import bambi.priors as priors
 from scipy.special import expit
@@ -240,6 +241,8 @@ class BayesianModel(PREDICTModel):
         self.cores = cores
         self.chains = chains
         self.model_formula = model_formula
+        self.bayes_model = None
+        self.inference_data = None
 
         if not isinstance(self.priors, dict):
             raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
@@ -270,16 +273,13 @@ class BayesianModel(PREDICTModel):
 
         
     def predict(self, input_data):
-        if "new_predictions" in input_data.columns:
-            coef_names = list(self.priors.keys())
-            preds = coef_names.copy()
-            preds.remove("Intercept")
-            for hook in self.postPredictHooks:
-                preds = hook(preds)
-        else:
-            # if no 'new_predictions' column then use the predictCol
+        if self.bayes_model is None:
             preds = input_data[self.predictColName]
-        
+        else:
+            preds = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
+            preds = az.summary(preds.posterior["outcome_mean"])["mean"].values.flatten()
+            preds = pd.Series(preds, index=input_data[self.predictColName].index)
+            preds = preds.clip(1e-10, 1 - 1e-10) # clip to prevent log(0) or log(1) errors
         return preds
 
 
@@ -295,16 +295,16 @@ class BayesianModel(PREDICTModel):
             if self.verbose:
                 print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
 
-        bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
+        self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
-        inference_data = bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
-        posterior_samples = inference_data.posterior 
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
+        posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
             print("\n*** POSTERIORS ***")
         if self.plot_idata:
-            az.plot_trace(inference_data, figsize=(10, 7), )
+            az.plot_trace(self.inference_data, figsize=(10, 7), )
         
 
         # Update the priors for the next run of the Bayesian model
@@ -330,19 +330,6 @@ class BayesianModel(PREDICTModel):
                 coef_mean = posterior_samples[predictor].values.flatten().mean()
                 coef_std = posterior_samples[predictor].values.flatten().std()
                 print(f"{predictor} mean coef: {coef_mean:.2f} ± {coef_std:.2f}")
-
-        def get_new_probs(predictors):
-            for index, row in input_data[predictors].iterrows():
-                lin_function = 0
-                for predictor in predictors:
-                    lin_function += self.posterior_samples[predictor] * row[predictor]
-
-                predicted_probs = expit(lin_function + self.posterior_samples["Intercept"])
-                mean_pred_probs = np.mean(predicted_probs)
-                input_data.at[index, "new_predictions"] = mean_pred_probs
-            return input_data
-            
-        self.addPostPredictHook(get_new_probs(self.predictors))
         
     def get_coefs(self):
         """Return the current coefficients of the model for the loghook.
