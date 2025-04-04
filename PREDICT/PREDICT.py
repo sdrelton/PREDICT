@@ -19,7 +19,7 @@ class PREDICT:
         The end date for the prediction window.
     timestep : str, int
         The timestep for the prediction window. Must be 'week', 'day', 'month', 
-        or an integer representing the number of days. Note: One month is considered 28 days.
+        or an integer representing the number of days. Defaults to 'month'.
     currentWindowStart : pd.datetime
         The current start date of the prediction window.
     currentWindowEnd : pd.datetime
@@ -30,7 +30,7 @@ class PREDICT:
         A list of hooks to be called during logging.
     """
     
-    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='week'):
+    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month'):
         """
         Initializes the PREDICT class with default values.
         """

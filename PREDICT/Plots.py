@@ -5,6 +5,8 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import expit
+import itertools
 
 
 def AccuracyPlot(log, recalthreshold=None):
@@ -12,24 +14,30 @@ def AccuracyPlot(log, recalthreshold=None):
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
-        recalthreshold (float, int): Threshold to trigger recalibration. Defaults to None.
+        recalthreshold (float, int, optional): Threshold to trigger recalibration.
     """
-    plt.plot(log['Accuracy'].keys(), log['Accuracy'].values(), label='Accuracy')
+    plt.figure()
+    timesteps = list(log['Accuracy'].keys())
+    accuracy_values = list(log['Accuracy'].values())
+
+    plt.plot(timesteps, [acc * 100 for acc in accuracy_values], label='Accuracy', marker='o')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), 0, 1, colors='r', linestyles='dashed', label='Model Updated')
+        plt.vlines(list(log['Model Updated'].keys()), ymin=min(accuracy_values) * 100, ymax=max(accuracy_values) * 100, 
+                colors='r', linestyles='dashed', label='Model Updated')
 
     # Add recalibration threshold details
     if recalthreshold is not None:
-        plt.text(min(log['Accuracy'].keys()), recalthreshold + 0.01, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
-        plt.hlines(recalthreshold, min(log['Accuracy'].keys()), max(log['Accuracy'].keys()), colors='grey', linestyles='dashed', label='Recalibration Threshold')
+        plt.text(timesteps[0], recalthreshold * 100 + 1, f'Recalibration Threshold: {recalthreshold * 100}%', fontsize=10, color='grey')
+        plt.hlines(recalthreshold * 100, min(timesteps), max(timesteps), colors='grey', linestyles='dashed', label='Recalibration Threshold')
 
-    plt.legend(loc='lower right')
+    plt.legend(loc='lower right', fontsize=8, markerscale=0.8, frameon=True)
 
     plt.xlabel('Timesteps')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Accuracy (%)')
     plt.xticks(rotation=90)
+    plt.grid(True, linestyle='--', alpha=0.7)
     plt.show()
 
 
@@ -39,6 +47,7 @@ def CalibrationSlopePlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['CalibrationSlope'].keys(), log['CalibrationSlope'].values(), label='Calibration Slope')
 
     plt.axhline(y=1, color='black', linestyle='--', label='Ideal Calibration Slope')
@@ -55,7 +64,7 @@ def CalibrationSlopePlot(log):
     plt.xlabel('Timesteps')
     plt.ylabel('Calibration Slope')
     
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -65,13 +74,14 @@ def CoxSnellPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['CoxSnellR2'].keys(), log['CoxSnellR2'].values(), label='Cox and Snell R2')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['CoxSnellR2'].values())-0.2, max(log['CoxSnellR2'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.ylim(min(log['CoxSnellR2'].values())-0.01, max(log['CoxSnellR2'].values())+0.01)
     plt.xlabel('Timesteps')
     plt.ylabel('Cox and Snell R2')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -96,7 +106,7 @@ def CITLPlot(log):
     plt.title('CITL')
     plt.xlabel('Timesteps')
     plt.ylabel('CITL')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -106,12 +116,13 @@ def AUROCPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['AUROC'].keys(), log['AUROC'].values(), label='AUROC')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['AUROC'].values())-0.2, max(log['AUROC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('AUROC')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -121,12 +132,13 @@ def AUPRCPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['AUPRC'].keys(), log['AUPRC'].values(), label='AUPRC')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['AUPRC'].values())-0.2, max(log['AUPRC'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('AUPRC')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -136,12 +148,13 @@ def F1ScorePlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['F1score'].keys(), log['F1score'].values(), label='F1 Score')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['F1score'].values())-0.2, max(log['F1score'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('F1 Score')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -151,12 +164,13 @@ def PrecisionPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Precision'].keys(), log['Precision'].values(), label='Precision')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Precision'].values())-0.2, max(log['Precision'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Precision')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -166,12 +180,13 @@ def SensitivityPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Sensitivity'].keys(), log['Sensitivity'].values(), label='Sensitivity')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Sensitivity'].values())-0.2, max(log['Sensitivity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Sensitivity')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -181,12 +196,13 @@ def SpecificityPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['Specificity'].keys(), log['Specificity'].values(), label='Specificity')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['Specificity'].values())-0.2, max(log['Specificity'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Specificity')
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -196,13 +212,14 @@ def OEPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
+    plt.figure()
     plt.plot(log['O/E'].keys(), log['O/E'].values(), label='O/E')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['O/E'].values())-0.2, max(log['O/E'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('O/E')
     
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -213,14 +230,14 @@ def NormalisedSumOfDiffPlot(log):
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
     """
-
+    plt.figure()
     plt.plot(log['NormSumOfDifferences'].keys(), log['NormSumOfDifferences'].values(), label='Normalised Sum Of Differences')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['NormSumOfDifferences'].values())-0.2, max(log['NormSumOfDifferences'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.xlabel('Timesteps')
     plt.ylabel('Sum of Differences Error')
     plt.hlines(0, min(log['NormSumOfDifferences'].keys()), max(log['NormSumOfDifferences'].keys()), colors='black', linestyles='dashed', label='No error')
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', fontsize=8, markerscale=0.8, frameon=True)
     plt.xticks(rotation=90)
     plt.show()
 
@@ -232,6 +249,7 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
+    plt.figure()
     error_df = pd.DataFrame(list(log['NormSumOfDifferences'].items()), columns=['Date', 'NormSumOfDifferences'])
     plt.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
 
@@ -260,7 +278,7 @@ def ErrorSPCPlot(log, model):
     plt.xlabel('Date')
     plt.ylabel('Normalised Error')
     plt.xticks(rotation=90)
-    plt.legend()
+    plt.legend(fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(False)
     plt.show()
 
@@ -282,8 +300,8 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
 
     Raises:
         ValueError: If timeframe variable is not 'Day', 'Week', 'Month', or 'Year'.
-        ValueError: If trackType is not 'P-bar' to track prevalence over time or 'X-bar' to track averages over time.
     """
+    plt.figure()
 
     if smallerSD > largerSD:
         raise ValueError(f"smallerSD must be smaller than largerSD. smallerSD: {smallerSD} > largerSD: {largerSD}")
@@ -347,6 +365,91 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
     else:
         plt.ylabel(f'Mean of {trackCol.capitalize()}')
     plt.xticks(rotation=90)
-    plt.legend()
+    plt.legend(fontsize=8, markerscale=0.8, frameon=True)
+    plt.grid(True)
+    plt.show()
+
+def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outcome="outcome", show_legend=True):
+    """Plots the probability of an outcome given a specific predictor.
+    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+        x_axis_min (float, optional): Minimum value for the x axis representing the predictor. Defaults to None.
+        x_axis_max (float, optional): Maximum value for the x axis representing the predictor. Defaults to None.
+        predictor (str, optional): Name of the predictor to assess. Defaults to None.
+        outcome (str, optional): Name of the outcome being predicted. Defaults to "outcome".
+        show_legend (bool, optional): Whether to show the legend. Defaults to True.
+
+    Raises:
+        ValueError: Raises error if x_axis_min is not provided.
+        ValueError: Raises error if x_axis_max is not provided.
+        ValueError: Raises error if predictor is not provided.
+    """
+    if x_axis_min is None:
+        raise ValueError("x_axis_min is None, minimum x axis value required for the plot.")
+    if x_axis_max is None:
+        raise ValueError("x_axis_max is None, maximum x axis value required for the plot.")
+    if predictor is None:
+        raise ValueError("predictor is None, a predictor is required to determine probability of the outcome.")
+
+    plt.figure()
+    bayesianCoefs = log["BayesianCoefficients"]
+    timestamps = list(bayesianCoefs.keys())
+    x_axis_values = list(range(x_axis_min, x_axis_max+1))
+    for timestamp in timestamps:
+        specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+        if specific_coefs[predictor] is not None:
+            mean_coef = specific_coefs[predictor][0]
+            intercept = specific_coefs["Intercept"][0]
+            probs = []
+            for value in x_axis_values:
+                linear_function = intercept + mean_coef * value
+                prob = expit(linear_function)
+                probs.append(prob)
+            plt.plot(x_axis_values, probs, label=timestamp, alpha=0.5)
+
+    plt.xlabel(f"{predictor}")
+    plt.ylabel(f"Probability of {outcome}")
+    legend = plt.legend(title="Time", fontsize=8, markerscale=0.8, frameon=True)
+    legend.set_visible(show_legend)
+    plt.grid(True)
+    plt.show()
+
+
+
+def BayesianCoefsPlot(log):
+    """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
+    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+    """
+    plt.figure()
+    bayesianCoefs = log["BayesianCoefficients"]
+    timestamps = list(bayesianCoefs.keys())
+
+    # Generate unique colors for predictors
+    predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
+    color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
+    color_map = {predictor: next(color_cycle) for predictor in predictors} 
+
+    used_labels = set()  # Keep track of labels already used
+
+    for timestamp in timestamps:
+        specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+        for predictor, (mean_coef, std_coef) in specific_coefs.items():
+            label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
+            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=label, color=color_map[predictor], alpha=0.5)
+            used_labels.add(predictor)  # Mark label as used
+
+    plt.xlabel("Time")
+    plt.title("Bayesian Priors Over Time")
+    plt.ylabel("Coefficient")
+    plt.yscale('symlog', linthresh=1)
+    legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+    legend.get_frame().set_edgecolor("black")
+    legend.get_frame().set_facecolor("white")
+    plt.xticks(timestamps, rotation=90)
     plt.grid(True)
     plt.show()

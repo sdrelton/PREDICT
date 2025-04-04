@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 from datetime import datetime, timedelta
 import PREDICT.PREDICT as PREDICT
+from dateutil.relativedelta import relativedelta
 
 
 class MockModel:
@@ -50,7 +51,7 @@ def test_initialisation(predict_instance):
     """
     assert predict_instance.startDate == predict_instance.data['date'].min()
     assert predict_instance.endDate == predict_instance.data['date'].max()
-    assert predict_instance.timestep == pd.Timedelta(weeks=1)
+    assert predict_instance.timestep == relativedelta(months=1)
     assert predict_instance.currentWindowStart == predict_instance.startDate
     assert predict_instance.currentWindowEnd == predict_instance.startDate + predict_instance.timestep
     assert predict_instance.log == {}

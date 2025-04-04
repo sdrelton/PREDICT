@@ -1,7 +1,12 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
-from scipy.special import logit
-
+import pandas as pd
+import bambi as bmb
+import bambi.priors as priors
+from scipy.special import expit
+import arviz as az
+from statsmodels.formula.api import logit as bayes_logit
+import matplotlib.pyplot as plt
 
 
 class PREDICTModel:
@@ -190,3 +195,150 @@ class RecalibratePredictions(PREDICTModel):
             self.l2sdl = -warningCL
     
         return self.u2sdl, self.u3sdl, self.l2sdl, self.l3sdl
+
+class BayesianModel(PREDICTModel):
+    """ A class which uses Bayesian regression to update the coefficients of a logistic regression model.
+
+    Args:
+        priors (dict): Dictionary of predictors (key) and their mean and stds of the coefficients (values) e.g. {"blood_pressure": (2.193, 0.12)}, 
+            this must include "Intercept" as a dictionary key.
+            If any of the prior keys are None then the prior coefficients are estimated using a logistic regression model.
+        input_data (pd.DataFrame): The input data for creating the model to calculate initial priors if none are provided.
+        predictColName (str): The name of the column in the dataframe containing the predictions (default='prediction').
+        outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
+        dateCol (str): The name of the column in the dataframe containing the dates (default='date').
+        verbose (bool): Whether to print the priors and posteriors of the model (default=True).
+        plot_idata (bool): Whether to plot the inference_data trace plot (default=False).
+        draws (int): Number of draws to use in the Bayesian model (default=1000).
+        tune (int): Number of tuning steps to use in the Bayesian model (default=1000).
+        cores (int): Number of cores to use in the Bayesian model (default=1).
+        chains (int): Number of chains to use in the Bayesian model (default=4).
+        model_formula (str): The formula to use in the Bayesian model (default=None, if None then a standard linear model formula is used without interactions).
+
+    Raises:
+        ValueError: If the priors are not in a dictionary format.
+        ValueError: If the required 'Intercept' is missing from the priors.keys().
+        ValueError: If priors are not provided and input_data is None.
+
+    Example
+    --------
+    # Create a Bayesian model which refits and gives new coefficients and predictions when triggered.
+    # Full example can be found in Examples/bayesian_example.ipynb
+    model = BayesianModel(input_data=df, priors={"Intercept": (0.34, 0.1), "age": (1.56, 0.4), "systolic_bp": (5.34, 0.2)})
+    model.trigger = BayesianRefitTrigger(model=model, input_data=df, refitFrequency=1)
+    """
+    def __init__(self, priors, input_data=None, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False, draws=1000,
+                tune=1000, cores=1, chains=4, model_formula=None):
+        super(BayesianModel, self).__init__()
+        self.predictColName = predictColName
+        self.outcomeColName = outcomeColName
+        self.dateCol = dateCol
+        self.priors = priors
+        self.verbose = verbose
+        self.plot_idata = plot_idata
+        self.draws = draws
+        self.tune = tune
+        self.cores = cores
+        self.chains = chains
+        self.model_formula = model_formula
+        self.bayes_model = None
+        self.inference_data = None
+
+        if not isinstance(self.priors, dict):
+            raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
+        
+        
+        self.coef_names = list(self.priors.keys())
+        self.predictors = self.coef_names.copy()
+        self.predictors.remove("Intercept")
+        if "Intercept" not in self.coef_names:
+            raise ValueError("The required 'Intercept' is missing from the priors.keys().")
+        if self.model_formula is None:
+            self.model_formula = self.outcomeColName + "~" + "+".join(self.predictors)
+
+        generate_priors = False
+        for _, value in self.priors.items():
+            if value is None:
+                generate_priors = True
+
+
+        if generate_priors:
+            if input_data is None:
+                raise ValueError("No input data provided to generate priors from.")
+            faux_model = bayes_logit(self.model_formula, data=input_data).fit()
+
+            self.priors = {}
+            for idx in range(0, len(self.coef_names)):
+                self.priors[faux_model.params.index[idx]] = (faux_model.params[idx], faux_model.bse[idx])
+
+        
+    def predict(self, input_data):
+        if self.bayes_model is None:
+            preds = input_data[self.predictColName]
+        else:
+            idata = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
+            mean_results = az.summary(idata.posterior)
+            number_coefs = len(self.coef_names)
+            df_filtered = mean_results.iloc[number_coefs:]
+            preds = df_filtered["mean"].values.flatten()
+            # preds = az.summary(preds.posterior["outcome_mean"])["mean"].values.flatten()
+            preds = pd.Series(preds, index=input_data[self.predictColName].index)
+            preds = preds.clip(1e-10, 1 - 1e-10) # clip to prevent log(0) or log(1) errors
+        return preds
+
+
+    
+    def update(self, input_data):
+        if self.verbose:
+            print("\n*** PRIORS ***")
+        bmb_priors = {}
+        for prior_key, prior_values in self.priors.items():
+            prior_mean, prior_std = prior_values
+            bmb_priors[prior_key] = bmb.Prior("Normal", mu=prior_mean, sigma=prior_std)
+
+            if self.verbose:
+                print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
+
+        self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
+            
+
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
+        posterior_samples = self.inference_data.posterior 
+
+        if self.verbose:
+            print("\n*** POSTERIORS ***")
+        if self.plot_idata:
+            az.plot_trace(self.inference_data, figsize=(10, 7), )
+        
+
+        # Update the priors for the next run of the Bayesian model
+        self.priors = {
+            predictor: (
+                posterior_samples[predictor].values.flatten().mean(),
+                posterior_samples[predictor].values.flatten().std()
+            )
+            for predictor in self.coef_names
+        }
+
+        self.posterior_samples = {
+            predictor: (
+                posterior_samples[predictor].values.flatten()
+            )
+            for predictor in self.coef_names
+        }
+
+
+        if self.verbose:
+            print(f'Intercept mean coef: {posterior_samples["Intercept"].values.flatten().mean():.2f} ± {posterior_samples["Intercept"].values.flatten().std():.2f}')
+            for predictor in self.predictors:
+                coef_mean = posterior_samples[predictor].values.flatten().mean()
+                coef_std = posterior_samples[predictor].values.flatten().std()
+                print(f"{predictor} mean coef: {coef_mean:.2f} ± {coef_std:.2f}")
+        
+    def get_coefs(self):
+        """Return the current coefficients of the model for the loghook.
+
+        Returns:
+            dict: Current priors of the model.
+        """
+        return self.priors
