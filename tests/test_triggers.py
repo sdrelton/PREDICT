@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
+from PREDICT import PREDICT
 from PREDICT.Models import PREDICTModel, RecalibratePredictions
 from PREDICT.Triggers import AccuracyThreshold, SPCTrigger, BayesianRefitTrigger
 from sklearn.metrics import accuracy_score
@@ -114,8 +115,6 @@ def test_bayesian_refit_trigger(sample_data):
     
     for date in trigger_dates:
         test_data = pd.DataFrame({"date": [date]})
-        print(date)
-        print(refit_func(test_data))
         assert refit_func(test_data) is True, f"Refit should trigger on {date}"
 
     # Test a non-triggering date
