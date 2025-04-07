@@ -23,7 +23,7 @@ def sample_data():
         pd.DataFrame: Fake dataset with date and value columns.
     """
     data = {
-        'date': pd.date_range(start='1/1/2020', periods=10, freq='D'),
+        'date': pd.date_range(start='1/1/2020', periods=10, freq='ME'),
         'value': range(10)
     }
     return pd.DataFrame(data)
@@ -102,12 +102,16 @@ def test_run(predict_instance):
         Manages prediction windows and logs, allows for the addition of hooks to execute functions 
         during the logging process.
     """
-    
-    def log_hook(data):
-        return 'log_hook', len(data)
 
-    predict_instance.addLogHook(log_hook)
+    def log_hook(data):
+        return lambda data: __log_hook(data)
+    
+    def __log_hook(data):
+        return 'log_hook', data
+
+    predict_instance.addLogHook(log_hook(10))
     predict_instance.run()
+    log = predict_instance.getLog()
 
     # Check if logs were added
     assert 'log_hook' in predict_instance.log
