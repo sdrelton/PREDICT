@@ -5,6 +5,7 @@ import pandas as pd
 import warnings
 from unittest.mock import MagicMock
 from statsmodels.tools.sm_exceptions import PerfectSeparationWarning
+import pytest
 
 # Check if the code is being executed by Sphinx
 if any(env in os.getenv("READTHEDOCS", "").lower() or os.getenv("SPHINX_BUILD", "").lower() for env in ["true", "sphinx"]):
@@ -466,3 +467,25 @@ def test_sum_of_diff_calculation3():
     _, result = SumOfDiff(df)
 
     assert np.isclose(result, 0.025)
+
+class MockBayesianModel:
+    def get_coefs(self):
+        return {"beta": 2.5, "intercept": 1.0}  # Example coefficient values
+
+@pytest.fixture
+def mock_model():
+    return MockBayesianModel()
+
+def test_track_bayesian_coefs(mock_model):
+    """
+    Tests the TrackBayesianCoefs hook by checking if the coefficients remain the same.
+    """
+    log_hook = Metrics.TrackBayesianCoefs(mock_model)
+    hook_name, priors = log_hook(None)
+
+    # Validate the returned hook name
+    assert hook_name == "BayesianCoefficients", "Hook name should be 'BayesianCoefficients'."
+
+    # Validate the retrieved coefficients
+    expected_coefs = {"beta": 2.5, "intercept": 1.0}
+    assert priors == expected_coefs, "Coefficients do not match expected values."

@@ -2,8 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ main ] # change this back to main when ready to merge
-  
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -12,36 +11,40 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@main
-      - name: Set up Python 3.10
-        uses: actions/setup-python@main
-        with:
-          python-version: 3.10
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: my_env
+          auto-activate-base: false
+
+      - name: Install dependencies from environment.yml
+        run: conda env update --file environment.yml --name my_env
 
       - name: Add PREDICT to PYTHONPATH
         run: |
           echo "PYTHONPATH=$env:PYTHONPATH;$($PWD.Path)/PREDICT" >> $env:GITHUB_ENV
 
       - name: Test with pytest
-        run: pytest tests/
+        run: conda run -n my_env pytest tests/
 
   test-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.11.0
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.11.0
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: my_env
+          auto-activate-base: false
+
+      - name: Install dependencies from environment.yml
+        run: conda env update --file environment.yml --name my_env
 
       - name: Add PREDICT to PYTHONPATH
         run: |
           echo "PYTHONPATH=$PYTHONPATH:$PWD/PREDICT" >> $GITHUB_ENV
 
       - name: Test with pytest
-        run: pytest tests/
+        run: conda run -n my_env pytest tests/
