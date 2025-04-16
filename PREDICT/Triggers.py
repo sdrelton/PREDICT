@@ -94,7 +94,8 @@ def __TimeframeTrigger(self, input_data, update_dates):
     
     
 def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
-            numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3):
+            numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3, 
+            verbose=True):
     """Trigger function to update the model if the error enters an upper control limit.
         The control limits can be set using one of the following methods:
         - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
@@ -115,6 +116,7 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         recalCL (float): A manually set control limit for the recalibration trigger limit. Defaults to None.
         warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to. Defaults to 2.
         recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to. Defaults to 3.
+        verbose (bool): If True, prints the control limit warnings. Defaults to True.
 
     Returns:
         tuple: A tuple containing:
@@ -154,9 +156,9 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
 
     u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
 
-    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl), model)
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose), model)
 
-def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
     """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
     displayed prompting the user to investigate increasing errors in the model.
 
@@ -176,22 +178,26 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl):
     # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
     if error > u2sdl and error < u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the upper warning zone. \nInvestigate the cause of the increase in error.\n')
+        if verbose:
+            print(f'{curDate}: Error is in the upper warning zone. \nInvestigate the cause of the increase in error.\n')
         return False
     # if error enter red zone (usally above 3SD) then recalibrate the model
     elif error > u3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the upper danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        if verbose:
+            print(f'{curDate}: Error is in the upper danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
         return True
     
     elif error < l2sdl and error > l3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the lower warning zone. \nInvestigate the cause of the increase in error.\n')
+        if verbose:
+            print(f'{curDate}: Error is in the lower warning zone. \nInvestigate the cause of the increase in error.\n')
         return False
 
     elif error < l3sdl:
         curDate = input_data[self.dateCol].max()
-        print(f'{curDate}: Error is in the lower danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
+        if verbose:
+            print(f'{curDate}: Error is in the lower danger zone. \nThe model has been recalibrated. \nYou might want to investigate the cause of the error increasing.\n')
         return True
     
     else:
