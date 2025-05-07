@@ -249,38 +249,42 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
-    plt.figure()
+    fig, ax = plt.subplots()  # Use subplots to get an explicit axes object
+
     error_df = pd.DataFrame(list(log['NormSumOfDifferences'].items()), columns=['Date', 'NormSumOfDifferences'])
-    plt.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
+    ax.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
 
-    # set where the recalibration zones end for plot aesthetics
-    ucl = error_df['NormSumOfDifferences'].max()+(0.1*error_df['NormSumOfDifferences'].max())
-    lcl = error_df['NormSumOfDifferences'].min()+(0.1*error_df['NormSumOfDifferences'].min())
+    # Set where the recalibration zones end for plot aesthetics
+    ucl = error_df['NormSumOfDifferences'].max() + (0.1 * error_df['NormSumOfDifferences'].max())
+    lcl = error_df['NormSumOfDifferences'].min() - (0.1 * error_df['NormSumOfDifferences'].min())
 
-    plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
-    plt.axhline(model.u2sdl, color='black', linestyle='-')
-    plt.axhline(model.u3sdl, color='black', linestyle='-')
-    plt.axhline(model.l2sdl, color='black', linestyle='-')
-    plt.axhline(model.l3sdl, color='black', linestyle='-')
+    ucl = ax.get_ylim()[1]
+    lcl = ax.get_ylim()[0]
+
+    ax.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
+    ax.axhline(model.u2sdl, color='black', linestyle='-')
+    ax.axhline(model.u3sdl, color='black', linestyle='-')
+    ax.axhline(model.l2sdl, color='black', linestyle='-')
+    ax.axhline(model.l3sdl, color='black', linestyle='-')
 
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
+        ax.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
 
-    plt.fill_between(error_df['Date'], model.u3sdl, ucl, color='red', alpha=0.2, label='Recalibration zone')
-    plt.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
-    plt.fill_between(error_df['Date'], model.l2sdl, model.u2sdl, color='green', alpha=0.2, label='Safe zone')
-    plt.fill_between(error_df['Date'], model.l2sdl, model.l3sdl, color='yellow', alpha=0.2)
-    plt.fill_between(error_df['Date'], model.l3sdl, lcl, color='red', alpha=0.2)
+    # Colour the safe and warning zones
+    ax.fill_between(error_df['Date'], model.u3sdl, ucl, color='red', alpha=0.2, label='Recalibration zone')
+    ax.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
+    ax.fill_between(error_df['Date'], model.l2sdl, model.u2sdl, color='green', alpha=0.2, label='Safe zone')
+    ax.fill_between(error_df['Date'], model.l2sdl, model.l3sdl, color='yellow', alpha=0.2)
+    ax.fill_between(error_df['Date'], model.l3sdl, lcl, color='red', alpha=0.2)
 
-
-
-    plt.title('SPC Chart for Error')
-    plt.xlabel('Date')
-    plt.ylabel('Normalised Error')
+    ax.set_title('SPC Chart for Error')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Normalised Error')
     plt.xticks(rotation=90)
     plt.legend(fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(False)
     plt.show()
+
 
 def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, smallerSD=2):
     """Generate a statistical process control chart to observe data changes over time.
