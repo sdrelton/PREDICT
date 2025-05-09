@@ -1,0 +1,30 @@
+Variable,Stat Type (e.g. % or mean),Statistic,Hazard Ratios
+White/not recorded,% (/100),0.973,1
+Indian,% (/100),0.0047,1.43
+Pakistani,% (/100),0.0026,1.8
+Bangladeshi,% (/100),0.0026,1.35
+Other Asian,% (/100),0.0016,1.15
+Black Caribbean,% (/100),0.0051,1.08
+Black African,% (/100),0.0047,0.58
+Chinese,% (/100),0.0015,0.69
+Other,% (/100),0.0047,1.04
+Age (10% increase)*,median (IQR),49 (41-60),1.66
+BMI (5 unit increase),mean \pm std,33.8 \pm 6.1,1.08
+Townsend score (5 unit increase),mean \pm std,17.67\pm4.42,1.37
+Systolic blood pressure (mm Hg) (20 unit increase),mean \pm std,26.6\pm4.4,1.2
+Cholesterol/HDL ratio,mean \pm std,3.66\pm0.144,1.17
+Family history coronary heart disease,% (/100),0.126,1.99
+Current smoker,% (/100),0.228,1.8
+Treated hypertension,% (/100),0.0712,1.54
+Type 2 diabetes,% (/100),0.017,2.54
+Rheumatoid arthritis,% (/100),0.0093,1.5
+Atrial fibrillation,% (/100),0.0035,3.06
+Renal disease,% (/100),0.0016,1.7
+Age* BMI interaction,,,0.976
+Age* Townsend interaction (5 unit increase in score),,,0.938
+Age* systolic blood pressure interaction (20 unit increase in systolic blood pressure),,,0.966
+Age* family history interaction,,,0.927
+Age* smoking interaction,,,0.931
+Age* treated hypertension interaction,,,0.952
+Age* type 2 diabetes interaction,,,0.904
+Age* atrial fibrillation interaction,,,0.858
