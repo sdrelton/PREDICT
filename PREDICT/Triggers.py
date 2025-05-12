@@ -7,28 +7,29 @@ from sklearn.linear_model import LogisticRegression
 from scipy.special import logit
 from PREDICT import Metrics
 
-def AccuracyThreshold(model, threshold, prediction_threshold=0.5):
-    return MethodType(lambda self, x: __AccuracyThreshold(self, x, threshold, prediction_threshold), model)
+def AccuracyThreshold(model, pos_threshold=0.5, prediction_threshold=0.7):
+    return MethodType(lambda self, x: __AccuracyThreshold(self, x, pos_threshold, prediction_threshold), model)
 
-def __AccuracyThreshold(self, input_data, threshold, prediction_threshold):
+def __AccuracyThreshold(self, input_data, pos_threshold, prediction_threshold):
     """Trigger function to update model if accuracy falls below a given threshold.
 
     Args:
         input_data (dataframe): DataFrame with column of the predicted outcome.
-        threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
-        prediction_threshold (float): Static accuracy threshold to trigger model update. 
+        pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
+        prediction_threshold (float): Static accuracy threshold to trigger model update. Defaults to 0.7.
 
     Returns:
         bool: Returns True if model update is required.
     """
     preds = self.predict(input_data)
     outcomes = input_data[self.outcomeColName].astype(int)
-    preds_rounded = np.array(preds >= prediction_threshold).astype(int)
+    preds_rounded = np.array(preds >= pos_threshold).astype(int)
     accuracy = np.mean(preds_rounded == outcomes)
-    if accuracy >= threshold:
+    if accuracy >= prediction_threshold:
         return False
     else:
         return True
+
     
 def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
     """Create a list of dates to update the model based on a fixed time interval.
