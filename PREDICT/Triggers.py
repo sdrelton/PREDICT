@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from sklearn.linear_model import LogisticRegression
 from scipy.special import logit
 from PREDICT import Metrics
+import sklearn as skl
 
 def AccuracyThreshold(model, pos_threshold=0.5, prediction_threshold=0.7):
     return MethodType(lambda self, x: __AccuracyThreshold(self, x, pos_threshold, prediction_threshold), model)
@@ -26,6 +27,33 @@ def __AccuracyThreshold(self, input_data, pos_threshold, prediction_threshold):
     preds_rounded = np.array(preds >= pos_threshold).astype(int)
     accuracy = np.mean(preds_rounded == outcomes)
     if accuracy >= prediction_threshold:
+        return False
+    else:
+        return True
+    
+
+def AUROCThreshold(model, pos_threshold=0.5, prediction_threshold=0.7):
+    return MethodType(lambda self, x: __AUROCThreshold(self, x, pos_threshold, prediction_threshold), model)
+
+def __AUROCThreshold(self, input_data, pos_threshold, prediction_threshold):
+    """Trigger function to update model if AUROC falls below a given threshold.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
+        prediction_threshold (float): Static AUROC threshold to trigger model update. Defaults to 0.7.
+
+    Returns:
+        bool: Returns True if model update is required.
+    """
+    preds = self.predict(input_data)
+    outcomes = input_data[self.outcomeColName].astype(int)
+    preds_rounded = np.array(preds >= pos_threshold).astype(int)
+
+    fpr, tpr, _ = skl.metrics.roc_curve(outcomes, preds_rounded)
+    auroc = skl.metrics.auc(fpr, tpr)
+
+    if auroc >= prediction_threshold:
         return False
     else:
         return True
