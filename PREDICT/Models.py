@@ -255,7 +255,8 @@ class BayesianModel(PREDICTModel):
             raise ValueError("The required 'Intercept' is missing from the priors.keys().")
         if self.model_formula is None:
             self.model_formula = self.outcomeColName + "~" + "+".join(self.predictors)
-
+            print("No model formula was provided, using standard linear model formula.")
+        print("Model formula is set to: ", self.model_formula)
         generate_priors = False
         for _, value in self.priors.items():
             if value is None:
@@ -265,6 +266,7 @@ class BayesianModel(PREDICTModel):
         if generate_priors:
             if input_data is None:
                 raise ValueError("No input data provided to generate priors from.")
+            print("Generating priors from input data...")
             faux_model = bayes_logit(self.model_formula, data=input_data).fit()
 
             self.priors = {}
@@ -302,7 +304,7 @@ class BayesianModel(PREDICTModel):
         self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
-        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, inference_method='vi')
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, inference_method='mcmc')
         posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
