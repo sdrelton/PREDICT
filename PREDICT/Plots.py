@@ -51,12 +51,14 @@ def CalibrationSlopePlot(log):
     plt.plot(log['CalibrationSlope'].keys(), log['CalibrationSlope'].values(), label='Calibration Slope')
 
     plt.axhline(y=1, color='black', linestyle='--', label='Ideal Calibration Slope')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), max(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 1.0001),
-                arrowprops=dict(facecolor='green', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), ((max(log['CalibrationSlope'].values())+1)/2), 'Overestimation', fontsize=10, color='green')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), min(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 0.9999),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), ((min(log['CalibrationSlope'].values())+1)/2), 'Underestimation', fontsize=10, color='red')
+    if max(log['CalibrationSlope'].values()) > 1:
+        plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), max(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 1.0001),
+                    arrowprops=dict(facecolor='green', shrink=0.05))
+        plt.text(min(log['CalibrationSlope'].keys()), ((max(log['CalibrationSlope'].values())+1)/2), 'Overestimation', fontsize=10, color='green')
+    if min(log['CalibrationSlope'].values()) < 1:
+        plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), min(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 0.9999),
+                    arrowprops=dict(facecolor='red', shrink=0.05))
+        plt.text(min(log['CalibrationSlope'].keys()), ((min(log['CalibrationSlope'].values())+1)/2), 'Underestimation', fontsize=10, color='red')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
@@ -94,12 +96,14 @@ def CITLPlot(log):
     plt.figure()
     plt.plot(log['CITL'].keys(), log['CITL'].values(), label='CITL')
     plt.axhline(y=0, color='black', linestyle='--', label='Ideal CITL')
-    plt.annotate('', xy=(max(log['CITL'].keys()), 0.35), xytext=(max(log['CITL'].keys()), 0.1),
-                arrowprops=dict(facecolor='green', shrink=0.05))
-    plt.text(min(log['CITL'].keys()), 0.3, 'Underestimation', fontsize=10, color='green')
-    plt.annotate('', xy=(max(log['CITL'].keys()), -0.3), xytext=(max(log['CITL'].keys()), -0.1),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-    plt.text(min(log['CITL'].keys()), -0.35, 'Overestimation', fontsize=10, color='red')
+    if max(log['CITL'].values()) > 0:
+        plt.annotate('', xy=(max(log['CITL'].keys()), 0.35), xytext=(max(log['CITL'].keys()), 0.1),
+                    arrowprops=dict(facecolor='green', shrink=0.05))
+        plt.text(min(log['CITL'].keys()), 0.3, 'Underestimation', fontsize=10, color='green')
+    if min(log['CITL'].values()) < 0:
+        plt.annotate('', xy=(max(log['CITL'].keys()), -0.3), xytext=(max(log['CITL'].keys()), -0.1),
+                    arrowprops=dict(facecolor='red', shrink=0.05))
+        plt.text(min(log['CITL'].keys()), -0.35, 'Overestimation', fontsize=10, color='red')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['CITL'].values())-0.2, max(log['CITL'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.ylim(min(log['CITL'].values()), max(log['CITL'].values()))
