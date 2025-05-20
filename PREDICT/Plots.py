@@ -426,6 +426,43 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 
 
 
+# def BayesianCoefsPlot(log):
+#     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
+#     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+#     Args:
+#         log (dict): Log of model metrics over time and when the model was updated.
+#     """
+#     plt.figure()
+#     bayesianCoefs = log["BayesianCoefficients"]
+#     timestamps = list(bayesianCoefs.keys())
+
+#     # Generate unique colors for predictors
+#     predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
+#     color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
+#     color_map = {predictor: next(color_cycle) for predictor in predictors} 
+
+#     used_labels = set()  # Keep track of labels already used
+
+#     for timestamp in timestamps:
+#         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+#         for predictor, (mean_coef, std_coef) in specific_coefs.items():
+#             label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
+#             plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='-o', label=label, color=color_map[predictor], alpha=0.5)
+#             used_labels.add(predictor)  # Mark label as used
+
+#     plt.xlabel("Time")
+#     plt.title("Bayesian Priors Over Time")
+#     plt.ylabel("Coefficient")
+#     plt.yscale('symlog', linthresh=1)
+#     legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+#     legend.get_frame().set_edgecolor("black")
+#     legend.get_frame().set_facecolor("white")
+#     plt.xticks(timestamps, rotation=90)
+#     plt.grid(True)
+#     plt.show()
+
+
 def BayesianCoefsPlot(log):
     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
@@ -439,23 +476,40 @@ def BayesianCoefsPlot(log):
 
     # Generate unique colors for predictors
     predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
-    color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
-    color_map = {predictor: next(color_cycle) for predictor in predictors} 
 
-    used_labels = set()  # Keep track of labels already used
+    # Create a DataFrame to store the coefficients and their corresponding timestamps
+    coefs_df = pd.DataFrame(columns=['Timestamp', 'Predictor', 'Mean Coef', 'Std Coef'])
 
+    mean_coefs=[]
+    std_coefs=[]
+    predictors_list=[]
+    timestamps_list=[]
     for timestamp in timestamps:
         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+
         for predictor, (mean_coef, std_coef) in specific_coefs.items():
-            label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
-            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=label, color=color_map[predictor], alpha=0.5)
-            used_labels.add(predictor)  # Mark label as used
+            mean_coefs.append(mean_coef)
+            std_coefs.append(std_coef)
+            predictors_list.append(predictor)
+            timestamps_list.append(timestamp)
+            
+    coefs_df = pd.DataFrame({"Predictors":predictors_list, "Timestamp":timestamps_list, "Mean Coef":mean_coefs, "Std Coef":std_coefs})
+
+    # groupby predictors to plot errorbars
+    grouped = coefs_df.groupby('Predictors')
+    for predictor_group in grouped:
+        # turn predictor_group into a dataframe
+        predictor_group = predictor_group[1]
+        # get the predictor name
+        predictor_name = predictor_group['Predictors'].values[0]
+        plt.errorbar(data=predictor_group, x='Timestamp', y='Mean Coef', yerr='Std Coef', fmt='-o', alpha=0.5, label=predictor_name)
 
     plt.xlabel("Time")
     plt.title("Bayesian Priors Over Time")
     plt.ylabel("Coefficient")
     plt.yscale('symlog', linthresh=1)
-    legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    legend = plt.legend(handles[:len(predictors)], labels[:len(predictors)], title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
     legend.get_frame().set_edgecolor("black")
     legend.get_frame().set_facecolor("white")
     plt.xticks(timestamps, rotation=90)
