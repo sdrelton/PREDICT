@@ -9,6 +9,7 @@ from PREDICT.Triggers import *
 from PREDICT.Plots import *
 
 
+
 def get_model_updated_log_covid(df, model, switch_times, i, model_name, undetected):
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
@@ -156,3 +157,31 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.show()
 
 
+def run_recalibration_tests(df, startDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+    ########################## Regular Testing ##########################
+    model = RecalibratePredictions()
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    total_runs +=1
+    ttd = get_model_updated_log_prev_drift(df, model, startDate, "Regular Testing", undetected)
+    regular_ttd.append(ttd)
+
+    ############################ Static Threshold ############################
+    model = RecalibratePredictions()
+    model.trigger = AUROCThreshold(model=model, prediction_threshold=recalthreshold)
+    ttd = get_model_updated_log_prev_drift(df, model, startDate, "Static Threshold", undetected)
+    static_ttd.append(ttd)
+
+    ############################ SPC ############################
+    model = RecalibratePredictions()
+    model.trigger = SPCTrigger(model=model, input_data=df, numMonths=3, verbose=False)
+    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC3", undetected)
+    spc_ttd3.append(ttd)
+
+    model.trigger = SPCTrigger(model=model, input_data=df, numMonths=5, verbose=False)
+    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC5", undetected)
+    spc_ttd5.append(ttd)
+
+    model.trigger = SPCTrigger(model=model, input_data=df, numMonths=7, verbose=False)
+    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC7", undetected)
+    spc_ttd7.append(ttd)
+    return df, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
