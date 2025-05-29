@@ -39,6 +39,7 @@ jobs:
       - name: Initialize Conda and Activate Environment
         run: |
           eval "$(conda shell.bash hook)"  # Properly initializes Conda in GitHub Actions
+          conda env create -f environment.yml
           conda activate predict_env
 
       - name: Build HTML
