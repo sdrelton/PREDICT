@@ -33,7 +33,11 @@ jobs:
         
       - name: Install dependencies
         run: | 
-          conda env update --file environment.yml --name my_env
+          conda env update --file environment.yml --name predict_env
+
+      - name: Activate conda environment
+        run: | 
+          echo "conda activate predict_env" >> $GITHUB_ENV
 
       - name: Build HTML
         run: | 
