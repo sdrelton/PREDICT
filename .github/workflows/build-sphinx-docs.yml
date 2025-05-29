@@ -50,6 +50,11 @@ jobs:
         run: |
           pip list | grep sphinx || echo "Sphinx is not installed"
           which sphinx-build || echo "sphinx-build not found"
+
+      - name: Install Sphinx
+        run: |
+          pip install sphinx
+          which sphinx-build
       
 
       - name: Build HTML
