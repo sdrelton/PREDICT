@@ -36,11 +36,9 @@ jobs:
           conda env update --file environment.yml --name predict_env
 
 
-      - name: Initialize Conda
-        run: conda init
-        
-      - name: Activate conda environment
-        run: | 
+      - name: Initialize Conda and Activate Environment
+        run: |
+          eval "$(conda shell.bash hook)"  # Properly initializes Conda in GitHub Actions
           conda activate predict_env
 
       - name: Build HTML
