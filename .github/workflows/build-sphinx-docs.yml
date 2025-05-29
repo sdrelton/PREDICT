@@ -39,8 +39,13 @@ jobs:
       - name: Initialize Conda and Activate Environment
         run: |
           eval "$(conda shell.bash hook)"  # Properly initializes Conda in GitHub Actions
-          conda env create -f environment.yml
           conda activate predict_env
+          
+      - name: Verify Sphinx Installation
+        run: |
+          pip list | grep sphinx
+          which sphinx-build || echo "sphinx-build not found"
+      
 
       - name: Build HTML
         run: | 
