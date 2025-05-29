@@ -37,7 +37,7 @@ jobs:
 
 
       - name: Initialize Conda
-        run: eval "$(conda shell.bash hook)"
+        run: conda init
         
       - name: Activate conda environment
         run: | 
