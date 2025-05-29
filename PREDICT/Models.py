@@ -304,7 +304,7 @@ class BayesianModel(PREDICTModel):
         self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
-        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, inference_method='mcmc')
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, max_treedepth=15, target_accept=0.95)#, inference_method='mcmc')
         posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
