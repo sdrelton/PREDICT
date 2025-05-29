@@ -61,8 +61,9 @@ jobs:
         run: | 
           cd docs/
           make html
-      - name: Run ghp-import
+      - name: Install and run ghp-import
         run: | 
+          pip install ghp-import
           ghp-import -n -p -f docs/_build/html
 
       - name: Debug Environment
