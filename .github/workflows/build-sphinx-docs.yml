@@ -35,6 +35,10 @@ jobs:
         run: | 
           conda env update --file environment.yml --name predict_env
 
+
+      - name: Initialize Conda
+        run: eval "$(conda shell.bash hook)"
+        
       - name: Activate conda environment
         run: | 
           conda activate predict_env
