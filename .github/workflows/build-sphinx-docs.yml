@@ -41,9 +41,14 @@ jobs:
           eval "$(conda shell.bash hook)"  # Properly initializes Conda in GitHub Actions
           conda activate predict_env
           
+      - name: Install Sphinx
+        run: |
+          pip install sphinx
+          which sphinx-build
+
       - name: Verify Sphinx Installation
         run: |
-          pip list | grep sphinx
+          pip list | grep sphinx || echo "Sphinx is not installed"
           which sphinx-build || echo "sphinx-build not found"
       
 
