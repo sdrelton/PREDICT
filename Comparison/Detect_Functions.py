@@ -184,4 +184,19 @@ def run_recalibration_tests(df, startDate, undetected, total_runs, regular_ttd, 
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=7, verbose=False)
     ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC7", undetected)
     spc_ttd7.append(ttd)
-    return df, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
+    return undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
+
+def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, switchDateStrings, switchDateidx, sim_data="covid"):
+    bay_model.trigger = BayesianRefitTrigger(model=bay_model, input_data=df, refitFrequency=18)
+    mytest = PREDICT(data=df, model=bay_model, startDate='min', endDate='max', timestep='month')
+    mytest.addLogHook(TrackBayesianCoefs(bay_model))
+    mytest.run()
+    log = mytest.getLog()
+    if "BayesianCoefficients" in log:
+        bayes_dict["BayesianCoefficients"].update(log["BayesianCoefficients"])
+    if sim_data == "covid":
+        ttd = get_model_updated_log_covid(df, bay_model, switchDateStrings, switchDateidx, "Bayesian", undetected)
+    else:
+        ttd = get_model_updated_log_prev_drift(df, bay_model, switchDateStrings, "Bayesian", undetected)
+    bayesian_ttd.append(ttd)
+    return undetected, bayesian_ttd, bayes_dict
