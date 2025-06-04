@@ -21,9 +21,8 @@ To clone the repo:
 `git clone https://github.com/sdrelton/PREDICT.git`
 
 To create a suitable environment we suggest:
-- Build conda environment via `conda create --name predict_env python`
+- Build conda environment and install requirements via `conda env create -f environment.yml`
 - Activate environment `conda activate predict_env`
-- Install requirements via `python -m pip install -r ./requirements.txt`
 
 
 ### Examples
