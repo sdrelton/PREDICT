@@ -8,16 +8,16 @@ from scipy.special import logit
 from PREDICT import Metrics
 import sklearn as skl
 
-def AccuracyThreshold(model, pos_threshold=0.5, prediction_threshold=0.7):
-    return MethodType(lambda self, x: __AccuracyThreshold(self, x, pos_threshold, prediction_threshold), model)
+def AccuracyThreshold(model, pos_threshold=0.5, update_threshold=0.7):
+    return MethodType(lambda self, x: __AccuracyThreshold(self, x, pos_threshold, update_threshold), model)
 
-def __AccuracyThreshold(self, input_data, pos_threshold, prediction_threshold):
+def __AccuracyThreshold(self, input_data, pos_threshold, update_threshold):
     """Trigger function to update model if accuracy falls below a given threshold.
 
     Args:
         input_data (dataframe): DataFrame with column of the predicted outcome.
         pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
-        prediction_threshold (float): Static accuracy threshold to trigger model update. Defaults to 0.7.
+        update_threshold (float): Static accuracy threshold to trigger model update. Defaults to 0.7.
 
     Returns:
         bool: Returns True if model update is required.
@@ -26,22 +26,22 @@ def __AccuracyThreshold(self, input_data, pos_threshold, prediction_threshold):
     outcomes = input_data[self.outcomeColName].astype(int)
     preds_rounded = np.array(preds >= pos_threshold).astype(int)
     accuracy = np.mean(preds_rounded == outcomes)
-    if accuracy >= prediction_threshold:
+    if accuracy >= update_threshold:
         return False
     else:
         return True
     
 
-def AUROCThreshold(model, pos_threshold=0.5, prediction_threshold=0.7):
-    return MethodType(lambda self, x: __AUROCThreshold(self, x, pos_threshold, prediction_threshold), model)
+def AUROCThreshold(model, pos_threshold=0.5, update_threshold=0.7):
+    return MethodType(lambda self, x: __AUROCThreshold(self, x, pos_threshold, update_threshold), model)
 
-def __AUROCThreshold(self, input_data, pos_threshold, prediction_threshold):
+def __AUROCThreshold(self, input_data, pos_threshold, update_threshold):
     """Trigger function to update model if AUROC falls below a given threshold.
 
     Args:
         input_data (dataframe): DataFrame with column of the predicted outcome.
         pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
-        prediction_threshold (float): Static AUROC threshold to trigger model update. Defaults to 0.7.
+        update_threshold (float): Static AUROC threshold to trigger model update. Defaults to 0.7.
 
     Returns:
         bool: Returns True if model update is required.
@@ -53,7 +53,7 @@ def __AUROCThreshold(self, input_data, pos_threshold, prediction_threshold):
     fpr, tpr, _ = skl.metrics.roc_curve(outcomes, preds_rounded)
     auroc = skl.metrics.auc(fpr, tpr)
 
-    if auroc >= prediction_threshold:
+    if auroc >= update_threshold:
         return False
     else:
         return True

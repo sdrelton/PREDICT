@@ -103,7 +103,7 @@ class RecalibratePredictions(PREDICTModel):
     # Create a model which recalibrates predictions when triggered
     # Full example can be found in Examples/recalibration_example.ipynb
     model = RecalibratePredictions()
-    model.trigger = AccuracyThreshold(model=model, prediction_threshold=0.7)       
+    model.trigger = AccuracyThreshold(model=model, update_threshold=0.7)       
     """
     
     def __init__(self, predictColName='prediction', outcomeColName='outcome', dateCol='date'):

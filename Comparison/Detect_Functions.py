@@ -186,7 +186,7 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
-    model.trigger = AUROCThreshold(model=model, prediction_threshold=recalthreshold)
+    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
     ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
