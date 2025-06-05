@@ -233,7 +233,7 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
         return False
     
 
-def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=6):
+def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=1):
     """Determine the trigger dates for refitting the Bayesian model.
 
     Args:
