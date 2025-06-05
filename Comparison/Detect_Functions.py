@@ -10,89 +10,40 @@ from PREDICT.Plots import *
 
 
 
-def get_model_updated_log_covid(df, model, switch_times, i, model_name, undetected):
-    """Get the model update log for a given model and switch time for the COVID simulation data.
+def get_model_updated_log(df, model, model_name, undetected, detectDate):
+    """Get the model update log for a given model and simulation type.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data.
         model (PREDICTModel or bmb.Model): PREDICT or bayesian model to be used for prediction.
-        switch_times (str): List of switch times for the model updates.
-        i (int): Index for the switch time to check.
         model_name (str): Name of the model being checked for updates.
         undetected (dict): Dictionary to keep track of undetected models and their counts.
+        detectDate (datetime64[ns], optional): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
 
     Returns:
-        int: time to detect (ttd) in days, or None if no model update detected.
+        int: Time to detect (ttd) in days, or None if no model update detected.
     """
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
     log = mytest.getLog()
+    
     if 'Model Updated' in log:
-        dates = [date for date in log['Model Updated']]
-        switch_time = pd.to_datetime(switch_times[i], dayfirst=True)
-        model_update_date = next((date for date in dates if date > switch_time), None)
+        dates = log['Model Updated']        
+        model_update_date = next((date for date in dates if date > detectDate), None)
+        
         if model_update_date:
-            time_diff = model_update_date - switch_time
-            ttd = abs(time_diff.days)
-            
+            ttd = abs((model_update_date - detectDate).days)
         else:
             ttd = None
-            # add the model name to the undetected dictionary and add to the count
-            count_for_model = undetected.get(model_name, 0)
-            count_for_model += 1
-            undetected[model_name] = count_for_model
+            undetected[model_name] = undetected.get(model_name, 0) + 1
+        
         del mytest
-        return ttd
-    else:
-        # if no model update, return None
-        ttd = None
-        del mytest
-        # add the model name to the undetected dictionary and add to the count
-        count_for_model = undetected.get(model_name, 0)
-        count_for_model += 1
-        undetected[model_name] = count_for_model
         return ttd
     
-def get_model_updated_log_prev_drift(df, model, startDate, model_name, undetected):
-    """Get the model update log for a given model and switch time for the sslow change, 
-    outcome prevalence drift, and QRISK simulation data.
-
-    Args:
-        df (pd.DataFrame): DataFrame containing the simulation data.
-        model (PREDICTModel or bmb.Model): PREDICT or bayesian model to be used for prediction.
-        startDate (datetime64[ns]): Start date for when the data period begins.
-        model_name (str): Name of the model being checked for updates.
-        undetected (dict): Dictionary to keep track of undetected models and their counts.
-
-    Returns:
-        int: time to detect (ttd) in days, or None if no model update detected.
-    """
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
-    mytest.run()
-    log = mytest.getLog()
-    if 'Model Updated' in log:
-        dates = [date for date in log['Model Updated']]
-        model_update_date = next((date for date in dates if date > startDate), None)
-        if model_update_date:
-            time_diff = model_update_date - startDate
-            ttd = abs(time_diff.days)
-        else:
-            ttd = None
-            # add the model name to the undetected dictionary and add to the count
-            count_for_model = undetected.get(model_name, 0)
-            count_for_model += 1
-            undetected[model_name] = count_for_model
-        del mytest
-        return ttd
-    else:
-        # if no model update, return None
-        ttd = None
-        del mytest
-        # add the model name to the undetected dictionary and add to the count
-        count_for_model = undetected.get(model_name, 0)
-        count_for_model += 1
-        undetected[model_name] = count_for_model
-        return ttd
+    # If no model update, add to dictionary of methods that don't detect drift
+    undetected[model_name] = undetected.get(model_name, 0) + 1
+    del mytest
+    return None
     
 def get_binom_from_normal(mean, std, num_patients, threshold):
     """Get a binomial distribution for an outcome being over a certain threshold,
@@ -131,7 +82,7 @@ def select_ethnic_group(num_patients):
     ethnic_groups = ["White", "Indian", "Pakistani", "Bangladeshi", "Other_Asian",
                     "Black_Caribbean", "Black_African", "Chinese", "Other"]
 
-    # Define probabilities for selection (must sum to 1)
+    # Define probabilities for selection (must sum to 1) probabilities from Hippisley-Cox et al., 2008
     probabilities = [0.973, 0.0046, 0.0025, 0.0025, 0.0015, 0.0050, 0.0047, 0.0015, 0.0047]
 
     # Initialize dictionary with empty lists
@@ -202,12 +153,12 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.show()
 
 
-def run_recalibration_tests(df, startDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
     """Run recalibration tests on the given DataFrame using various triggers and return the updated undetected counts and time to detect (ttd) for each method.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
-        startDate (datetime[ns]): Start date for when the data period begins.
+        detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
         undetected (dict): Dictionary to keep track of undetected models and their counts.
         total_runs (int):  Total number of runs performed so far.
         regular_ttd (list): List of time to detect (ttd) for regular testing model updates.
@@ -230,33 +181,34 @@ def run_recalibration_tests(df, startDate, undetected, total_runs, regular_ttd, 
     model = RecalibratePredictions()
     model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
     total_runs +=1
-    ttd = get_model_updated_log_prev_drift(df, model, startDate, "Regular Testing", undetected)
+    ttd = get_model_updated_log(df, model, model_name="Regular Testing", undetected=undetected, detectDate=detectDate)
     regular_ttd.append(ttd)
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
     model.trigger = AUROCThreshold(model=model, prediction_threshold=recalthreshold)
-    ttd = get_model_updated_log_prev_drift(df, model, startDate, "Static Threshold", undetected)
+    ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
     ############################ SPC ############################
     model = RecalibratePredictions()
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=3, verbose=False)
-    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC3", undetected)
+    ttd = get_model_updated_log(df, model, model_name="SPC3", undetected=undetected, detectDate=detectDate)
+    
     spc_ttd3.append(ttd)
 
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=5, verbose=False)
-    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC5", undetected)
+    ttd = get_model_updated_log(df, model, model_name="SPC5", undetected=undetected, detectDate=detectDate)
     spc_ttd5.append(ttd)
 
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=7, verbose=False)
-    ttd = get_model_updated_log_prev_drift(df, model, startDate, "SPC7", undetected)
+    ttd = get_model_updated_log(df, model, model_name="SPC7", undetected=undetected, detectDate=detectDate)
     spc_ttd7.append(ttd)
     return undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
 
-def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, switchDateStrings, switchDateidx, sim_data="covid"):
+def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectDate):
     """Run the Bayesian model with a refit trigger and return the updated undetected counts, time to detect (ttd), and coefficients.
 
     Args:
@@ -265,10 +217,7 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, switchD
         bayes_dict (dict): Dictionary to store Bayesian coefficients and other information.
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         bayesian_ttd (list): List to store time to detect (ttd) for Bayesian model updates.
-        switchDateStrings (list or datetime[ns]): List of switch dates as strings for the model updates or datetime[ns] if startDate is
-                                given for non-COVID data simulation.
-        switchDateidx (int): Index of the switch date to check for model updates.
-        sim_data (str, optional): String of the data simulation type. Defaults to "covid".
+        detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
 
     Returns:
         dict: Dictionary of undetected models and their counts.
@@ -282,9 +231,6 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, switchD
     log = mytest.getLog()
     if "BayesianCoefficients" in log:
         bayes_dict["BayesianCoefficients"].update(log["BayesianCoefficients"])
-    if sim_data == "covid":
-        ttd = get_model_updated_log_covid(df, bay_model, switchDateStrings, switchDateidx, "Bayesian", undetected)
-    else:
-        ttd = get_model_updated_log_prev_drift(df, bay_model, switchDateStrings, "Bayesian", undetected)
+    ttd = get_model_updated_log(df, bay_model, model_name="Bayesian", undetected=undetected, detectDate=detectDate)
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
