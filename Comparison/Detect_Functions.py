@@ -207,6 +207,51 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     return undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
+def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_name="Bayesian", threshold=0.1):
+    """Find the first significant change in Bayesian coefficients after a given detection date. 
+    Work out the time to detect (ttd) from the first significant change in coefficients.
+
+    Args:
+        bayesian_coefficients (dict): Dictionary containing Bayesian coefficients with timestamps as keys.
+        detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
+        bayes_dict (dict): Dictionary to store Bayesian coefficients and other information.
+        undetected (dict): Dictionary to keep track of undetected models and their counts.
+        model_name (str): Name of the method being used. Defaults to "Bayesian".
+        threshold (float): Threshold for significant coefficient change. Defaults to 0.1.
+
+    Returns:
+        int: Number of days to detect drift in the model.
+    """
+    significant_timestamps = []
+
+    timestamps = sorted(bayesian_coefficients.keys()) 
+
+    for i in range(len(timestamps) - 1):
+        curr_timestamp = timestamps[i]
+        next_timestamp = timestamps[i + 1]
+
+        curr_coeffs = bayesian_coefficients[curr_timestamp]
+        next_coeffs = bayesian_coefficients[next_timestamp]
+
+        for key in curr_coeffs:
+            curr_value = curr_coeffs[key][0]  # Get coefficient value
+            next_value = next_coeffs[key][0]
+
+            if abs(next_value - curr_value) > abs(curr_value) * threshold:  # More than X% difference
+                significant_timestamps.append(next_timestamp)
+                print(f"Significant change detected in coefficient '{curr_coeffs}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
+                break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
+    
+    # Assuming the first significant increase is the one we want to calculate time to detect from
+    if len(significant_timestamps) > 0:
+        ttd = (abs((detectDate) - significant_timestamps[0]).days)
+    else:
+        ttd = None
+        undetected[model_name] = undetected.get(model_name, 0) + 1
+
+    return ttd
+
+
 
 def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectDate):
     """Run the Bayesian model with a refit trigger and return the updated undetected counts, time to detect (ttd), and coefficients.
@@ -231,6 +276,8 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
     log = mytest.getLog()
     if "BayesianCoefficients" in log:
         bayes_dict["BayesianCoefficients"].update(log["BayesianCoefficients"])
-    ttd = get_model_updated_log(df, bay_model, model_name="Bayesian", undetected=undetected, detectDate=detectDate)
+    #ttd = get_model_updated_log(df, bay_model, model_name="Bayesian", undetected=undetected, detectDate=detectDate)
+    ttd = find_bayes_coef_change(bayes_dict["BayesianCoefficients"], detectDate=detectDate, undetected=undetected, threshold=0.1)
+
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
