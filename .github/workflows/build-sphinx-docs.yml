@@ -4,7 +4,7 @@ name: Build-sphinx-docs
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches: [ repair_analysis ]
   pull_request:
     branches: [ main ]
 
@@ -49,18 +49,16 @@ jobs:
       - name: Verify Sphinx Installation
         run: |
           pip list | grep sphinx || echo "Sphinx is not installed"
-          which sphinx-build || echo "sphinx-build not found"
+          which sphinx-build || echo "sphinx-build not found"      
 
-      - name: Install Sphinx
+
+      - name: Build HTML with activated Conda environment
         run: |
-          pip install sphinx
-          which sphinx-build
-      
-
-      - name: Build HTML
-        run: | 
+          eval "$(conda shell.bash hook)"
+          conda activate predict_env
           cd docs/
           make html
+
       - name: Install and run ghp-import
         run: | 
           pip install ghp-import
