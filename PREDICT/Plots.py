@@ -51,12 +51,14 @@ def CalibrationSlopePlot(log):
     plt.plot(log['CalibrationSlope'].keys(), log['CalibrationSlope'].values(), label='Calibration Slope')
 
     plt.axhline(y=1, color='black', linestyle='--', label='Ideal Calibration Slope')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), max(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 1.0001),
-                arrowprops=dict(facecolor='green', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), ((max(log['CalibrationSlope'].values())+1)/2), 'Overestimation', fontsize=10, color='green')
-    plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), min(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 0.9999),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-    plt.text(min(log['CalibrationSlope'].keys()), ((min(log['CalibrationSlope'].values())+1)/2), 'Underestimation', fontsize=10, color='red')
+    if max(log['CalibrationSlope'].values()) > 1:
+        plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), max(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 1.0001),
+                    arrowprops=dict(facecolor='green', shrink=0.05))
+        plt.text(min(log['CalibrationSlope'].keys()), ((max(log['CalibrationSlope'].values())+1)/2), 'Overestimation', fontsize=10, color='green')
+    if min(log['CalibrationSlope'].values()) < 1:
+        plt.annotate('', xy=(max(log['CalibrationSlope'].keys()), min(log['CalibrationSlope'].values())), xytext=(max(log['CalibrationSlope'].keys()), 0.9999),
+                    arrowprops=dict(facecolor='red', shrink=0.05))
+        plt.text(min(log['CalibrationSlope'].keys()), ((min(log['CalibrationSlope'].values())+1)/2), 'Underestimation', fontsize=10, color='red')
 
     # Add dashed line to indicate when the model was recalibrated
     if 'Model Updated' in log:
@@ -94,12 +96,14 @@ def CITLPlot(log):
     plt.figure()
     plt.plot(log['CITL'].keys(), log['CITL'].values(), label='CITL')
     plt.axhline(y=0, color='black', linestyle='--', label='Ideal CITL')
-    plt.annotate('', xy=(max(log['CITL'].keys()), 0.35), xytext=(max(log['CITL'].keys()), 0.1),
-                arrowprops=dict(facecolor='green', shrink=0.05))
-    plt.text(min(log['CITL'].keys()), 0.3, 'Underestimation', fontsize=10, color='green')
-    plt.annotate('', xy=(max(log['CITL'].keys()), -0.3), xytext=(max(log['CITL'].keys()), -0.1),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-    plt.text(min(log['CITL'].keys()), -0.35, 'Overestimation', fontsize=10, color='red')
+    if max(log['CITL'].values()) > 0:
+        plt.annotate('', xy=(max(log['CITL'].keys()), 0.35), xytext=(max(log['CITL'].keys()), 0.1),
+                    arrowprops=dict(facecolor='green', shrink=0.05))
+        plt.text(min(log['CITL'].keys()), 0.3, 'Underestimation', fontsize=10, color='green')
+    if min(log['CITL'].values()) < 0:
+        plt.annotate('', xy=(max(log['CITL'].keys()), -0.3), xytext=(max(log['CITL'].keys()), -0.1),
+                    arrowprops=dict(facecolor='red', shrink=0.05))
+        plt.text(min(log['CITL'].keys()), -0.35, 'Overestimation', fontsize=10, color='red')
     if 'Model Updated' in log:
         plt.vlines(log['Model Updated'].keys(), min(log['CITL'].values())-0.2, max(log['CITL'].values())+0.2, colors='r', linestyles='dashed', label='Model Updated')
     plt.ylim(min(log['CITL'].values()), max(log['CITL'].values()))
@@ -249,38 +253,42 @@ def ErrorSPCPlot(log, model):
         log (dict): Log of model metrics over time and when the model was updated.
         model (PREDICTModel): The model to evaluate, must have a predict method.
     """
-    plt.figure()
+    fig, ax = plt.subplots()  # Use subplots to get an explicit axes object
+
     error_df = pd.DataFrame(list(log['NormSumOfDifferences'].items()), columns=['Date', 'NormSumOfDifferences'])
-    plt.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
+    ax.plot(error_df['Date'], error_df['NormSumOfDifferences'], marker='o', label='Data')
 
-    # set where the recalibration zones end for plot aesthetics
-    ucl = error_df['NormSumOfDifferences'].max()+(0.1*error_df['NormSumOfDifferences'].max())
-    lcl = error_df['NormSumOfDifferences'].min()+(0.1*error_df['NormSumOfDifferences'].min())
+    # Set where the recalibration zones end for plot aesthetics
+    ucl = error_df['NormSumOfDifferences'].max() + (0.1 * error_df['NormSumOfDifferences'].max())
+    lcl = error_df['NormSumOfDifferences'].min() - (0.1 * error_df['NormSumOfDifferences'].min())
 
-    plt.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
-    plt.axhline(model.u2sdl, color='black', linestyle='-')
-    plt.axhline(model.u3sdl, color='black', linestyle='-')
-    plt.axhline(model.l2sdl, color='black', linestyle='-')
-    plt.axhline(model.l3sdl, color='black', linestyle='-')
+    ucl = ax.get_ylim()[1]
+    lcl = ax.get_ylim()[0]
+
+    ax.axhline(model.mean_error, color='black', linestyle='--', label='Mean (X-bar)')
+    ax.axhline(model.u2sdl, color='black', linestyle='-')
+    ax.axhline(model.u3sdl, color='black', linestyle='-')
+    ax.axhline(model.l2sdl, color='black', linestyle='-')
+    ax.axhline(model.l3sdl, color='black', linestyle='-')
 
     if 'Model Updated' in log:
-        plt.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
+        ax.vlines(log['Model Updated'].keys(), lcl, ucl, colors='r', linestyles='dashed', label='Model Updated')
 
-    plt.fill_between(error_df['Date'], model.u3sdl, ucl, color='red', alpha=0.2, label='Recalibration zone')
-    plt.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
-    plt.fill_between(error_df['Date'], model.l2sdl, model.u2sdl, color='green', alpha=0.2, label='Safe zone')
-    plt.fill_between(error_df['Date'], model.l2sdl, model.l3sdl, color='yellow', alpha=0.2)
-    plt.fill_between(error_df['Date'], model.l3sdl, lcl, color='red', alpha=0.2)
+    # Colour the safe and warning zones
+    ax.fill_between(error_df['Date'], model.u3sdl, ucl, color='red', alpha=0.2, label='Recalibration zone')
+    ax.fill_between(error_df['Date'], model.u2sdl, model.u3sdl, color='yellow', alpha=0.2, label='Warning zone')
+    ax.fill_between(error_df['Date'], model.l2sdl, model.u2sdl, color='green', alpha=0.2, label='Safe zone')
+    ax.fill_between(error_df['Date'], model.l2sdl, model.l3sdl, color='yellow', alpha=0.2)
+    ax.fill_between(error_df['Date'], model.l3sdl, lcl, color='red', alpha=0.2)
 
-
-
-    plt.title('SPC Chart for Error')
-    plt.xlabel('Date')
-    plt.ylabel('Normalised Error')
+    ax.set_title('SPC Chart for Error')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Normalised Error')
     plt.xticks(rotation=90)
     plt.legend(fontsize=8, markerscale=0.8, frameon=True)
     plt.grid(False)
     plt.show()
+
 
 def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, smallerSD=2):
     """Generate a statistical process control chart to observe data changes over time.
@@ -418,6 +426,43 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 
 
 
+# def BayesianCoefsPlot(log):
+#     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
+#     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+
+#     Args:
+#         log (dict): Log of model metrics over time and when the model was updated.
+#     """
+#     plt.figure()
+#     bayesianCoefs = log["BayesianCoefficients"]
+#     timestamps = list(bayesianCoefs.keys())
+
+#     # Generate unique colors for predictors
+#     predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
+#     color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
+#     color_map = {predictor: next(color_cycle) for predictor in predictors} 
+
+#     used_labels = set()  # Keep track of labels already used
+
+#     for timestamp in timestamps:
+#         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+#         for predictor, (mean_coef, std_coef) in specific_coefs.items():
+#             label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
+#             plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='-o', label=label, color=color_map[predictor], alpha=0.5)
+#             used_labels.add(predictor)  # Mark label as used
+
+#     plt.xlabel("Time")
+#     plt.title("Bayesian Priors Over Time")
+#     plt.ylabel("Coefficient")
+#     plt.yscale('symlog', linthresh=1)
+#     legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+#     legend.get_frame().set_edgecolor("black")
+#     legend.get_frame().set_facecolor("white")
+#     plt.xticks(timestamps, rotation=90)
+#     plt.grid(True)
+#     plt.show()
+
+
 def BayesianCoefsPlot(log):
     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
@@ -431,23 +476,40 @@ def BayesianCoefsPlot(log):
 
     # Generate unique colors for predictors
     predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
-    color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
-    color_map = {predictor: next(color_cycle) for predictor in predictors} 
 
-    used_labels = set()  # Keep track of labels already used
+    # Create a DataFrame to store the coefficients and their corresponding timestamps
+    coefs_df = pd.DataFrame(columns=['Timestamp', 'Predictor', 'Mean Coef', 'Std Coef'])
 
+    mean_coefs=[]
+    std_coefs=[]
+    predictors_list=[]
+    timestamps_list=[]
     for timestamp in timestamps:
         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
+
         for predictor, (mean_coef, std_coef) in specific_coefs.items():
-            label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
-            plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='o', label=label, color=color_map[predictor], alpha=0.5)
-            used_labels.add(predictor)  # Mark label as used
+            mean_coefs.append(mean_coef)
+            std_coefs.append(std_coef)
+            predictors_list.append(predictor)
+            timestamps_list.append(timestamp)
+            
+    coefs_df = pd.DataFrame({"Predictors":predictors_list, "Timestamp":timestamps_list, "Mean Coef":mean_coefs, "Std Coef":std_coefs})
+
+    # groupby predictors to plot errorbars
+    grouped = coefs_df.groupby('Predictors')
+    for predictor_group in grouped:
+        # turn predictor_group into a dataframe
+        predictor_group = predictor_group[1]
+        # get the predictor name
+        predictor_name = predictor_group['Predictors'].values[0]
+        plt.errorbar(data=predictor_group, x='Timestamp', y='Mean Coef', yerr='Std Coef', fmt='-o', alpha=0.5, label=predictor_name)
 
     plt.xlabel("Time")
     plt.title("Bayesian Priors Over Time")
     plt.ylabel("Coefficient")
     plt.yscale('symlog', linthresh=1)
-    legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    legend = plt.legend(handles[:len(predictors)], labels[:len(predictors)], title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
     legend.get_frame().set_edgecolor("black")
     legend.get_frame().set_facecolor("white")
     plt.xticks(timestamps, rotation=90)

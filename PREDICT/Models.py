@@ -103,7 +103,7 @@ class RecalibratePredictions(PREDICTModel):
     # Create a model which recalibrates predictions when triggered
     # Full example can be found in Examples/recalibration_example.ipynb
     model = RecalibratePredictions()
-    model.trigger = AccuracyThreshold(model=model, threshold=0.7)       
+    model.trigger = AccuracyThreshold(model=model, update_threshold=0.7)       
     """
     
     def __init__(self, predictColName='prediction', outcomeColName='outcome', dateCol='date'):
@@ -228,7 +228,7 @@ class BayesianModel(PREDICTModel):
     model.trigger = BayesianRefitTrigger(model=model, input_data=df, refitFrequency=1)
     """
     def __init__(self, priors, input_data=None, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False, draws=1000,
-                tune=1000, cores=1, chains=4, model_formula=None):
+                tune=250, cores=1, chains=4, model_formula=None):
         super(BayesianModel, self).__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
@@ -255,7 +255,8 @@ class BayesianModel(PREDICTModel):
             raise ValueError("The required 'Intercept' is missing from the priors.keys().")
         if self.model_formula is None:
             self.model_formula = self.outcomeColName + "~" + "+".join(self.predictors)
-
+            print("No model formula was provided, using standard linear model formula.")
+        print("Model formula is set to: ", self.model_formula)
         generate_priors = False
         for _, value in self.priors.items():
             if value is None:
@@ -265,6 +266,7 @@ class BayesianModel(PREDICTModel):
         if generate_priors:
             if input_data is None:
                 raise ValueError("No input data provided to generate priors from.")
+            print("Generating priors from input data...")
             faux_model = bayes_logit(self.model_formula, data=input_data).fit()
 
             self.priors = {}
@@ -302,7 +304,7 @@ class BayesianModel(PREDICTModel):
         self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
             
 
-        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains)
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, max_treedepth=10, target_accept=0.9)#, inference_method='mcmc')
         posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
