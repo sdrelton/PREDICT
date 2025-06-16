@@ -281,3 +281,73 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
 
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
+
+
+
+
+def get_metrics_recal_methods(df, custom_impact, recalthreshold):
+    """Get metrics for different recalibration methods on the given DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
+        custom_impact (float): Either the custom impact on the outcome or the prevalence of a condition.
+        recalthreshold (float): Threshold for the static threshold recalibration method.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the metrics for each recalibration method, including accuracy, AUROC, precision, and impact or prevalence.
+    """
+    metrics = []
+
+    # Regular Testing
+    model = RecalibratePredictions()
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest.addLogHook(Accuracy(model))
+    mytest.addLogHook(AUROC(model))
+    mytest.addLogHook(Precision(model))
+    mytest.run()
+    log = mytest.getLog()
+
+    metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                'Accuracy': list(log["Accuracy"].values()), 
+                                'AUROC': list(log["AUROC"].values()), 
+                                'Precision': list(log["Precision"].values()), 
+                                'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                'Method': ['Regular Testing'] * len(log["Accuracy"])}))
+
+    # Static Threshold Testing
+    model = RecalibratePredictions()
+    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest.addLogHook(Accuracy(model))
+    mytest.addLogHook(AUROC(model))
+    mytest.addLogHook(Precision(model))
+    mytest.run()
+    log = mytest.getLog()
+
+    metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                'Accuracy': list(log["Accuracy"].values()), 
+                                'AUROC': list(log["AUROC"].values()), 
+                                'Precision': list(log["Precision"].values()), 
+                                'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                'Method': ['Static Threshold'] * len(log["Accuracy"])}))
+
+    # SPC Testing (3, 5, 7 months)
+    for numMonths in [3, 5, 7]:
+        model = RecalibratePredictions()
+        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=numMonths, verbose=False)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+        mytest.addLogHook(Accuracy(model))
+        mytest.addLogHook(AUROC(model))
+        mytest.addLogHook(Precision(model))
+        mytest.run()
+        log = mytest.getLog()
+
+        metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                    'Accuracy': list(log["Accuracy"].values()), 
+                                    'AUROC': list(log["AUROC"].values()), 
+                                    'Precision': list(log["Precision"].values()), 
+                                    'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                    'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
+
+    return pd.concat(metrics, ignore_index=True)
