@@ -41,7 +41,7 @@ We compare methods to detect and repair temporal drift for four scenarios:
 3) Outcome drift - change in prevalence of myocardial infarctions
 4) Multivariate drift - the importance of BMI increases whilst age is deemed less important by models
 
-<img src="..\docs\images\detect_and_repair_methods.png" alt="Methods used to detect and repair temporal drift" width="400">
+<img src="docs\images\detect_and_repair_methods.png" alt="Methods used to detect and repair temporal drift" width="400">
 
 [Notebook for detection method comparison](Comparison/detect_comparison.ipynb)
 
