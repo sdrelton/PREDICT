@@ -179,7 +179,7 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     """
     ########################## Regular Testing ##########################
     model = RecalibratePredictions()
-    model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
     total_runs +=1
     ttd = get_model_updated_log(df, model, model_name="Regular Testing", undetected=undetected, detectDate=detectDate)
     regular_ttd.append(ttd)
@@ -300,7 +300,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
 
     # Regular Testing
     model = RecalibratePredictions()
-    model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
