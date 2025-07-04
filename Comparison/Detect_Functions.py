@@ -306,6 +306,9 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
     mytest.addLogHook(CalibrationSlope(model))
+    mytest.addLogHook(CITL(model))
+    mytest.addLogHook(OE(model))
+    mytest.addLogHook(AUPRC(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -314,6 +317,9 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                 'AUROC': list(log["AUROC"].values()), 
                                 'Precision': list(log["Precision"].values()),
                                 'Calibration Slope': list(log["CalibrationSlope"].values()), 
+                                'CITL': list(log["CITL"].values()),
+                                'OE': list(log["OE"].values()),
+                                'AUPRC': list(log["AUPRC"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Regular Testing'] * len(log["Accuracy"])}))
 
@@ -325,6 +331,9 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
     mytest.addLogHook(CalibrationSlope(model))
+    mytest.addLogHook(CITL(model))
+    mytest.addLogHook(OE(model))
+    mytest.addLogHook(AUPRC(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -332,7 +341,10 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                 'Accuracy': list(log["Accuracy"].values()), 
                                 'AUROC': list(log["AUROC"].values()), 
                                 'Precision': list(log["Precision"].values()), 
-                                'Calibration Slope': list(log["CalibrationSlope"].values()), 
+                                'Calibration Slope': list(log["CalibrationSlope"].values()),
+                                'CITL': list(log["CITL"].values()),
+                                'OE': list(log["OE"].values()),
+                                'AUPRC': list(log["AUPRC"].values()), 
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Static Threshold'] * len(log["Accuracy"])}))
 
@@ -345,6 +357,9 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
         mytest.addLogHook(AUROC(model))
         mytest.addLogHook(Precision(model))
         mytest.addLogHook(CalibrationSlope(model))
+        mytest.addLogHook(CITL(model))
+        mytest.addLogHook(OE(model))
+        mytest.addLogHook(AUPRC(model))
         mytest.run()
         log = mytest.getLog()
 
@@ -353,6 +368,9 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                     'AUROC': list(log["AUROC"].values()), 
                                     'Precision': list(log["Precision"].values()), 
                                     'Calibration Slope': list(log["CalibrationSlope"].values()), 
+                                    'CITL': list(log["CITL"].values()),
+                                    'OE': list(log["OE"].values()),
+                                    'AUPRC': list(log["AUPRC"].values()),
                                     'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
 
