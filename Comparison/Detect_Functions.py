@@ -318,7 +318,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                 'Precision': list(log["Precision"].values()),
                                 'Calibration Slope': list(log["CalibrationSlope"].values()), 
                                 'CITL': list(log["CITL"].values()),
-                                'OE': list(log["OE"].values()),
+                                'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Regular Testing'] * len(log["Accuracy"])}))
@@ -343,7 +343,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                 'Precision': list(log["Precision"].values()), 
                                 'Calibration Slope': list(log["CalibrationSlope"].values()),
                                 'CITL': list(log["CITL"].values()),
-                                'OE': list(log["OE"].values()),
+                                'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()), 
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Static Threshold'] * len(log["Accuracy"])}))
@@ -369,7 +369,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                     'Precision': list(log["Precision"].values()), 
                                     'Calibration Slope': list(log["CalibrationSlope"].values()), 
                                     'CITL': list(log["CITL"].values()),
-                                    'OE': list(log["OE"].values()),
+                                    'OE': list(log["O/E"].values()),
                                     'AUPRC': list(log["AUPRC"].values()),
                                     'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
