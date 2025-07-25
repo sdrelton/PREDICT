@@ -101,7 +101,7 @@ def select_ethnic_group(num_patients):
 
     return ethnicity_assignments
 
-def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd):
+def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None):
     """Plot the prevalence of an outcome over time, with vertical lines indicating model update times.
 
     Args:
@@ -152,6 +152,9 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.ylabel("Prevalence")
     plt.legend()
     plt.show()
+
+    # save figure
+    plt.savefig(f"prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
 
 
 def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):

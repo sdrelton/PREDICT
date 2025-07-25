@@ -463,7 +463,7 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 #     plt.show()
 
 
-def BayesianCoefsPlot(log):
+def BayesianCoefsPlot(log, sim_data=None):
     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
@@ -515,3 +515,5 @@ def BayesianCoefsPlot(log):
     plt.xticks(timestamps, rotation=90)
     plt.grid(True)
     plt.show()
+    # save figure
+    plt.savefig(f"bayesian_coefs_{sim_data}_plot.png", dpi=600, bbox_inches='tight')
