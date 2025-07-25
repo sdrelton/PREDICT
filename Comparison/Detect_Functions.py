@@ -7,6 +7,7 @@ from PREDICT.Models import *
 from PREDICT.Metrics import *
 from PREDICT.Triggers import *
 from PREDICT.Plots import *
+from dateutil.relativedelta import relativedelta
 
 
 
@@ -375,3 +376,53 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
 
     return pd.concat(metrics, ignore_index=True)
+
+def prevent_constant_variable(df, startDate, endDate, ):
+    """
+    Prevents constant variables in the dataframe (e.g., if no one has AF) by checking each month of data and flipping a value if a column is constant.
+    Args:
+        df (pd.DataFrame): The input dataframe containing patient data.
+        startDate (datetime): The start date of the data.
+        endDate (datetime): The end date of the data.
+    Returns:
+        pd.DataFrame: The modified dataframe with constant variables handled."""
+
+    # for every month of data in df check to make sure none of the columns are consistently one value
+    currentWindowStart = startDate
+    timestep = relativedelta(months=1)
+    currentWindowEnd = startDate + timestep
+    while currentWindowEnd <= endDate:
+        # filter the dataframe to only include data within the current window
+        df_window = df[(df['date'] >= currentWindowStart) & (df['date'] < currentWindowEnd)]
+
+        # if any of the diseases are constant (e.g. all 0s or all 1s), flip a value in the dataframe
+        for col in ['Family_CHD', 'Current_smoker', 'Treated_HTN', 'DM', 'RA', 'AF', 'Renal_disease']:
+            if df_window[col].nunique() == 1:
+                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                # copy a random row of data and flip the value of the disease
+                random_idx = np.random.choice(df_window.index)
+                # add new rows to original dataframe
+                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+        
+        # if any of the ethnicities are constant (e.g. all 0s or all 1s), switch the 1 to to the column that is constant
+        ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
+                    'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
+        for col in ethnicity_cols:
+            if df_window[col].nunique()==1:
+                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                random_idx = np.random.choice(df_window.index)
+                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
+
+                # Assign the current ethnicity to the newly added row
+                df.loc[df.index[-1], col] = 1
+
+        
+        # move to the next window
+        currentWindowStart += timestep
+        currentWindowEnd += timestep
+
+
+    df.reset_index(drop=True, inplace=True)
+    return df
