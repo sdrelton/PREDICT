@@ -514,6 +514,7 @@ def BayesianCoefsPlot(log, sim_data=None):
     legend.get_frame().set_facecolor("white")
     plt.xticks(timestamps, rotation=90)
     plt.grid(True)
+    plt.savefig(f"bayesian_coefs_{sim_data}_plot.png", dpi=600, bbox_inches='tight')
     plt.show()
     # save figure
-    plt.savefig(f"bayesian_coefs_{sim_data}_plot.png", dpi=600, bbox_inches='tight')
+    

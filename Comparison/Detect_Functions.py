@@ -151,10 +151,11 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.xlabel("Date")
     plt.ylabel("Prevalence")
     plt.legend()
-    plt.show()
-
     # save figure
     plt.savefig(f"prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
+    plt.show()
+
+    
 
 
 def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
