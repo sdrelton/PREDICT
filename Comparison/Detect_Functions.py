@@ -125,9 +125,10 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.plot(groupby_df['date'], groupby_df['outcome'], label='Prevalence', color='blue')
 
     if switchDateStrings is not None:
-        # get the model update times and plot them as vertical lines
         switch_time = pd.to_datetime(switchDateStrings[-1], dayfirst=True)
         plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max(), color='orange', linestyle='--', label='Switch Time')
+    else:
+        switch_time = df['date'].min()  # Use the minimum date in the DataFrame if no switch date is provided
 
     if len(regular_ttd) > 0 and regular_ttd[-1] is not None:
         regular_update = switch_time + timedelta(days=regular_ttd[-1])
