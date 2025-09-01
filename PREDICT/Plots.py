@@ -5,6 +5,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+plt.use("Agg")
 from scipy.special import expit
 import itertools
 
