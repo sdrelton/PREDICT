@@ -317,11 +317,11 @@ class BayesianModel(PREDICTModel):
             az.plot_trace(self.inference_data, figsize=(10, 7), )
         
 
-        # Update the priors for the next run of the Bayesian model
+        # Update only the prior means, keep original stds to prevent narrowing intervals
         self.priors = {
             predictor: (
                 posterior_samples[predictor].values.flatten().mean(),
-                posterior_samples[predictor].values.flatten().std()
+                self.priors[predictor][1]  # retain original std
             )
             for predictor in self.coef_names
         }
