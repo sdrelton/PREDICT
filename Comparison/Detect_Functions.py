@@ -7,6 +7,8 @@ from PREDICT.Models import *
 from PREDICT.Metrics import *
 from PREDICT.Triggers import *
 from PREDICT.Plots import *
+from dateutil.relativedelta import relativedelta
+import logging
 
 
 
@@ -100,7 +102,7 @@ def select_ethnic_group(num_patients):
 
     return ethnicity_assignments
 
-def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd):
+def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None):
     """Plot the prevalence of an outcome over time, with vertical lines indicating model update times.
 
     Args:
@@ -124,9 +126,10 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.plot(groupby_df['date'], groupby_df['outcome'], label='Prevalence', color='blue')
 
     if switchDateStrings is not None:
-        # get the model update times and plot them as vertical lines
         switch_time = pd.to_datetime(switchDateStrings[-1], dayfirst=True)
         plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max(), color='orange', linestyle='--', label='Switch Time')
+    else:
+        switch_time = df['date'].min()  # Use the minimum date in the DataFrame if no switch date is provided
 
     if len(regular_ttd) > 0 and regular_ttd[-1] is not None:
         regular_update = switch_time + timedelta(days=regular_ttd[-1])
@@ -150,7 +153,11 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.xlabel("Date")
     plt.ylabel("Prevalence")
     plt.legend()
+    # save figure
+    plt.savefig(f"prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
     plt.show()
+
+    
 
 
 def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
@@ -179,7 +186,7 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     """
     ########################## Regular Testing ##########################
     model = RecalibratePredictions()
-    model.trigger = TimeframeTrigger(model=model, updateTimestep=100, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
     total_runs +=1
     ttd = get_model_updated_log(df, model, model_name="Regular Testing", undetected=undetected, detectDate=detectDate)
     regular_ttd.append(ttd)
@@ -281,3 +288,147 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
 
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
+
+
+
+
+def get_metrics_recal_methods(df, custom_impact, recalthreshold):
+    """Get metrics for different recalibration methods on the given DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
+        custom_impact (float): Either the custom impact on the outcome or the prevalence of a condition.
+        recalthreshold (float): Threshold for the static threshold recalibration method.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the metrics for each recalibration method, including accuracy, AUROC, precision, and impact or prevalence.
+    """
+    metrics = []
+
+    # Regular Testing
+    model = RecalibratePredictions()
+    model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest.addLogHook(Accuracy(model))
+    mytest.addLogHook(AUROC(model))
+    mytest.addLogHook(Precision(model))
+    mytest.addLogHook(CalibrationSlope(model))
+    mytest.addLogHook(CITL(model))
+    mytest.addLogHook(OE(model))
+    mytest.addLogHook(AUPRC(model))
+    mytest.run()
+    log = mytest.getLog()
+
+    metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                'Accuracy': list(log["Accuracy"].values()), 
+                                'AUROC': list(log["AUROC"].values()), 
+                                'Precision': list(log["Precision"].values()),
+                                'CalibrationSlope': list(log["CalibrationSlope"].values()), 
+                                'CITL': list(log["CITL"].values()),
+                                'OE': list(log["O/E"].values()),
+                                'AUPRC': list(log["AUPRC"].values()),
+                                'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                'Method': ['Regular Testing'] * len(log["Accuracy"])}))
+
+    # Static Threshold Testing
+    model = RecalibratePredictions()
+    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest.addLogHook(Accuracy(model))
+    mytest.addLogHook(AUROC(model))
+    mytest.addLogHook(Precision(model))
+    mytest.addLogHook(CalibrationSlope(model))
+    mytest.addLogHook(CITL(model))
+    mytest.addLogHook(OE(model))
+    mytest.addLogHook(AUPRC(model))
+    mytest.run()
+    log = mytest.getLog()
+
+    metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                'Accuracy': list(log["Accuracy"].values()), 
+                                'AUROC': list(log["AUROC"].values()), 
+                                'Precision': list(log["Precision"].values()), 
+                                'CalibrationSlope': list(log["CalibrationSlope"].values()),
+                                'CITL': list(log["CITL"].values()),
+                                'OE': list(log["O/E"].values()),
+                                'AUPRC': list(log["AUPRC"].values()), 
+                                'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                'Method': ['Static Threshold'] * len(log["Accuracy"])}))
+
+    # SPC Testing (3, 5, 7 months)
+    for numMonths in [3, 5, 7]:
+        model = RecalibratePredictions()
+        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=numMonths, verbose=False)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+        mytest.addLogHook(Accuracy(model))
+        mytest.addLogHook(AUROC(model))
+        mytest.addLogHook(Precision(model))
+        mytest.addLogHook(CalibrationSlope(model))
+        mytest.addLogHook(CITL(model))
+        mytest.addLogHook(OE(model))
+        mytest.addLogHook(AUPRC(model))
+        mytest.run()
+        log = mytest.getLog()
+
+        metrics.append(pd.DataFrame({'Time': list(log["Accuracy"].keys()), 
+                                    'Accuracy': list(log["Accuracy"].values()), 
+                                    'AUROC': list(log["AUROC"].values()), 
+                                    'Precision': list(log["Precision"].values()), 
+                                    'CalibrationSlope': list(log["CalibrationSlope"].values()), 
+                                    'CITL': list(log["CITL"].values()),
+                                    'OE': list(log["O/E"].values()),
+                                    'AUPRC': list(log["AUPRC"].values()),
+                                    'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
+                                    'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
+
+    return pd.concat(metrics, ignore_index=True)
+
+def prevent_constant_variable(df, startDate, endDate, ):
+    """
+    Prevents constant variables in the dataframe (e.g., if no one has AF) by checking each month of data and flipping a value if a column is constant.
+    Args:
+        df (pd.DataFrame): The input dataframe containing patient data.
+        startDate (datetime): The start date of the data.
+        endDate (datetime): The end date of the data.
+    Returns:
+        pd.DataFrame: The modified dataframe with constant variables handled."""
+
+    # for every month of data in df check to make sure none of the columns are consistently one value
+    currentWindowStart = startDate
+    timestep = relativedelta(months=1)
+    currentWindowEnd = startDate + timestep
+    while currentWindowEnd <= endDate:
+        # filter the dataframe to only include data within the current window
+        df_window = df[(df['date'] >= currentWindowStart) & (df['date'] < currentWindowEnd)]
+
+        # if any of the diseases are constant (e.g. all 0s or all 1s), flip a value in the dataframe
+        for col in ['Family_CHD', 'Current_smoker', 'Treated_HTN', 'DM', 'RA', 'AF', 'Renal_disease']:
+            if df_window[col].nunique() == 1:
+                logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                # copy a random row of data and flip the value of the disease
+                random_idx = np.random.choice(df_window.index)
+                # add new rows to original dataframe
+                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+        
+        # if any of the ethnicities are constant (e.g. all 0s or all 1s), switch the 1 to to the column that is constant
+        ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
+                    'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
+        for col in ethnicity_cols:
+            if df_window[col].nunique()==1:
+                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                random_idx = np.random.choice(df_window.index)
+                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
+
+                # Assign the current ethnicity to the newly added row
+                df.loc[df.index[-1], col] = 1
+
+        
+        # move to the next window
+        currentWindowStart += timestep
+        currentWindowEnd += timestep
+
+
+    df.reset_index(drop=True, inplace=True)
+    return df

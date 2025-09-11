@@ -24,6 +24,25 @@ Dr Samuel Relton (s.d.relton@leeds.ac.uk)
    :align: center
    :alt: Comic strip showing the problem of temporal drift in clinical prediction models
 
+Upcoming Workshop
+-----
+The PREDICT workshop (~July 2026) aims to bring together national stakeholders to discuss how to 
+handle temporal drift over the coming decade. As AI and predictive models become further embedded 
+in the healthcare system, it is critical that we have robust monitoring to ensure they remain fit 
+for purpose. We have secured delegates from the MHRA, NHSE, TPP, EMIS, academics, patient advocates, 
+and other relevant groups. The main goals of the workshop are to:
+
+1. Highlight the critical importance of this issue to successful integration of digital tools
+2. Discuss the pros and cons of the approaches to monitoring and repairing drift
+3. Examine potential regulatory approaches to ensure the longevity of digital health tools
+4. Distil the discussion into a joint paper outlining our thinking on the issue
+
+We'll be finalising the date and list of attendees in January 2026 so please look out for this.
+
+In the meantime we have software available that implements these potential solutions, and will soon 
+have publications that test these on real-life cases such as QRISK and the electronic frailty index. 
+Please feel free to reach out if a demo of the software, or any additional info would be helpful.
+
 Links
 -----
 * `Github code repository`_
@@ -33,7 +52,7 @@ Links
 .. _Github code repository: https://github.com/sdrelton/PREDICT
 
 Team
-----
+-----
 The core PREDICT team is:
 
 * Samuel Relton (s.d.relton@leeds.ac.uk)
@@ -46,7 +65,7 @@ The core PREDICT team is:
 .. _documentation:
 
 Documentation
-=============
+-----
 Here is the full documentation for the PREDICT software,
 the associated Github with examples of usage is `here`_.
 

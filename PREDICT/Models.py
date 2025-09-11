@@ -7,6 +7,7 @@ from scipy.special import expit
 import arviz as az
 from statsmodels.formula.api import logit as bayes_logit
 import matplotlib.pyplot as plt
+import logging
 
 
 class PREDICTModel:
@@ -277,15 +278,20 @@ class BayesianModel(PREDICTModel):
     def predict(self, input_data):
         if self.bayes_model is None:
             preds = input_data[self.predictColName]
+            if self.verbose:
+                logging.info("No Bayesian model has been fitted yet. Returning the predictions from the input data.")
         else:
             idata = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
-            mean_results = az.summary(idata.posterior)
-            number_coefs = len(self.coef_names)
-            df_filtered = mean_results.iloc[number_coefs:]
-            preds = df_filtered["mean"].values.flatten()
-            # preds = az.summary(preds.posterior["outcome_mean"])["mean"].values.flatten()
-            preds = pd.Series(preds, index=input_data[self.predictColName].index)
-            preds = preds.clip(1e-10, 1 - 1e-10) # clip to prevent log(0) or log(1) errors
+
+            # Get mean posterior predictions across chains and draws
+            pred_array = idata.posterior["p"].mean(dim=["chain", "draw"]).values.flatten()
+
+            # Sanity check to avoid future mismatches
+            assert len(pred_array) == len(input_data), f"Mismatched lengths: {len(pred_array)} vs {len(input_data)}"
+
+            # Final formatted predictions
+            preds = pd.Series(np.clip(pred_array, 1e-10, 1 - 1e-10), index=input_data.index)
+            
         return preds
 
 
@@ -313,11 +319,11 @@ class BayesianModel(PREDICTModel):
             az.plot_trace(self.inference_data, figsize=(10, 7), )
         
 
-        # Update the priors for the next run of the Bayesian model
+        # Update only the prior means, keep original stds to prevent narrowing intervals
         self.priors = {
             predictor: (
                 posterior_samples[predictor].values.flatten().mean(),
-                posterior_samples[predictor].values.flatten().std()
+                self.priors[predictor][1]  # retain original std
             )
             for predictor in self.coef_names
         }

@@ -5,6 +5,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+#plt.use("Agg")
 from scipy.special import expit
 import itertools
 
@@ -463,55 +464,61 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 #     plt.show()
 
 
-def BayesianCoefsPlot(log):
-    """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
+def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
+    """
+    Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
+        model_name (str, optional): Name of model or domain used in filename e.g. 'COVID_data_simulation'.
+        max_predictors_per_plot (int): Max number of predictors per plot to avoid clutter.
     """
-    plt.figure()
     bayesianCoefs = log["BayesianCoefficients"]
     timestamps = list(bayesianCoefs.keys())
 
-    # Generate unique colors for predictors
-    predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
+    # Collect all predictors
+    all_predictors = sorted({key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()})
 
-    # Create a DataFrame to store the coefficients and their corresponding timestamps
-    coefs_df = pd.DataFrame(columns=['Timestamp', 'Predictor', 'Mean Coef', 'Std Coef'])
-
-    mean_coefs=[]
-    std_coefs=[]
-    predictors_list=[]
-    timestamps_list=[]
+    # Prepare DataFrame
+    data = []
     for timestamp in timestamps:
         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
-
         for predictor, (mean_coef, std_coef) in specific_coefs.items():
-            mean_coefs.append(mean_coef)
-            std_coefs.append(std_coef)
-            predictors_list.append(predictor)
-            timestamps_list.append(timestamp)
-            
-    coefs_df = pd.DataFrame({"Predictors":predictors_list, "Timestamp":timestamps_list, "Mean Coef":mean_coefs, "Std Coef":std_coefs})
+            data.append({
+                "Timestamp": pd.Timestamp(timestamp),
+                "Predictor": predictor,
+                "Mean Coef": mean_coef,
+                "Std Coef": std_coef
+            })
+    coefs_df = pd.DataFrame(data)
 
-    # groupby predictors to plot errorbars
-    grouped = coefs_df.groupby('Predictors')
-    for predictor_group in grouped:
-        # turn predictor_group into a dataframe
-        predictor_group = predictor_group[1]
-        # get the predictor name
-        predictor_name = predictor_group['Predictors'].values[0]
-        plt.errorbar(data=predictor_group, x='Timestamp', y='Mean Coef', yerr='Std Coef', fmt='-o', alpha=0.5, label=predictor_name)
+    # Split predictors into chunks
+    predictor_chunks = [all_predictors[i:i + max_predictors_per_plot] for i in range(0, len(all_predictors), max_predictors_per_plot)]
 
-    plt.xlabel("Time")
-    plt.title("Bayesian Priors Over Time")
-    plt.ylabel("Coefficient")
-    plt.yscale('symlog', linthresh=1)
-    handles, labels = plt.gca().get_legend_handles_labels()
-    legend = plt.legend(handles[:len(predictors)], labels[:len(predictors)], title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
-    legend.get_frame().set_edgecolor("black")
-    legend.get_frame().set_facecolor("white")
-    plt.xticks(timestamps, rotation=90)
-    plt.grid(True)
-    plt.show()
+    # Plot each chunk
+    for i, chunk in enumerate(predictor_chunks):
+        plt.figure(figsize=(10, 5))
+        for predictor in chunk:
+            predictor_data = coefs_df[coefs_df['Predictor'] == predictor]
+            plt.errorbar(
+                predictor_data['Timestamp'],
+                predictor_data['Mean Coef'],
+                yerr=predictor_data['Std Coef'],
+                fmt='-o',
+                alpha=0.6,
+                label=predictor
+            )
+
+        plt.xlabel("Time")
+        plt.ylabel("Coefficient")
+        plt.title(f"Bayesian Priors Over Time (Predictor Set {i+1})")
+        plt.yscale('symlog', linthresh=1)
+        plt.xticks(timestamps, rotation=90)
+        plt.grid(True)
+        plt.legend(title="Predictor", fontsize=8, markerscale=0.8, frameon=True)
+        plt.tight_layout()
+        filename = f"bayesian_coefs_{'_'+model_name if model_name is not None else ''}_chunk{i+1}_plot.png" if model_name else f"bayesian_coefs_chunk{i+1}_plot.png"
+        plt.savefig(filename, dpi=600)
+        plt.show()
+    
