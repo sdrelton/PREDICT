@@ -5,7 +5,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
-plt.use("Agg")
+#plt.use("Agg")
 from scipy.special import expit
 import itertools
 
@@ -464,14 +464,14 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 #     plt.show()
 
 
-def BayesianCoefsPlot(log, sim_data=None, max_predictors_per_plot=10):
+def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
     """
     Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
-        sim_data (str, optional): Identifier for simulation data used in filename.
+        model_name (str, optional): Name of model or domain used in filename e.g. 'COVID_data_simulation'.
         max_predictors_per_plot (int): Max number of predictors per plot to avoid clutter.
     """
     bayesianCoefs = log["BayesianCoefficients"]
@@ -518,7 +518,7 @@ def BayesianCoefsPlot(log, sim_data=None, max_predictors_per_plot=10):
         plt.grid(True)
         plt.legend(title="Predictor", fontsize=8, markerscale=0.8, frameon=True)
         plt.tight_layout()
-        filename = f"bayesian_coefs_{sim_data}_chunk{i+1}_plot.png" if sim_data else f"bayesian_coefs_chunk{i+1}_plot.png"
+        filename = f"bayesian_coefs_{'_'+model_name if model_name is not None else ''}_chunk{i+1}_plot.png" if model_name else f"bayesian_coefs_chunk{i+1}_plot.png"
         plt.savefig(filename, dpi=600)
         plt.show()
     
