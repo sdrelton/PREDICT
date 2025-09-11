@@ -7,6 +7,7 @@ from scipy.special import expit
 import arviz as az
 from statsmodels.formula.api import logit as bayes_logit
 import matplotlib.pyplot as plt
+import logging
 
 
 class PREDICTModel:
@@ -277,7 +278,8 @@ class BayesianModel(PREDICTModel):
     def predict(self, input_data):
         if self.bayes_model is None:
             preds = input_data[self.predictColName]
-            print("No Bayesian model has been fitted yet. Returning the predictions from the input data.")
+            if self.verbose:
+                logging.info("No Bayesian model has been fitted yet. Returning the predictions from the input data.")
         else:
             idata = self.bayes_model.predict(data=input_data, idata=self.inference_data, inplace=False)
 
