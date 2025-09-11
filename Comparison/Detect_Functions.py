@@ -8,6 +8,7 @@ from PREDICT.Metrics import *
 from PREDICT.Triggers import *
 from PREDICT.Plots import *
 from dateutil.relativedelta import relativedelta
+import logging
 
 
 
@@ -403,7 +404,7 @@ def prevent_constant_variable(df, startDate, endDate, ):
         # if any of the diseases are constant (e.g. all 0s or all 1s), flip a value in the dataframe
         for col in ['Family_CHD', 'Current_smoker', 'Treated_HTN', 'DM', 'RA', 'AF', 'Renal_disease']:
             if df_window[col].nunique() == 1:
-                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
                 # copy a random row of data and flip the value of the disease
                 random_idx = np.random.choice(df_window.index)
                 # add new rows to original dataframe
