@@ -154,7 +154,7 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.ylabel("Prevalence")
     plt.legend()
     # save figure
-    plt.savefig(f"prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
+    plt.savefig(f"../docs/images/monitoring/prev_over_time/prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
     plt.show()
 
     
@@ -285,7 +285,6 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
         bayes_dict["BayesianCoefficients"].update(log["BayesianCoefficients"])
     #ttd = get_model_updated_log(df, bay_model, model_name="Bayesian", undetected=undetected, detectDate=detectDate)
     ttd = find_bayes_coef_change(bayes_dict["BayesianCoefficients"], detectDate=detectDate, undetected=undetected, threshold=0.1)
-
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
 
