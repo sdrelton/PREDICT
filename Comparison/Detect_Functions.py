@@ -442,13 +442,75 @@ def plot_time_to_detect(csv_name, str_name):
     df = pd.read_csv(csv_name)
     plt.figure(figsize=(10, 5))
     plt.title(f"Time to Detect Change in Outcomes")
-    plt.plot('impact', 'regular_ttd', color='#f781bf', label='Regular Testing', alpha=0.6, linewidth=1, data=covid_ttd_df)
-    plt.plot('impact', 'static_ttd', color='#984ea3', label='Static Threshold', alpha=0.6, linewidth=1, data=covid_ttd_df)
-    plt.plot('impact', 'spc_ttd3', color='#4daf4a', label='SPC 3 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
-    plt.plot('impact', 'spc_ttd5', color='#377eb8', label='SPC 5 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
-    plt.plot('impact', 'spc_ttd7', color='#ff7f00', label='SPC 7 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
-    plt.plot('impact', 'bayesian_ttd', color='#a65628', label='Bayesian', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'regular_ttd', color='#f781bf', label='Regular Testing', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'static_ttd', color='#984ea3', label='Static Threshold', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd3', color='#4daf4a', label='SPC 3 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd5', color='#377eb8', label='SPC 5 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd7', color='#ff7f00', label='SPC 7 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'bayesian_ttd', color='#a65628', label='Bayesian', alpha=0.6, linewidth=1, data=df)
     plt.xlabel("Impact Increase Size")
     plt.ylabel("Time to Detect (days)")
     plt.savefig(f"../docs/images/monitoring/time_to_detect_change_{str_name}.png", dpi=600, bbox_inches='tight')
     plt.show()
+
+
+def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, custom_impact, ttd_csv_file):
+    """
+    Update the time-to-detect (TTD) table with new values and generate plots.
+    
+    Args:
+        regular_ttd (list): List containing time to detect for regular testing.
+        static_ttd (list): List containing time to detect for static threshold.
+        spc_ttd3 (list): List containing time to detect for SPC with window size 3 months.
+        spc_ttd5 (list): List containing time to detect for SPC with window size 5 months.
+        spc_ttd7 (list): List containing time to detect for SPC with window size 7 months.
+        bayesian_ttd (list): List containing time to detect for Bayesian method.
+        custom_impact (float): The custom impact/prevalence value used in the simulation.
+        bayes_dict (dict): Dictionary containing Bayesian coefficients over time.
+        pat_df (pd.DataFrame): DataFrame containing patient data.
+        ttd_csv_file (str): Path to the CSV file where TTD data is stored.
+        str_name (str, optional): Suffix for plot filenames. Defaults to ''.
+        switchDateStrings (list, optional): List of switch date strings. Defaults to None.
+    """ 
+    
+    
+    # Load ttd dataframe
+    ttd_df = pd.read_csv(ttd_csv_file)
+
+    # Update time to detect values
+    if regular_ttd[0] is not None:
+        ttd_df['regular_ttd'] += int(regular_ttd[0])
+    else:
+        print("Regular testing did not detect any change.")
+
+    if static_ttd[0] is not None:
+        ttd_df['static_ttd'] += int(static_ttd[0])
+    else:
+        print("Static threshold did not detect any change.")
+
+    if spc_ttd3[0] is not None:
+        ttd_df['spc_ttd3'] += int(spc_ttd3[0])
+    else:
+        print("SPC3 did not detect any change.")
+
+    if spc_ttd5[0] is not None:
+        ttd_df['spc_ttd5'] += int(spc_ttd5[0])
+    else:
+        print("SPC5 did not detect any change.")
+
+    if spc_ttd7[0] is not None:
+        ttd_df['spc_ttd7'] += int(spc_ttd7[0])
+    else:
+        print("SPC7 did not detect any change.")
+
+    if bayesian_ttd[0] is not None:
+        ttd_df['bayesian_ttd'] += int(bayesian_ttd[0])
+    else:
+        print("Bayesian method did not detect any change.")
+
+    ttd_df['impact'] += custom_impact
+
+    # Save updated data
+    ttd_df.to_csv(ttd_csv_file, index=False)
+
+
