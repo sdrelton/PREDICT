@@ -431,3 +431,24 @@ def prevent_constant_variable(df, startDate, endDate, ):
 
     df.reset_index(drop=True, inplace=True)
     return df
+
+def plot_time_to_detect(csv_name, str_name):
+    """Plot a figure showing the time to detect change in outcomes for different impacts.
+
+    Args:
+        csv_name (str): File name of the CSV containing time to detect data.
+        str_name (str): Name of string to add to image filename e.g., "fast_change" or "slow_change".
+    """
+    df = pd.read_csv(csv_name)
+    plt.figure(figsize=(10, 5))
+    plt.title(f"Time to Detect Change in Outcomes")
+    plt.plot('impact', 'regular_ttd', color='#f781bf', label='Regular Testing', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'static_ttd', color='#984ea3', label='Static Threshold', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'spc_ttd3', color='#4daf4a', label='SPC 3 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'spc_ttd5', color='#377eb8', label='SPC 5 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'spc_ttd7', color='#ff7f00', label='SPC 7 months', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.plot('impact', 'bayesian_ttd', color='#a65628', label='Bayesian', alpha=0.6, linewidth=1, data=covid_ttd_df)
+    plt.xlabel("Impact Increase Size")
+    plt.ylabel("Time to Detect (days)")
+    plt.savefig(f"../docs/images/monitoring/time_to_detect_change_{str_name}.png", dpi=600, bbox_inches='tight')
+    plt.show()
