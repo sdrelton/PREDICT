@@ -479,36 +479,43 @@ def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, baye
 
     # Update time to detect values
     if regular_ttd[0] is not None:
-        ttd_df['regular_ttd'] += int(regular_ttd[0])
+        ttd1 = int(regular_ttd[0])
     else:
         print("Regular testing did not detect any change.")
+        ttd1 = ''
 
     if static_ttd[0] is not None:
-        ttd_df['static_ttd'] += int(static_ttd[0])
+        ttd2 = int(static_ttd[0])
     else:
         print("Static threshold did not detect any change.")
+        ttd2 = ''
 
     if spc_ttd3[0] is not None:
-        ttd_df['spc_ttd3'] += int(spc_ttd3[0])
+        ttd3 = int(spc_ttd3[0])
     else:
         print("SPC3 did not detect any change.")
+        ttd3 = ''
 
     if spc_ttd5[0] is not None:
-        ttd_df['spc_ttd5'] += int(spc_ttd5[0])
+        ttd4 = int(spc_ttd5[0])
     else:
         print("SPC5 did not detect any change.")
+        ttd4 = ''
 
     if spc_ttd7[0] is not None:
-        ttd_df['spc_ttd7'] += int(spc_ttd7[0])
+        ttd5 = int(spc_ttd7[0])
     else:
         print("SPC7 did not detect any change.")
-
+        ttd5=''
+        
     if bayesian_ttd[0] is not None:
-        ttd_df['bayesian_ttd'] += int(bayesian_ttd[0])
+        ttd7 = int(bayesian_ttd[0])
     else:
-        print("Bayesian method did not detect any change.")
+        print("Bayesian did not detect any change.")
+        ttd7 = ''
+    impact_val = custom_impact
 
-    ttd_df['impact'] += custom_impact
+    ttd_df.loc[len(ttd_df)] = [ttd1, ttd2, ttd3, ttd4, ttd5, ttd7, impact_val]
 
     # Save updated data
     ttd_df.to_csv(ttd_csv_file, index=False)
