@@ -472,37 +472,37 @@ def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, baye
     ttd_df = pd.read_csv(ttd_csv_file)
 
     # Update time to detect values
-    if regular_ttd[0] is not None:
+    if regular_ttd:
         ttd1 = int(regular_ttd[0])
     else:
         print("Regular testing did not detect any change.")
         ttd1 = ''
 
-    if static_ttd[0] is not None:
+    if static_ttd:
         ttd2 = int(static_ttd[0])
     else:
         print("Static threshold did not detect any change.")
         ttd2 = ''
 
-    if spc_ttd3[0] is not None:
+    if spc_ttd3:
         ttd3 = int(spc_ttd3[0])
     else:
         print("SPC3 did not detect any change.")
         ttd3 = ''
 
-    if spc_ttd5[0] is not None:
+    if spc_ttd5:
         ttd4 = int(spc_ttd5[0])
     else:
         print("SPC5 did not detect any change.")
         ttd4 = ''
 
-    if spc_ttd7[0] is not None:
+    if spc_ttd7:
         ttd5 = int(spc_ttd7[0])
     else:
         print("SPC7 did not detect any change.")
         ttd5=''
         
-    if bayesian_ttd[0] is not None:
+    if bayesian_ttd:
         ttd7 = int(bayesian_ttd[0])
     else:
         print("Bayesian did not detect any change.")
