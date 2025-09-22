@@ -160,14 +160,13 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     
 
 
-def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
     """Run recalibration tests on the given DataFrame using various triggers and return the updated undetected counts and time to detect (ttd) for each method.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
         undetected (dict): Dictionary to keep track of undetected models and their counts.
-        total_runs (int):  Total number of runs performed so far.
         regular_ttd (list): List of time to detect (ttd) for regular testing model updates.
         static_ttd (list): List of time to detect (ttd) for static threshold model updates.
         spc_ttd3 (list): List of time to detect (ttd) for SPC 3 months model updates.
@@ -187,7 +186,6 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     ########################## Regular Testing ##########################
     model = RecalibratePredictions()
     model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
-    total_runs +=1
     ttd = get_model_updated_log(df, model, model_name="Regular Testing", undetected=undetected, detectDate=detectDate)
     regular_ttd.append(ttd)
 
@@ -211,7 +209,7 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=7, verbose=False)
     ttd = get_model_updated_log(df, model, model_name="SPC7", undetected=undetected, detectDate=detectDate)
     spc_ttd7.append(ttd)
-    return undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
+    return undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
 def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_name="Bayesian", threshold=0.1):
