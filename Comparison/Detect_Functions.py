@@ -466,11 +466,7 @@ def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, baye
         spc_ttd7 (list): List containing time to detect for SPC with window size 7 months.
         bayesian_ttd (list): List containing time to detect for Bayesian method.
         custom_impact (float): The custom impact/prevalence value used in the simulation.
-        bayes_dict (dict): Dictionary containing Bayesian coefficients over time.
-        pat_df (pd.DataFrame): DataFrame containing patient data.
         ttd_csv_file (str): Path to the CSV file where TTD data is stored.
-        str_name (str, optional): Suffix for plot filenames. Defaults to ''.
-        switchDateStrings (list, optional): List of switch date strings. Defaults to None.
     """ 
     
     
