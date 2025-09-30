@@ -244,12 +244,13 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
 
             if abs(next_value - curr_value) > abs(curr_value) * threshold:  # More than X% difference
                 significant_timestamps.append(next_timestamp)
-                print(f"Significant change detected in coefficient '{curr_coeffs}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
+                print(f"Significant change detected in coefficient '{key}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
                 break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
     
-    # Assuming the first significant increase is the one we want to calculate time to detect from
-    if len(significant_timestamps) > 0:
-        ttd = (abs((detectDate) - significant_timestamps[0]).days)
+    # Assuming the first significant increase after the start time or switch time is the one we want to calculate time to detect from
+    filtered_timestamps = [ts for ts in significant_timestamps if ts >= detectDate]
+    if len(filtered_timestamps) > 0:
+        ttd = (abs((detectDate) - filtered_timestamps[0]).days)
     else:
         ttd = None
         undetected[model_name] = undetected.get(model_name, 0) + 1
@@ -472,37 +473,37 @@ def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, baye
     ttd_df = pd.read_csv(ttd_csv_file)
 
     # Update time to detect values
-    if regular_ttd:
+    if regular_ttd and regular_ttd[0] is not None:
         ttd1 = int(regular_ttd[0])
     else:
         print("Regular testing did not detect any change.")
         ttd1 = ''
 
-    if static_ttd:
+    if static_ttd and static_ttd[0] is not None:
         ttd2 = int(static_ttd[0])
     else:
         print("Static threshold did not detect any change.")
         ttd2 = ''
 
-    if spc_ttd3:
+    if spc_ttd3 and spc_ttd3[0] is not None:
         ttd3 = int(spc_ttd3[0])
     else:
         print("SPC3 did not detect any change.")
         ttd3 = ''
 
-    if spc_ttd5:
+    if spc_ttd5 and spc_ttd5[0] is not None:
         ttd4 = int(spc_ttd5[0])
     else:
         print("SPC5 did not detect any change.")
         ttd4 = ''
 
-    if spc_ttd7:
+    if spc_ttd7 and spc_ttd7[0] is not None:
         ttd5 = int(spc_ttd7[0])
     else:
         print("SPC7 did not detect any change.")
         ttd5=''
         
-    if bayesian_ttd:
+    if bayesian_ttd and bayesian_ttd[0] is not None:
         ttd7 = int(bayesian_ttd[0])
     else:
         print("Bayesian did not detect any change.")
