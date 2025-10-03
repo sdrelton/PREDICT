@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Images generated from notebooks
+PREDICT/docs/images/monitoring/*
+PREDICT/docs/images/performance_comparison/*
