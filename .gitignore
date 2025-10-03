@@ -171,5 +171,5 @@ cython_debug/
 .pypirc
 
 # Images generated from notebooks
-PREDICT/docs/images/monitoring/*
-PREDICT/docs/images/performance_comparison/*
+docs/images/monitoring/*
+docs/images/performance_comparison/*
