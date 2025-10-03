@@ -106,6 +106,7 @@ class PREDICT:
         """
         Runs the prediction model over the specified date range.
         """
+        n_samples = 0
         while self.currentWindowEnd <= self.endDate:
             self.model.predict(self.data)
             dates = self.data[self.dateCol]
@@ -119,3 +120,9 @@ class PREDICT:
                 self.addLog('Model Updated', self.currentWindowEnd, True)
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
+            n_samples += len(curdata)
+
+        # Sample size calculation
+        n_features = self.data.shape[1] - 3 # minus date, prediction and label columns
+        if n_samples < 10 * n_features: # sample size should be at least 10 times the number of features
+            print(f"Warning: Sample size ({n_samples}) is less than 10 times the number of features ({n_features}). Model performance may be unreliable.")
