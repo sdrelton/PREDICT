@@ -1,5 +1,6 @@
 import pandas as pd
 from dateutil.relativedelta import relativedelta
+import logging
 
 class PREDICT:
     """
@@ -28,9 +29,11 @@ class PREDICT:
         A dictionary to store logs.
     logHooks : list
         A list of hooks to be called during logging.
+    verbose : bool
+        Print sample size calculation warnings.
     """
     
-    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month'):
+    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month', verbose=False):
         """
         Initializes the PREDICT class with default values.
         """
@@ -65,6 +68,7 @@ class PREDICT:
         self.currentWindowEnd = self.startDate + self.timestep
         self.log = dict()
         self.logHooks = list()
+        self.verbose = verbose
 
     def addLogHook(self, hook):
         """
@@ -118,11 +122,16 @@ class PREDICT:
                 self.model.update(curdata)
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
+                # if verbose and trigger then do sample size calculation for the window
+                if self.verbose:
+                    n_samples = len(curdata)
+                    # Sample size calculation
+                    n_features = self.data.shape[1] - 3 # minus date, prediction and label columns
+                    if n_samples < 10 * n_features: # sample size should be at least 10 times the number of features
+                        logging.warning(f"Warning: Sample size ({n_samples}) is less than 10 times the number of features ({n_features}). Model performance may be unreliable.")
+                        
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
-            n_samples += len(curdata)
+            
 
-        # Sample size calculation
-        n_features = self.data.shape[1] - 3 # minus date, prediction and label columns
-        if n_samples < 10 * n_features: # sample size should be at least 10 times the number of features
-            print(f"Warning: Sample size ({n_samples}) is less than 10 times the number of features ({n_features}). Model performance may be unreliable.")
+        
