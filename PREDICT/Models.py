@@ -145,25 +145,24 @@ class RecalibratePredictions(PREDICTModel):
 
 
     def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
-        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate), 
-        the inputted control limits (warningCL, recalCL), or the first X months (nummMonths) since the start of the 
-        data.
+        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate) or 
+        the inputted control limits (warningCL, recalCL).
 
         Args:
             input_data (pd.DataFrame): The input data for updating the model.
-            startCLDate (str): Start date to determine control limits from. Defaults to None.
-            endCLDate (str): End date to determine control limits from. Defaults to None.
+            startCLDate (str): Start date to determine control limits from.
+            endCLDate (str): End date to determine control limits from.
             warningCL (float): A manually set control limit for the warning control limit.
             recalCL (float): A manually set control limit for the recalibration trigger limit.
-            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to. Defaults to 2.
-            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to. Defaults to 3.
+            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to
+            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
 
         Returns:
             float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
         """
         def CalculateError(group):
             predictions = group['predictions']
-            differences = group[self.outcomeColName] - predictions
+            differences = abs(group[self.outcomeColName] - predictions)
             sum_of_differences = np.sum(differences)/len(group[self.outcomeColName])
             return sum_of_differences
         

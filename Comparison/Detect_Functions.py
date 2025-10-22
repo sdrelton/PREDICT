@@ -154,20 +154,19 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.ylabel("Prevalence")
     plt.legend()
     # save figure
-    plt.savefig(f"prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
+    plt.savefig(f"../docs/images/monitoring/prev_over_time/prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
     plt.show()
 
     
 
 
-def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
     """Run recalibration tests on the given DataFrame using various triggers and return the updated undetected counts and time to detect (ttd) for each method.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
         undetected (dict): Dictionary to keep track of undetected models and their counts.
-        total_runs (int):  Total number of runs performed so far.
         regular_ttd (list): List of time to detect (ttd) for regular testing model updates.
         static_ttd (list): List of time to detect (ttd) for static threshold model updates.
         spc_ttd3 (list): List of time to detect (ttd) for SPC 3 months model updates.
@@ -187,7 +186,6 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     ########################## Regular Testing ##########################
     model = RecalibratePredictions()
     model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
-    total_runs +=1
     ttd = get_model_updated_log(df, model, model_name="Regular Testing", undetected=undetected, detectDate=detectDate)
     regular_ttd.append(ttd)
 
@@ -211,7 +209,7 @@ def run_recalibration_tests(df, detectDate, undetected, total_runs, regular_ttd,
     model.trigger = SPCTrigger(model=model, input_data=df, numMonths=7, verbose=False)
     ttd = get_model_updated_log(df, model, model_name="SPC7", undetected=undetected, detectDate=detectDate)
     spc_ttd7.append(ttd)
-    return undetected, total_runs, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
+    return undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
 def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_name="Bayesian", threshold=0.1):
@@ -246,12 +244,13 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
 
             if abs(next_value - curr_value) > abs(curr_value) * threshold:  # More than X% difference
                 significant_timestamps.append(next_timestamp)
-                print(f"Significant change detected in coefficient '{curr_coeffs}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
+                print(f"Significant change detected in coefficient '{key}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
                 break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
     
-    # Assuming the first significant increase is the one we want to calculate time to detect from
-    if len(significant_timestamps) > 0:
-        ttd = (abs((detectDate) - significant_timestamps[0]).days)
+    # Assuming the first significant increase after the start time or switch time is the one we want to calculate time to detect from
+    filtered_timestamps = [ts for ts in significant_timestamps if ts >= detectDate]
+    if len(filtered_timestamps) > 0:
+        ttd = (abs((detectDate) - filtered_timestamps[0]).days)
     else:
         ttd = None
         undetected[model_name] = undetected.get(model_name, 0) + 1
@@ -285,7 +284,6 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
         bayes_dict["BayesianCoefficients"].update(log["BayesianCoefficients"])
     #ttd = get_model_updated_log(df, bay_model, model_name="Bayesian", undetected=undetected, detectDate=detectDate)
     ttd = find_bayes_coef_change(bayes_dict["BayesianCoefficients"], detectDate=detectDate, undetected=undetected, threshold=0.1)
-
     bayesian_ttd.append(ttd)
     return undetected, bayesian_ttd, bayes_dict
 
@@ -432,3 +430,89 @@ def prevent_constant_variable(df, startDate, endDate, ):
 
     df.reset_index(drop=True, inplace=True)
     return df
+
+def plot_time_to_detect(csv_name, str_name):
+    """Plot a figure showing the time to detect change in outcomes for different impacts.
+
+    Args:
+        csv_name (str): File name of the CSV containing time to detect data.
+        str_name (str): Name of string to add to image filename e.g., "fast_change" or "slow_change".
+    """
+    df = pd.read_csv(csv_name)
+    plt.figure(figsize=(10, 5))
+    plt.title(f"Time to Detect Change in Outcomes")
+    plt.plot('impact', 'regular_ttd', color='#f781bf', label='Regular Testing', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'static_ttd', color='#984ea3', label='Static Threshold', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd3', color='#4daf4a', label='SPC 3 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd5', color='#377eb8', label='SPC 5 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'spc_ttd7', color='#ff7f00', label='SPC 7 months', alpha=0.6, linewidth=1, data=df)
+    plt.plot('impact', 'bayesian_ttd', color='#a65628', label='Bayesian', alpha=0.6, linewidth=1, data=df)
+    plt.xlabel("Impact Increase Size")
+    plt.ylabel("Time to Detect (days)")
+    plt.savefig(f"../docs/images/monitoring/time_to_detect_change_{str_name}.png", dpi=600, bbox_inches='tight')
+    plt.show()
+
+
+def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, custom_impact, ttd_csv_file):
+    """
+    Update the time-to-detect (TTD) table with new values and generate plots.
+    
+    Args:
+        regular_ttd (list): List containing time to detect for regular testing.
+        static_ttd (list): List containing time to detect for static threshold.
+        spc_ttd3 (list): List containing time to detect for SPC with window size 3 months.
+        spc_ttd5 (list): List containing time to detect for SPC with window size 5 months.
+        spc_ttd7 (list): List containing time to detect for SPC with window size 7 months.
+        bayesian_ttd (list): List containing time to detect for Bayesian method.
+        custom_impact (float): The custom impact/prevalence value used in the simulation.
+        ttd_csv_file (str): Path to the CSV file where TTD data is stored.
+    """ 
+    
+    
+    # Load ttd dataframe
+    ttd_df = pd.read_csv(ttd_csv_file)
+
+    # Update time to detect values
+    if regular_ttd and regular_ttd[0] is not None:
+        ttd1 = int(regular_ttd[0])
+    else:
+        print("Regular testing did not detect any change.")
+        ttd1 = ''
+
+    if static_ttd and static_ttd[0] is not None:
+        ttd2 = int(static_ttd[0])
+    else:
+        print("Static threshold did not detect any change.")
+        ttd2 = ''
+
+    if spc_ttd3 and spc_ttd3[0] is not None:
+        ttd3 = int(spc_ttd3[0])
+    else:
+        print("SPC3 did not detect any change.")
+        ttd3 = ''
+
+    if spc_ttd5 and spc_ttd5[0] is not None:
+        ttd4 = int(spc_ttd5[0])
+    else:
+        print("SPC5 did not detect any change.")
+        ttd4 = ''
+
+    if spc_ttd7 and spc_ttd7[0] is not None:
+        ttd5 = int(spc_ttd7[0])
+    else:
+        print("SPC7 did not detect any change.")
+        ttd5=''
+        
+    if bayesian_ttd and bayesian_ttd[0] is not None:
+        ttd7 = int(bayesian_ttd[0])
+    else:
+        print("Bayesian did not detect any change.")
+        ttd7 = ''
+    impact_val = custom_impact
+
+    ttd_df.loc[len(ttd_df)] = [ttd1, ttd2, ttd3, ttd4, ttd5, ttd7, impact_val]
+
+    # Save updated data
+    ttd_df.to_csv(ttd_csv_file, index=False)
+
+
