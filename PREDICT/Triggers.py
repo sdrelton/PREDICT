@@ -79,32 +79,24 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
         - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
     """
 
-    try:
-        if updateTimestep == 'week':
-            updateTimestep = pd.Timedelta(weeks=1)
-        elif updateTimestep == 'day':
-            updateTimestep = pd.Timedelta(days=1)
-        elif updateTimestep == 'month':
-            #updateTimestep = pd.Timedelta(weeks=4)
-            updateTimestep = relativedelta(months=1)
-        elif isinstance(updateTimestep, int):
-            updateTimestep = pd.Timedelta(days=updateTimestep)
-        else:
-            raise TypeError
-    except (ValueError, TypeError):
-        print("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
+    if updateTimestep == 'week':
         updateTimestep = pd.Timedelta(weeks=1)
-
-    # List of dates to update the model excluding the first window
-    update_dates = []
-    current_date = dataStart + updateTimestep
-    while current_date <= dataEnd:
-        update_dates.append(current_date)
-        current_date += updateTimestep
+    elif updateTimestep == 'day':
+        updateTimestep = pd.Timedelta(days=1)
+    elif updateTimestep == 'month':
+        #updateTimestep = pd.Timedelta(weeks=4)
+        updateTimestep = relativedelta(months=1)
+    elif isinstance(updateTimestep, int):
+        updateTimestep = pd.Timedelta(days=updateTimestep)
+    else:
+        updateTimestep = pd.Timedelta(weeks=1)
+        raise TypeError("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
+    
+    update_dates = pd.date_range(start=dataStart + updateTimestep, end=dataEnd, freq=updateTimestep)
 
     return MethodType(lambda self, x: __TimeframeTrigger(self, x, update_dates), model)
     
-def __TimeframeTrigger(self, input_data, update_dates):
+def __TimeframeTrigger(self, input_data, update_dates, tolerance=pd.Timedelta(days=5)):
     """Trigger function to update model based on a fixed time interval.
 
     Args:
@@ -115,11 +107,8 @@ def __TimeframeTrigger(self, input_data, update_dates):
         bool: Returns True if model update is required.
     """
 
-    # Check if current period is in the list of update dates
-    if any(date in input_data[self.dateCol].values for date in update_dates):
-        return True
-    else:
-        return False
+    current_date = input_data[self.dateCol].max()
+    return any(abs(current_date - d) <= tolerance for d in update_dates)
     
     
 def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
