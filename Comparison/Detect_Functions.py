@@ -25,7 +25,10 @@ def get_model_updated_log(df, model, model_name, undetected, detectDate):
     Returns:
         int: Time to detect (ttd) in days, or None if no model update detected.
     """
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    if model_name == "Regular Testing": # if regular testing then recalibrate using the last 3 years 
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', recal_period=3*365)
+    else:
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
     log = mytest.getLog()
     
@@ -276,7 +279,7 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
         dict: Dictionary of Bayesian coefficients and other information.
     """
     bay_model.trigger = BayesianRefitTrigger(model=bay_model, input_data=df, refitFrequency=1)
-    mytest = PREDICT(data=df, model=bay_model, startDate='min', endDate='max', timestep='month')
+    mytest = PREDICT(data=df, model=bay_model, startDate='min', endDate='max', timestep='month', recal_period=30)
     mytest.addLogHook(TrackBayesianCoefs(bay_model))
     mytest.run()
     log = mytest.getLog()
