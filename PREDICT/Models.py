@@ -142,6 +142,7 @@ class RecalibratePredictions(PREDICTModel):
         # Add hook to adjust predictions accordingly
         recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
+        return intercept, scale
 
 
     def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
