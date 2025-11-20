@@ -72,6 +72,8 @@ class PREDICT:
         self.log = dict()
         self.logHooks = list()
         self.verbose = verbose
+        self.intercept = 0
+        self.scale = 0 
         self.recal_period = recal_period
 
     def addLogHook(self, hook):
@@ -128,7 +130,10 @@ class PREDICT:
                     update_data = self.data[(dates >= (self.currentWindowEnd - relativedelta(months=1))) & (dates < self.currentWindowEnd)]
                 else:
                     update_data = self.data[(dates >= (self.currentWindowEnd - pd.Timedelta(days=self.recal_period))) & (dates < self.currentWindowEnd)]
-                self.model.update(curdata)
+                self.intercept, self.scale = self.model.update(curdata)
+
+                # update all the future predictions
+                self.model.predict(self.data[(dates >= (self.currentWindowStart)) & (dates < self.endDate)])
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
                 # if verbose and trigger then do sample size calculation for the window
