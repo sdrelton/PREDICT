@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 #plt.use("Agg")
 from scipy.special import expit
 import itertools
+import seaborn as sns
+import os
 
 
 def AccuracyPlot(log, recalthreshold=None):
@@ -427,43 +429,6 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 
 
 
-# def BayesianCoefsPlot(log):
-#     """Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
-#     Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
-
-#     Args:
-#         log (dict): Log of model metrics over time and when the model was updated.
-#     """
-#     plt.figure()
-#     bayesianCoefs = log["BayesianCoefficients"]
-#     timestamps = list(bayesianCoefs.keys())
-
-#     # Generate unique colors for predictors
-#     predictors = {key for timestamp in timestamps for key in bayesianCoefs[pd.Timestamp(timestamp)].keys()}
-#     color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap cycle
-#     color_map = {predictor: next(color_cycle) for predictor in predictors} 
-
-#     used_labels = set()  # Keep track of labels already used
-
-#     for timestamp in timestamps:
-#         specific_coefs = bayesianCoefs[pd.Timestamp(timestamp)]
-#         for predictor, (mean_coef, std_coef) in specific_coefs.items():
-#             label = predictor if predictor not in used_labels else "_nolegend_"  # Avoid duplicate labels
-#             plt.errorbar(timestamp, mean_coef, yerr=std_coef, fmt='-o', label=label, color=color_map[predictor], alpha=0.5)
-#             used_labels.add(predictor)  # Mark label as used
-
-#     plt.xlabel("Time")
-#     plt.title("Bayesian Priors Over Time")
-#     plt.ylabel("Coefficient")
-#     plt.yscale('symlog', linthresh=1)
-#     legend = plt.legend(title="Coefficient", fontsize=8, markerscale=0.8, frameon=True)
-#     legend.get_frame().set_edgecolor("black")
-#     legend.get_frame().set_facecolor("white")
-#     plt.xticks(timestamps, rotation=90)
-#     plt.grid(True)
-#     plt.show()
-
-
 def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
     """
     Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
@@ -523,26 +488,31 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
             plt.savefig(filename, dpi=600)
             plt.show()
 
+    
     elif isinstance(log, pd.DataFrame):
         df = log.copy()
         df['date'] = pd.to_datetime(df['date'])
 
-        # Identify coefficient and std columns
-        std_cols = [col for col in df.columns if col.endswith('_std')]
-        coef_cols = [col for col in df.columns if col not in std_cols + ['date']]
 
-        coef_long = df.melt(id_vars='date', value_vars=coef_cols, var_name='Predictor', value_name='Mean Coef')
-        std_long = df.melt(id_vars='date', value_vars=std_cols, var_name='Predictor_std', value_name='Std Coef')
+        # Parse "(mean, std)" strings into numeric columns
+        parsed = []
+        for col in df.columns:
+            if col != 'date':
+                temp = df[col].str.strip("()").str.split(",", expand=True)
+                temp.columns = ['Mean Coef', 'Std Coef']
+                temp['Mean Coef'] = temp['Mean Coef'].astype(float)
+                temp['Std Coef'] = temp['Std Coef'].astype(float)
+                temp['Predictor'] = col
+                temp['date'] = df['date']
+                parsed.append(temp)
 
-        # Align std column names with predictors
-        std_long['Predictor'] = std_long['Predictor_std'].str.replace('_std$', '', regex=True)
-        std_long = std_long.drop(columns='Predictor_std')
+        coefs_df = pd.concat(parsed, ignore_index=True)
+        date_col = "date"
 
-        coefs_df = pd.merge(coef_long, std_long, on=['date', 'Predictor'])
-        
-        all_predictors = sorted(coefs_df['Predictor'].unique())
+    
 
         # Split predictors into chunks
+        all_predictors = sorted(coefs_df['Predictor'].unique())
         predictor_chunks = [all_predictors[i:i + max_predictors_per_plot] for i in range(0, len(all_predictors), max_predictors_per_plot)]
 
         # Plot each chunk
@@ -551,7 +521,7 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
             for predictor in chunk:
                 predictor_data = coefs_df[coefs_df['Predictor'] == predictor]
                 plt.errorbar(
-                    predictor_data['date'],
+                    predictor_data[date_col],
                     predictor_data['Mean Coef'],
                     yerr=predictor_data['Std Coef'],
                     fmt='-o',
@@ -572,5 +542,167 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
             plt.savefig(filename, dpi=600)
             plt.show()
 
+
     else:
         raise ValueError("Bayesian coefficients need to be either the log or the pd.DataFrame of the coefficients.")
+    
+
+def plot_patients_per_month(df, model_type:str, gender:str=''):
+    """
+    Plots the number of people per month.
+    Args:
+        df (pd.DataFrame) : DataFrame of patient data.
+        model_type (str) : String of model name e.g. 'qrisk'.
+        gender (str) : If using the qrisk model pick between the male and female model e.g. "female". Defaults to ''.
+
+    """
+    df['date'] = pd.to_datetime(df['date'])
+
+    # Create a 'month' column for grouping
+    df['month'] = df['date'].dt.to_period('M')
+
+    # Count number of patients per month
+    monthly_patient_count = df.groupby('month').size()
+
+    # Convert PeriodIndex to datetime for plotting
+    monthly_patient_count.index = monthly_patient_count.index.to_timestamp()
+
+    plt.figure(figsize=(10, 6))
+    monthly_patient_count.plot(kind='bar')
+    plt.title("Number of Patients per Month")
+    plt.xlabel("Month")
+    plt.ylabel("Patient Count")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f"../docs/images/performance_comparison/{model_type}_{gender}_num_patients_per_month.png", dpi=600, bbox_inches='tight')
+    plt.show()
+        
+
+def plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2', gender=''):
+    """
+    Plot the number of people per week who have over x% risk of the outcome.
+    Args:
+        threshold (float) : Risk threshold value. Defaults to 0.1.
+        model_type (str) : String of model name e.g. 'qrisk'. Defaults to 'qrisk2'.
+        gender (str) : If using the qrisk model pick between the male and female model e.g. "female". Defaults to ''.
+
+    """
+    def count_over_threshold(df, date_col, prob_col, threshold=0.1):
+        df[date_col] = pd.to_datetime(df[date_col])
+        # filter rows
+        filtered = df[df[prob_col] > threshold]
+        # group by week
+        weekly = filtered.groupby(pd.Grouper(key=date_col, freq='W')).size()
+        return weekly
+    
+    plt.figure(figsize=(10,6))
+
+    if os.path.exists(f"Baseline_{model_type}_{gender}_predictions_and_outcomes.csv"):
+        baseline = pd.read_csv(f"Baseline_{model_type}_{gender}_predictions_and_outcomes.csv")
+        counts1 = count_over_threshold(baseline, 'date', 'Baseline preds', threshold=threshold)
+        counts1.plot(label='Baseline')
+    else:
+        print("File for baseline predictions and outcomes does not exist.")
+
+    if os.path.exists(f"Regular Testing_{model_type}_{gender}_predictions_and_outcomes.csv"):
+        regular = pd.read_csv(f"Regular Testing_{model_type}_{gender}_predictions_and_outcomes.csv")
+        counts2 = count_over_threshold(regular, 'date', 'Regular Testing preds', threshold=threshold)
+        counts2.plot(label='Regular Testing')
+    else:
+        print("File for regular testing predictions and outcomes does not exist.")
+
+    if os.path.exists(f"Static Threshold_{model_type}_{gender}_predictions_and_outcomes.csv"):
+        static = pd.read_csv(f"Static Threshold_{model_type}_{gender}_predictions_and_outcomes.csv")
+        counts3 = count_over_threshold(static, 'date', 'Static Threshold preds', threshold=threshold)
+        counts3.plot(label='Static Threshold')
+    else:
+        print("File for static threshold predictions and outcomes does not exist.")
+
+    if os.path.exists(f"SPC_{model_type}_{gender}_predictions_and_outcomes.csv"):
+        spc = pd.read_csv(f"SPC_{model_type}_{gender}_predictions_and_outcomes.csv")
+        counts4 = count_over_threshold(spc, 'date', 'SPC preds', threshold=threshold)
+        counts4.plot(label='SPC')
+    else:
+        print("File for SPC predictions and outcomes does not exist.")
+
+    if os.path.exists(f"Bayesian_{model_type}_{gender}_predictions_and_outcomes.csv"):
+        bayesian = pd.read_csv(f"Bayesian_{model_type}_{gender}_predictions_and_outcomes.csv")
+        counts5 = count_over_threshold(bayesian, 'date', 'Bayesian preds', threshold=threshold)
+        counts5.plot(label='Bayesian')
+    else:
+        print("File for bayesian predictions and outcomes does not exist.")
+
+    plt.xlabel('Date')
+    plt.ylabel(f'Number of people with >{int(threshold*100)}% probability')
+    plt.title(f'Count of People with Over {int(threshold*100)}% Risk of Outcome')
+    plt.legend()
+    plt.savefig(f"{model_type}_{gender}_count_over_{int(threshold*100)}%_risk.png", dpi=600, bbox_inches='tight')
+    plt.show()
+
+def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, model_type, gender=''):
+    """
+    Plot the metric comparison graphs with each line showing a different PREDICT method.
+    Args:
+        metrics_df (str) : csv file name where performance metrics for each method are saved.
+        recalthreshold (float) : static threshold method AUROC threshold.
+        model_updates (str) : csv file name where dates of model updates with method names are stored.
+        model_type (str) : name of the model used e.g. QRISK2.
+        gender (str) : if using the QRISK model, define whether to use male or female. Defaults to ''.
+
+    """
+    metrics_df = pd.read_csv(metrics_df)
+    model_updates = pd.read_csv(model_updates)
+    metrics_df["Time"] = pd.to_datetime(metrics_df["Time"])
+    sns.set(font_scale=1.2)
+    metric_choices = ["CalibrationSlope", "OE", "CITL"]
+
+    for metric_choice in metric_choices:
+
+        metrics_df["Method"] = metrics_df["Method"].replace({"Static Threshold": f"Static Threshold ({round(recalthreshold, 2)})"})
+
+        fig, ax = plt.subplots(figsize=(14, 7))
+
+        sns.lineplot(
+            data=metrics_df,
+            x="Time",
+            y=metric_choice,
+            hue="Method",
+            ci=None,
+            style="Method",
+            ax=ax
+        )
+
+        
+        model_updates["date"] = pd.to_datetime(model_updates["date"])
+
+        for method in ['Regular Testing', "Static Threshold", "SPC", "Bayesian"]:
+            if method in model_updates['method'].values:
+                if method == "Regular Testing":
+                    marker = 'o'
+                    colour = 'orange'
+                elif method == "Static Threshold":
+                    marker = '|'
+                    colour = 'green'
+                elif method == "SPC":
+                    marker = '^'
+                    colour = 'red'
+                elif method == "Bayesian":
+                    marker = 'D'
+                    colour = 'purple'
+                subset = model_updates[model_updates["method"] == method]
+                ax.scatter(
+                    subset["date"],
+                    [metrics_df[metric_choice].min()]*len(subset),
+                    label=f"{method} update",
+                    marker=marker,
+                    color=colour,
+                    alpha=0.4,
+                    s=40
+                )
+
+        ax.set_title(metric_choice)
+        ax.set_xlabel("Date")
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        fig.tight_layout()
+        fig.savefig(f"../docs/images/performance_comparison/{model_type}_{gender}_{metric_choice}.png", dpi=600, bbox_inches='tight')
+        plt.show()
