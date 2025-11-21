@@ -4,11 +4,12 @@ from PREDICT.Metrics import Accuracy, CalibrationSlope, CoxSnellR2, CITL, AUROC,
 import pandas as pd
 import datetime as dt
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-#plt.use("Agg")
+import seaborn as sns
 from scipy.special import expit
 import itertools
-import seaborn as sns
 import os
 
 
@@ -427,8 +428,6 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
     plt.grid(True)
     plt.show()
 
-
-
 def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
     """
     Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
@@ -587,47 +586,47 @@ def plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2
         gender (str) : If using the qrisk model pick between the male and female model e.g. "female". Defaults to ''.
 
     """
-    def count_over_threshold(df, date_col, prob_col, threshold=0.1):
+    def count_over_threshold(df, date_col, threshold=0.1):
         df[date_col] = pd.to_datetime(df[date_col])
         # filter rows
-        filtered = df[df[prob_col] > threshold]
+        filtered = df[df['new_prediction'] > threshold]
         # group by week
-        weekly = filtered.groupby(pd.Grouper(key=date_col, freq='W')).size()
+        weekly = filtered.groupby(pd.Grouper(key=date_col, freq='M')).size()
         return weekly
     
     plt.figure(figsize=(10,6))
 
     if os.path.exists(f"Baseline_{model_type}_{gender}_predictions_and_outcomes.csv"):
         baseline = pd.read_csv(f"Baseline_{model_type}_{gender}_predictions_and_outcomes.csv")
-        counts1 = count_over_threshold(baseline, 'date', 'Baseline preds', threshold=threshold)
+        counts1 = count_over_threshold(baseline, 'date', threshold=threshold)
         counts1.plot(label='Baseline')
     else:
         print("File for baseline predictions and outcomes does not exist.")
 
     if os.path.exists(f"Regular Testing_{model_type}_{gender}_predictions_and_outcomes.csv"):
         regular = pd.read_csv(f"Regular Testing_{model_type}_{gender}_predictions_and_outcomes.csv")
-        counts2 = count_over_threshold(regular, 'date', 'Regular Testing preds', threshold=threshold)
+        counts2 = count_over_threshold(regular, 'date', threshold=threshold)
         counts2.plot(label='Regular Testing')
     else:
         print("File for regular testing predictions and outcomes does not exist.")
 
     if os.path.exists(f"Static Threshold_{model_type}_{gender}_predictions_and_outcomes.csv"):
         static = pd.read_csv(f"Static Threshold_{model_type}_{gender}_predictions_and_outcomes.csv")
-        counts3 = count_over_threshold(static, 'date', 'Static Threshold preds', threshold=threshold)
+        counts3 = count_over_threshold(static, 'date', threshold=threshold)
         counts3.plot(label='Static Threshold')
     else:
         print("File for static threshold predictions and outcomes does not exist.")
 
     if os.path.exists(f"SPC_{model_type}_{gender}_predictions_and_outcomes.csv"):
         spc = pd.read_csv(f"SPC_{model_type}_{gender}_predictions_and_outcomes.csv")
-        counts4 = count_over_threshold(spc, 'date', 'SPC preds', threshold=threshold)
+        counts4 = count_over_threshold(spc, 'date', threshold=threshold)
         counts4.plot(label='SPC')
     else:
         print("File for SPC predictions and outcomes does not exist.")
 
     if os.path.exists(f"Bayesian_{model_type}_{gender}_predictions_and_outcomes.csv"):
         bayesian = pd.read_csv(f"Bayesian_{model_type}_{gender}_predictions_and_outcomes.csv")
-        counts5 = count_over_threshold(bayesian, 'date', 'Bayesian preds', threshold=threshold)
+        counts5 = count_over_threshold(bayesian, 'date', threshold=threshold)
         counts5.plot(label='Bayesian')
     else:
         print("File for bayesian predictions and outcomes does not exist.")
