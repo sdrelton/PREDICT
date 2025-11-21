@@ -30,13 +30,17 @@ class PREDICT:
     logHooks : list
         A list of hooks to be called during logging.
     recal_period : int
-        An integer representing the number of days in the recalibration window.
-        Defaults to one year (365)
+        An integer giving the number of days for the recalibration window. 
+        Defaults to one year (365).
+    saveRecalibratedPredictions : bool
+        Save recalibrated predictions into a csv file. Defaults to False.
+    model_name : str
+        Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
     verbose : bool
         Print sample size calculation warnings.
     """
     
-    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, verbose=False):
+    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, saveRecalibratedPredictions=False, model_name='', verbose=False):
         """
         Initializes the PREDICT class with default values.
         """
@@ -73,8 +77,10 @@ class PREDICT:
         self.logHooks = list()
         self.verbose = verbose
         self.intercept = 0
-        self.scale = 0 
+        self.scale = 0
         self.recal_period = recal_period
+        self.saveRecalibratedPredictions = saveRecalibratedPredictions
+        self.model_name = model_name
 
     def addLogHook(self, hook):
         """
@@ -117,26 +123,42 @@ class PREDICT:
         Runs the prediction model over the specified date range.
         """
         n_samples = 0
+        self.data['new_prediction'] = self.data['prediction']
         while self.currentWindowEnd <= self.endDate:
-            self.model.predict(self.data)
             dates = self.data[self.dateCol]
+            
             curdata = self.data[(dates >= self.currentWindowStart) & (dates < self.currentWindowEnd)]
             for hook in self.logHooks:
                 logname, result = hook(curdata)
                 self.addLog(logname, self.currentWindowEnd, result)
             if self.model.trigger(curdata):
-                print("Trigger activated. Updating model...")
+                print("Trigger activated")
+                # update based on the chosen window of data
                 if self.recal_period == 30: # if 30 days aka a month is inputted then use the currentWindowStart instead
                     update_data = self.data[(dates >= (self.currentWindowEnd - relativedelta(months=1))) & (dates < self.currentWindowEnd)]
                 else:
                     update_data = self.data[(dates >= (self.currentWindowEnd - pd.Timedelta(days=self.recal_period))) & (dates < self.currentWindowEnd)]
-                self.intercept, self.scale = self.model.update(curdata)
+                self.intercept, self.scale = self.model.update(update_data)
+                print(f"Intercept: {self.intercept}\nScale: {self.scale}")
+                #print(self.model.update(update_data))
 
-                # update all the future predictions
-                self.model.predict(self.data[(dates >= (self.currentWindowStart)) & (dates < self.endDate)])
+                if self.saveRecalibratedPredictions:
+                    print("Saving recalibrated predictions..")
+                    # update predictions as new_predictions column
+                    updateRecalWindow = self.data[(dates >= (self.currentWindowStart)) & (dates < self.endDate)]
+                    window_new_preds = self.model.predict(updateRecalWindow)
+                    self.data['new_prediction'] = window_new_preds.combine_first(self.data['new_prediction']) # combine first only replaces values which have new values
+                    plotPredsdf = self.data[[self.dateCol, 'outcome']]
+                    plotPredsdf = pd.concat([plotPredsdf, self.data['new_prediction']], axis=1)
+
+                    if pd.to_datetime('2008-04-01') in self.data[self.dateCol].values:
+                        plotPredsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", index=False)
+                    else: # if it's a bayesian model we want to append because of batching
+                        plotPredsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", mode='a', header='False', index=False)
+
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
-                # if verbose and trigger then do sample size calculation for the window
+                # if verbose and trigger happens then do sample size calculation for the window
                 if self.verbose:
                     n_samples = len(update_data)
                     # Sample size calculation
@@ -146,6 +168,3 @@ class PREDICT:
                         
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
-            
-
-        
