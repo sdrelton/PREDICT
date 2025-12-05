@@ -35,12 +35,12 @@ class PREDICT:
     saveRecalibratedPredictions : bool
         Save recalibrated predictions into a csv file. Defaults to False.
     model_name : str
-        Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
+        Name of the model, used to name csv with recalibrated predictions.
     verbose : bool
         Print sample size calculation warnings.
     """
     
-    def __init__(self, data, model, dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, saveRecalibratedPredictions=False, model_name='', verbose=False):
+    def __init__(self, data, model, model_name, dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, verbose=False, startOfAnalysis=None):
         """
         Initializes the PREDICT class with default values.
         """
@@ -79,8 +79,8 @@ class PREDICT:
         self.intercept = 0
         self.scale = 0
         self.recal_period = recal_period
-        self.saveRecalibratedPredictions = saveRecalibratedPredictions
         self.model_name = model_name
+        self.startOfAnalysis = startOfAnalysis
 
     def addLogHook(self, hook):
         """
@@ -123,14 +123,23 @@ class PREDICT:
         Runs the prediction model over the specified date range.
         """
         n_samples = 0
-        self.data['new_prediction'] = self.data['prediction']
         while self.currentWindowEnd <= self.endDate:
             dates = self.data[self.dateCol]
-            
             curdata = self.data[(dates >= self.currentWindowStart) & (dates < self.currentWindowEnd)]
             for hook in self.logHooks:
                 logname, result = hook(curdata)
                 self.addLog(logname, self.currentWindowEnd, result)
+            # append the updated prediction to the prediction and outcomes file
+            # get the current predictions for the window in certain conditions to prevent multiple writes caused by overlap
+            if 'bayesian' in self.model_name.lower() and ((self.currentWindowStart==self.startOfAnalysis) or (self.currentWindowStart > self.startDate)):
+                print("Saving predictors and outcomes...")
+                
+                # save them to the predictions and outcomes csv file alongside the dates and outcomes
+                predsdf = pd.DataFrame({'date': list(curdata[self.dateCol]), 'outcome': list(curdata['outcome']), 'prediction': self.model.predict(curdata)})
+                write_mode = 'w' if self.currentWindowStart==self.startOfAnalysis else 'a'
+                header_type = True if self.currentWindowStart==self.startOfAnalysis else False
+                predsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", mode=write_mode, header=header_type, index=False)
+
             if self.model.trigger(curdata):
                 print("Trigger activated")
                 # update based on the chosen window of data
@@ -138,24 +147,12 @@ class PREDICT:
                     update_data = self.data[(dates >= (self.currentWindowEnd - relativedelta(months=1))) & (dates < self.currentWindowEnd)]
                 else:
                     update_data = self.data[(dates >= (self.currentWindowEnd - pd.Timedelta(days=self.recal_period))) & (dates < self.currentWindowEnd)]
-                self.intercept, self.scale = self.model.update(update_data)
-                print(f"Intercept: {self.intercept}\nScale: {self.scale}")
-                #print(self.model.update(update_data))
-
-                if self.saveRecalibratedPredictions:
-                    print("Saving recalibrated predictions..")
-                    # update predictions as new_predictions column
-                    updateRecalWindow = self.data[(dates >= (self.currentWindowStart)) & (dates < self.endDate)]
-                    window_new_preds = self.model.predict(updateRecalWindow)
-                    self.data['new_prediction'] = window_new_preds.combine_first(self.data['new_prediction']) # combine first only replaces values which have new values
-                    plotPredsdf = self.data[[self.dateCol, 'outcome']]
-                    plotPredsdf = pd.concat([plotPredsdf, self.data['new_prediction']], axis=1)
-
-                    if pd.to_datetime('2008-04-01') in self.data[self.dateCol].values:
-                        plotPredsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", index=False)
-                    else: # if it's a bayesian model we want to append because of batching
-                        plotPredsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", mode='a', header='False', index=False)
-
+                if 'bayesian' in self.model_name.lower():
+                    self.model.update(update_data)
+                    
+                else:
+                    self.intercept, self.scale = self.model.update(update_data)
+                    print(f"Intercept: {self.intercept}\nScale: {self.scale}")
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
                 # if verbose and trigger happens then do sample size calculation for the window
@@ -164,7 +161,7 @@ class PREDICT:
                     # Sample size calculation
                     n_features = self.data.shape[1] - 3 # minus date, prediction and label columns
                     if n_samples < 10 * n_features: # sample size should be at least 10 times the number of features
-                        logging.warning(f"Warning: Sample size ({n_samples}) is less than 10 times the number of features ({n_features}). Model performance may be unreliable.")
-                        
+                        logging.warning(f"Warning: Sample size ({n_samples}) is less than 10 times the number of features ({n_features}). Model performance may be unreliable.")        
+
             self.currentWindowStart += self.timestep
             self.currentWindowEnd += self.timestep
