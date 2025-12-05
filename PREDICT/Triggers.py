@@ -80,19 +80,20 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
     """
 
     if updateTimestep == 'week':
-        updateTimestep = pd.Timedelta(weeks=1)
+        freq = pd.Timedelta(weeks=1)
     elif updateTimestep == 'day':
-        updateTimestep = pd.Timedelta(days=1)
+        freq = pd.Timedelta(days=1)
     elif updateTimestep == 'month':
-        #updateTimestep = pd.Timedelta(weeks=4)
-        updateTimestep = relativedelta(months=1)
+        freq = pd.DateOffset(months=1)
     elif isinstance(updateTimestep, int):
-        updateTimestep = pd.Timedelta(days=updateTimestep)
+        freq = pd.Timedelta(days=updateTimestep)
     else:
-        updateTimestep = pd.Timedelta(weeks=1)
+        freq = pd.Timedelta(weeks=1)
         raise TypeError("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
-    
-    update_dates = pd.date_range(start=dataStart + updateTimestep, end=dataEnd, freq=updateTimestep)
+        
+
+    update_dates = pd.date_range(start=dataStart + freq, end=dataEnd, freq=freq)
+
 
     return MethodType(lambda self, x: __TimeframeTrigger(self, x, update_dates), model)
     
