@@ -35,12 +35,12 @@ class PREDICT:
     saveRecalibratedPredictions : bool
         Save recalibrated predictions into a csv file. Defaults to False.
     model_name : str
-        Name of the model, used to name csv with recalibrated predictions.
+        Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
     verbose : bool
         Print sample size calculation warnings.
     """
     
-    def __init__(self, data, model, model_name, dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, verbose=False, startOfAnalysis=None):
+    def __init__(self, data, model, model_name='', dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, verbose=False, startOfAnalysis=None):
         """
         Initializes the PREDICT class with default values.
         """
@@ -138,7 +138,8 @@ class PREDICT:
                 predsdf = pd.DataFrame({'date': list(curdata[self.dateCol]), 'outcome': list(curdata['outcome']), 'prediction': self.model.predict(curdata)})
                 write_mode = 'w' if self.currentWindowStart==self.startOfAnalysis else 'a'
                 header_type = True if self.currentWindowStart==self.startOfAnalysis else False
-                predsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", mode=write_mode, header=header_type, index=False)
+                if self.model_name != '':
+                    predsdf.to_csv(f"{self.model_name}_predictions_and_outcomes.csv", mode=write_mode, header=header_type, index=False)
 
             if self.model.trigger(curdata):
                 print("Trigger activated")
@@ -152,7 +153,8 @@ class PREDICT:
                     
                 else:
                     self.intercept, self.scale = self.model.update(update_data)
-                    print(f"Intercept: {self.intercept}\nScale: {self.scale}")
+                    if self.verbose:
+                        print(f"Intercept: {self.intercept}\nScale: {self.scale}")
                 # Add to log
                 self.addLog('Model Updated', self.currentWindowEnd, True)
                 # if verbose and trigger happens then do sample size calculation for the window

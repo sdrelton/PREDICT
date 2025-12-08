@@ -26,9 +26,9 @@ def get_model_updated_log(df, model, model_name, undetected, detectDate):
         int: Time to detect (ttd) in days, or None if no model update detected.
     """
     if model_name == "Regular Testing": # if regular testing then recalibrate using the last 3 years 
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', recal_period=3*365)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', recal_period=3*365, model_name=model_name)
     else:
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
     mytest.run()
     log = mytest.getLog()
     
@@ -262,7 +262,7 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
 
 
 
-def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectDate):
+def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectDate, model_name):
     """Run the Bayesian model with a refit trigger and return the updated undetected counts, time to detect (ttd), and coefficients.
 
     Args:
@@ -278,8 +278,8 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
         list: List of time to detect (ttd) for Bayesian model updates.
         dict: Dictionary of Bayesian coefficients and other information.
     """
-    bay_model.trigger = BayesianRefitTrigger(model=bay_model, input_data=df, refitFrequency=1)
-    mytest = PREDICT(data=df, model=bay_model, startDate='min', endDate='max', timestep='month', recal_period=30)
+    bay_model.trigger = TimeframeTrigger(model=bay_model, input_data=df, refitFrequency=1)
+    mytest = PREDICT(data=df, model=bay_model, startDate='min', endDate='max', timestep='month', recal_period=30, model_name=model_name)
     mytest.addLogHook(TrackBayesianCoefs(bay_model))
     mytest.run()
     log = mytest.getLog()
@@ -293,13 +293,14 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
 
 
 
-def get_metrics_recal_methods(df, custom_impact, recalthreshold):
+def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     """Get metrics for different recalibration methods on the given DataFrame.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         custom_impact (float): Either the custom impact on the outcome or the prevalence of a condition.
         recalthreshold (float): Threshold for the static threshold recalibration method.
+        model_name (str): Name of the model being evaluated.
 
     Returns:
         pd.DataFrame: DataFrame containing the metrics for each recalibration method, including accuracy, AUROC, precision, and impact or prevalence.
@@ -309,7 +310,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
     # Regular Testing
     model = RecalibratePredictions()
     model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
@@ -334,7 +335,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
     # Static Threshold Testing
     model = RecalibratePredictions()
     model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
@@ -360,7 +361,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold):
     for numMonths in [3, 5, 7]:
         model = RecalibratePredictions()
         model.trigger = SPCTrigger(model=model, input_data=df, numMonths=numMonths, verbose=False)
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
         mytest.addLogHook(Accuracy(model))
         mytest.addLogHook(AUROC(model))
         mytest.addLogHook(Precision(model))
