@@ -105,8 +105,13 @@ for method_str in method_strs:
     df = df[df['date']<= endDate]
 
     plot_patients_per_month(df, model_type='efalls')
-    with open(f"efalls_auroc_thresh.txt", "r") as file:
-        recalthreshold = float(file.read())
+
+    if not os.path.exists(f"efalls_auroc_thresh.txt"):
+        print(f"Threshold file 'efalls_auroc_thresh.txt' not found. Please run 'refit_efalls_model.py' to generate the threshold file or manually create the threshold file before running this script.\nSetting threshold to 0.7 for now.")
+        recalthreshold = 0.7
+    else:
+        with open(f"efalls_auroc_thresh.txt", "r") as file:
+            recalthreshold = float(file.read())
 
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == startOfAnalysis:

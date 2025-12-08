@@ -113,8 +113,12 @@ for method_str in method_strs:
     df = df[df['date']<= endDate]
 
     plot_patients_per_month(df, model_type='qrisk2', gender=gender)
-    with open(f"qrisk_{gender}_auroc_thresh.txt", "r") as file:
-        recalthreshold = float(file.read())
+    if not os.path.exists(f"qrisk_{gender}_auroc_thresh.txt"):
+        print(f"Threshold file qrisk_{gender}_auroc_thresh.txt not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the threshold file before running this script.\nSetting threshold to 0.7 for now.")
+        recalthreshold = 0.7
+    else:
+        with open(f"qrisk_{gender}_auroc_thresh.txt", "r") as file:
+            recalthreshold = float(file.read())
 
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == pd.to_datetime('01-04-2008', dayfirst=True):
