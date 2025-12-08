@@ -122,8 +122,11 @@ for method_str in method_strs:
 
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == startOfAnalysis:
-        with open(f'qrisk2_{gender}_coefs.json', 'r') as f:
-            coefs = json.load(f)
+        if not os.path.exists(f'qrisk2_{gender}_coefs.json'):
+            raise FileNotFoundError(f"Coefficients file 'qrisk2_{gender}_coefs.json' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the coefficients file before running this script.")
+        else:
+            with open(f'qrisk2_{gender}_coefs.json', 'r') as f:
+                coefs = json.load(f)
 
         coefs_std = {key: 0.25 for key in coefs}
 

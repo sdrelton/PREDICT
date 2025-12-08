@@ -116,12 +116,14 @@ for method_str in method_strs:
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == startOfAnalysis:
         # if you want the coefficients from the model trained on the prior 6 months of data 01-06-2018 to 01-01-2019
-        with open(f'efalls_coefs.json', 'r') as f:
-            coefs = json.load(f)
-
-        # # if you want to use the refitted coefficients from efalls paper
-        # with open(f'efalls_refitted_coefs.json', 'r') as f:
-        #     coefs = json.load(f)
+        if not os.path.exists(f'efalls_coefs.json') and not os.path.exists(f'efalls_refitted_coefs.json'):
+            raise FileNotFoundError(f"Coefficients file 'efalls_coefs.json' not found. Please run 'refit_efalls_model.py' to generate the coefficients file before running this script.")
+        else:
+            with open(f'efalls_coefs.json', 'r') as f:
+                coefs = json.load(f)
+            # # if you want to use the refitted coefficients from efalls paper
+            # with open(f'efalls_refitted_coefs.json', 'r') as f:
+            #     coefs = json.load(f)
 
 
         coefs_std = {key: 0.25 for key in coefs}
