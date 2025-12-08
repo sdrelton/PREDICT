@@ -121,7 +121,7 @@ for method_str in method_strs:
             recalthreshold = float(file.read())
 
     # If the startDate and endDate are the full period then fit the initial model
-    if startDate == pd.to_datetime('01-04-2008', dayfirst=True):
+    if startDate == startOfAnalysis:
         with open(f'qrisk2_{gender}_coefs.json', 'r') as f:
             coefs = json.load(f)
 
@@ -211,7 +211,7 @@ for method_str in method_strs:
             priors_dict[predictor] = (coefs[predictor], coefs_std[predictor])
         
         # add the initial coefficients to the csv file to plot Bayesian coefficients over time
-        if startDate == pd.to_datetime('01-04-2008', dayfirst=True):
+        if startDate == startOfAnalysis:
             priors_df = pd.DataFrame([priors_dict])
             # add the date
             priors_df.insert(0, 'date', startDate)
@@ -266,7 +266,7 @@ for method_str in method_strs:
 
     if method_str == 'Bayesian':
         # if this is the first batch of dates for the bayesian model set up the coefs csv
-        if startDate == pd.to_datetime('01-04-2008', dayfirst=True):
+        if startDate == startOfAnalysis:
             # create and save df with headers
             coef_columns = ['date'] + predictors + interactions + [value + 'std' for value in predictors] + [value + 'std' for value in interactions]
 
