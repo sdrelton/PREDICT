@@ -75,6 +75,8 @@ the associated Github with examples of usage is `here`_.
    :maxdepth: 2
    :caption: Contents:
 
+   Newsletters
+   Podcasts
    PREDICT
    Models
    Metrics
