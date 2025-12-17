@@ -6,8 +6,7 @@ Podcasts
 We've created some fantastic podcasts describing our project using Gemini Pro.
 Please find them linked below.
 
-* :download:`March 2025 <newsletters/PREDICT_Newsletter_March2025.pdf>`
-
+* Podcast 1: AI Temporal Drift in Healthcare Safety
 .. raw:: html
 
    <audio controls>
@@ -15,4 +14,20 @@ Please find them linked below.
      Your browser does not support the audio element.
    </audio>
 
-Description of podcast here...
+* Podcast 2: Temporal Drift in Health and Patient Trust
+.. raw:: html
+
+   <audio controls>
+     <source src="_static/Health_AI_Temporal_Drift_and_Patient_Trust.m4a" type="audio/mp4">
+     Your browser does not support the audio element.
+   </audio>
+
+
+* Podcast 3: Learning Health Systems Fix Outdated AI 
+.. raw:: html
+
+   <audio controls>
+     <source src="_static/Learning_Health_Systems_Fix_Outdated_AI.m4a" type="audio/mp4">
+     Your browser does not support the audio element.
+   </audio>
+
