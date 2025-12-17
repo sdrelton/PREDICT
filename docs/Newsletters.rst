@@ -11,3 +11,5 @@ Please find them linked below.
 * :download:`June 2025 <newsletters/PREDICT_Newsletter_June2025.pdf>`
 
 * :download:`September 2025 <newsletters/PREDICT_Newsletter_September2025.pdf>`
+
+* :download:`December 2025 <newsletters/predict_newsletter_december25.pdf>`
