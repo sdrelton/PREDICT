@@ -46,7 +46,7 @@ Please feel free to reach out if a demo of the software, or any additional info 
 Links
 -----
 * `Github code repository`_
-* :ref:`Documentation <documentation>`
+* :ref:`Documentation <Documentation>`
 * :ref:`Newsletters on project progress <Newsletters>`
 
 .. _Github code repository: https://github.com/sdrelton/PREDICT
@@ -72,25 +72,16 @@ We have created a number of newsletters and podcasts to help engage with differe
 
    Newsletters
    Podcasts
+   Documentation
 
 .. _documentation:
 
-Documentation
------
 The full documentation for the PREDICT software,
 the associated Github with examples of usage can be found `here`_.
 
 .. _here: https://github.com/sdrelton/PREDICT
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Documentation:
-   PREDICT
-   Models
-   Metrics
-   Plots
-   Triggers
-   Tests
+
 
 Indices and tables
 ------------------
