@@ -65,8 +65,8 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         updateTimestep (pd.Timedelta): Time interval at which to update the model. Note: The model 
-        can only be recalibrated at the end of the time interval. If the prediction window is less 
-        than the updateTimestep, the model will not be recalibrated.
+            can only be recalibrated at the end of the time interval. If the prediction window is less 
+            than the updateTimestep, the model will not be recalibrated.
         dataStart (pd.Timedelta): Date of when to start regular recalibration.
         dataEnd (pd.Timedelta): Date of when to end regular recalibration.
 

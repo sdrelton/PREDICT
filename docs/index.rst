@@ -81,6 +81,7 @@ the associated Github with examples of usage is `here`_.
    Models
    Metrics
    Plots
+   Triggers
    Tests
 
 Indices and tables
