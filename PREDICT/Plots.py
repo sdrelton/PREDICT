@@ -389,7 +389,7 @@ def MonitorChangeSPC(input_data, trackCol, timeframe, windowSize, largerSD=3, sm
 
 def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, outcome="outcome", show_legend=True):
     """Plots the probability of an outcome given a specific predictor.
-    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+        Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
     Args:
         log (dict): Log of model metrics over time and when the model was updated.
@@ -437,7 +437,7 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
 def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
     """
     Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
-    Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
+        Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
 
     Args:
         log (dict, pd.DataFrame): Log or dataframe of model metrics over time and when the model was updated.
@@ -586,6 +586,7 @@ def plot_patients_per_month(df, model_type:str, gender:str=''):
 def plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2', gender=''):
     """
     Plot the number of people per month who have over x% risk of the outcome.
+
     Args:
         threshold (float) : Risk threshold value. Defaults to 0.1.
         model_type (str) : String of model name e.g. 'qrisk'. Defaults to 'qrisk2'.
@@ -656,6 +657,7 @@ def plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2
 def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, model_type, gender=''):
     """
     Plot the metric comparison graphs with each line showing a different PREDICT method.
+
     Args:
         metrics_df (str) : csv file name where performance metrics for each method are saved.
         recalthreshold (float) : static threshold method AUROC threshold.
@@ -856,8 +858,7 @@ def plot_calibration_yearly(model, method_list = ['Baseline', 'Regular Testing',
 
 def plot_predictor_distributions(df, predictors, plot_type, model_name):
     """Plots the distributions of the predictors, can choose from using a violin plot, a stacked bar chart
-    or a percentage stacked barchart.
-    One bar is plotted for each month.
+    or a percentage stacked barchart. One bar is plotted for each month.
 
     Args:
         df (pd.DataFrame): Dataframe where predictors are columns and rows are individual visits.

@@ -6,38 +6,23 @@ class PREDICT:
     """
     A class used to represent the PREDICT model.
     
-    Attributes
-    ----------
-    data : pd.DataFrame
-        The data to be used by the model.
-    model : PREDICTModel
-        The model to be used for prediction.
-    dateCol: str
-        The column in the data that contains the date.
-    startDate : str, dt.datetime
-        The start date for the prediction window.
-    endDate : str, pd.datetime
-        The end date for the prediction window.
-    timestep : str, int
-        The timestep for the prediction window. Must be 'week', 'day', 'month', 
-        or an integer representing the number of days. Defaults to 'month'.
-    currentWindowStart : pd.datetime
-        The current start date of the prediction window.
-    currentWindowEnd : pd.datetime
-        The current end date of the prediction window.
-    log : dict
-        A dictionary to store logs.
-    logHooks : list
-        A list of hooks to be called during logging.
-    recal_period : int
-        An integer giving the number of days for the recalibration window. 
-        Defaults to one year (365).
-    saveRecalibratedPredictions : bool
-        Save recalibrated predictions into a csv file. Defaults to False.
-    model_name : str
-        Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
-    verbose : bool
-        Print sample size calculation warnings.
+    Args:
+        data (pd.DataFrame) : The data to be used by the model.
+        model (PREDICTModel) : The model to be used for prediction.
+        dateCol (str) The column in the data that contains the date.
+        startDate (str, dt.datetime): The start date for the prediction window.
+        endDate (str, pd.datetime): The end date for the prediction window.
+        timestep (str, int) : The timestep for the prediction window. Must be 'week', 'day', 'month', 
+            or an integer representing the number of days. Defaults to 'month'.
+        currentWindowStart (pd.datetime) : The current start date of the prediction window.
+        currentWindowEnd (pd.datetime) : The current end date of the prediction window.
+        log (dict) : A dictionary to store logs.
+        logHooks (list): A list of hooks to be called during logging.
+        recal_period (int) :An integer giving the number of days for the recalibration window. 
+            Defaults to one year (365).
+        saveRecalibratedPredictions (bool) : Save recalibrated predictions into a csv file. Defaults to False.
+        model_name (str) : Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
+        verbose (bool) : Print sample size calculation warnings.
     """
     
     def __init__(self, data, model, model_name='', dateCol = 'date', startDate='min', endDate='max', timestep='month', recal_period=365, verbose=False, startOfAnalysis=None):
@@ -85,24 +70,20 @@ class PREDICT:
     def addLogHook(self, hook):
         """
         Adds a hook to the logHooks list.
-        Parameters
-        ----------
-        hook : function
-            A function to be called during logging.
+
+        Args:
+            hook (function) : A function to be called during logging.
         """
         self.logHooks.append(hook)
     
     def addLog(self, key, date, val):
         """
         Adds a log entry to the log dictionary.
-        Parameters
-        ----------
-        key : str
-            The key for the log entry.
-        date : any
-            The date for the log entry.
-        val : any
-            The value for the log entry.
+
+        Args:
+            key (str) : The key for the log entry.
+            date (any) : The date for the log entry.
+            val (any) : The value for the log entry.
         """
         if key not in self.log.keys():
             self.log[key] = dict()
@@ -111,10 +92,9 @@ class PREDICT:
     def getLog(self):
         """
         Returns the log dictionary.
-        Returns
-        -------
-        dict
-            The log dictionary.
+
+        Returns:
+            dict: The log dictionary.
         """
         return self.log
     

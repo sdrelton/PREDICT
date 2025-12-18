@@ -75,8 +75,9 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
 
     Returns:
         tuple: A tuple containing:
-        - pd.Timedelta: The calculated time interval for updating the model.
-        - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
+        
+            - pd.Timedelta: The calculated time interval for updating the model.
+            - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
     """
 
     if updateTimestep == 'week':
@@ -117,12 +118,12 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
             verbose=True):
     """Trigger function to update the model if the error enters an upper control limit.
         The control limits can be set using one of the following methods:
-        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
-            limits using the error mean and std during this period.
+
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control limits using the error mean and std during this period.
         - Enter the number of months (numMonths) to base the control limits on from the start of the period.
         - Manually set the control limits by entering the float values for the 'warning' (warningCL) and 'recalibration' (recalCL) zones.
         - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the 
-            recalibration zone (recalSDs).
+        recalibration zone (recalSDs).
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -139,8 +140,9 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
 
     Returns:
         tuple: A tuple containing:
-        - pd.Timedelta: The calculated time interval for updating the model.
-        - pd.DatetimeIndex: A range of dates specifying the update schedule.
+
+            - pd.Timedelta: The calculated time interval for updating the model.
+            - pd.DatetimeIndex: A range of dates specifying the update schedule.
     """
     if warningSDs > recalSDs:
         raise ValueError(f"warningSDs must be lower than recalSDs. recalSDs {recalSDs} is > warningSDs {warningSDs}")
