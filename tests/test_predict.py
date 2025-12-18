@@ -46,8 +46,8 @@ def test_initialisation(predict_instance):
 
     Args:
         predict_instance (class): Initialises with a dataset and a prediction model. 
-        Manages prediction windows and logs, allows for the addition of hooks to execute functions 
-        during the logging process.
+            Manages prediction windows and logs, allows for the addition of hooks to execute functions 
+            during the logging process.
     """
     assert predict_instance.startDate == predict_instance.data['date'].min()
     assert predict_instance.endDate == predict_instance.data['date'].max()
@@ -62,8 +62,8 @@ def test_add_log_hook(predict_instance):
 
     Args:
         predict_instance (class): Initialises with a dataset and a prediction model. 
-        Manages prediction windows and logs, allows for the addition of hooks to execute functions 
-        during the logging process.
+            Manages prediction windows and logs, allows for the addition of hooks to execute functions 
+            during the logging process.
     """
     hook = lambda data: ('hook_name', 'result')
     predict_instance.addLogHook(hook)
@@ -74,8 +74,8 @@ def test_add_log(predict_instance):
 
     Args:
         predict_instance (class): Initialises with a dataset and a prediction model. 
-        Manages prediction windows and logs, allows for the addition of hooks to execute functions 
-        during the logging process.
+            Manages prediction windows and logs, allows for the addition of hooks to execute functions 
+            during the logging process.
     """
     predict_instance.addLog('test', '2020-01-01', 'value')
     assert 'test' in predict_instance.log
@@ -87,8 +87,8 @@ def test_get_log(predict_instance):
 
     Args:
         predict_instance (class): Initialises with a dataset and a prediction model. 
-        Manages prediction windows and logs, allows for the addition of hooks to execute functions 
-        during the logging process.
+            Manages prediction windows and logs, allows for the addition of hooks to execute functions 
+            during the logging process.
     """
     predict_instance.addLog('test', '2020-01-01', 'value')
     log = predict_instance.getLog()
@@ -99,8 +99,8 @@ def test_run(predict_instance):
 
     Args:
         predict_instance (class): Initialises with a dataset and a prediction model. 
-        Manages prediction windows and logs, allows for the addition of hooks to execute functions 
-        during the logging process.
+            Manages prediction windows and logs, allows for the addition of hooks to execute functions 
+            during the logging process.
     """
 
     def log_hook(data):
