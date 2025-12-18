@@ -8,6 +8,7 @@ This work contains code for:
 .. toctree::
    :maxdepth: 2
    :caption: Documentation:
+   
    PREDICT
    Models
    Metrics
