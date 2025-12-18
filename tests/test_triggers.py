@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from PREDICT import PREDICT
+import PREDICT.PREDICT as PREDICT
 from PREDICT.Models import PREDICTModel, RecalibratePredictions
 from PREDICT.Triggers import AccuracyThreshold, SPCTrigger, BayesianRefitTrigger
 from sklearn.metrics import accuracy_score

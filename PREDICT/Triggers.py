@@ -122,8 +122,7 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
         - Enter a start (clStartDate) and end date (clEndDate) to determine the control limits using the error mean and std during this period.
         - Enter the number of months (numMonths) to base the control limits on from the start of the period.
         - Manually set the control limits by entering the float values for the 'warning' (warningCL) and 'recalibration' (recalCL) zones.
-        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the 
-        recalibration zone (recalSDs).
+        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the recalibration zone (recalSDs).
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
