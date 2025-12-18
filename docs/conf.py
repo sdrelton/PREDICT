@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PREDICT'
+html_title = 'PREDICT'
 copyright = '2025, Dr Samuel D. Relton, Dr Zoe L. Hancox, Dr Kate E. Best, Dr Oliver Todd, Barbara Hartley'
 author = 'Dr Samuel D. Relton, Dr Zoe L. Hancox, Dr Kate E. Best, Dr Oliver Todd, Barbara Hartley'
 

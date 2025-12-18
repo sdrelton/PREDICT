@@ -8,7 +8,7 @@ Although this project is primarily focused on the UK healthcare system,
 the tools and methods developed are applicable to any binary prediction model.
 
 The PREDICT project is a research project funded by the 
-National Insitute for Health and Care Research (NIHR206843) which aims to:
+National Insitute for Health and Care Research (`NIHR206843 <https://www.fundingawards.nihr.ac.uk/award/NIHR206843>`_) which aims to:
 
 * Build software to help detect and repair temporal drift `Github`_
 * Understand public opinion around the use of AI for clinical decision making, and deployment issues
@@ -62,14 +62,9 @@ The core PREDICT team is:
 * Barbara Hartley
 
 
-.. _documentation:
-
-Documentation
+Engagement Materials
 -----
-Here is the full documentation for the PREDICT software,
-the associated Github with examples of usage is `here`_.
-
-.. _here: https://github.com/sdrelton/PREDICT
+We have created a number of newsletters and podcasts to help engage with different stakeholders.
 
 .. toctree::
    :maxdepth: 2
@@ -77,6 +72,19 @@ the associated Github with examples of usage is `here`_.
 
    Newsletters
    Podcasts
+
+.. _documentation:
+
+Documentation
+-----
+The full documentation for the PREDICT software,
+the associated Github with examples of usage can be found `here`_.
+
+.. _here: https://github.com/sdrelton/PREDICT
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Documentation:
    PREDICT
    Models
    Metrics
