@@ -3,8 +3,7 @@
 Podcasts
 ===========
 
-We've created some fantastic podcasts describing our project using Gemini Pro.
-Please find them linked below.
+We've created some fantastic podcasts describing our project using `Gemini Pro <https://gemini.google.com/>`_. :
 
 * Podcast 1: AI Temporal Drift in Healthcare Safety
 .. raw:: html
