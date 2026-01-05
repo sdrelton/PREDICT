@@ -102,7 +102,7 @@ def test_bayesian_refit_trigger(sample_data):
     """
     probs = np.array([0.4, 0.5, 0.9, 0.4, 0.4])
     model = MockModel(probs)
-    refit_func = TimeframeTrigger(model, sample_data)
+    refit_func = TimeframeTrigger(model, updateTimestep=6, dataStart=sample_data['date'].min(), dataEnd=sample_data['date'].max())
 
     # Check if the function is bound correctly
     assert hasattr(refit_func, "__call__"), "The returned function should be callable."
