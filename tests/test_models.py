@@ -114,6 +114,4 @@ def test_regular_recalibrations():
             pd.Timestamp('2024-10-28 00:00:00'): True,
             pd.Timestamp('2024-11-04 00:00:00'): True, 
             pd.Timestamp('2024-12-02 00:00:00'): True}
-    
-
     assert updatedDates == trueUpdateDates

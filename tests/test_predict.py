@@ -8,6 +8,9 @@ from dateutil.relativedelta import relativedelta
 class MockModel:
     """Mock model for testing the PREDICT class.
     """
+    def __init__(self):
+        self.outcomeColName = 'outcome'
+        self.dateCol = "date"
     def predict(self, data):
         pass
     def trigger(self, data):
@@ -24,7 +27,8 @@ def sample_data():
     """
     data = {
         'date': pd.date_range(start='1/1/2020', periods=10, freq='ME'),
-        'value': range(10)
+        'value': range(10),
+        'outcome': [0, 1, 0, 1, 1, 0, 1, 0, 1, 0]
     }
     return pd.DataFrame(data)
 
@@ -39,7 +43,7 @@ def predict_instance(sample_data):
         An instance of the PREDICT class.
     """
     model = MockModel()
-    return PREDICT(sample_data, model)
+    return PREDICT(sample_data, model, model_name='Bayesian')
 
 def test_initialisation(predict_instance):
     """Test that the PREDICT class is initialised correctly.
@@ -105,7 +109,7 @@ def test_run(predict_instance):
 
     def log_hook(data):
         return lambda data: __log_hook(data)
-    
+     
     def __log_hook(data):
         return 'log_hook', data
 
