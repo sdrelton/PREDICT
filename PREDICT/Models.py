@@ -163,7 +163,7 @@ class RecalibratePredictions(PREDICTModel):
         """
         def CalculateError(group):
             predictions = group['predictions']
-            differences = abs(group[self.outcomeColName] - predictions)
+            differences = group[self.outcomeColName] - predictions
             sum_of_differences = np.sum(differences)/len(group[self.outcomeColName])
             return sum_of_differences
         
@@ -176,7 +176,7 @@ class RecalibratePredictions(PREDICTModel):
 
             errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
             self.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std()
+            std_dev_error = errors_by_date.std() / np.sqrt(len(errors_by_date))
             
             self.u2sdl = self.mean_error + warningSDs * std_dev_error
             self.u3sdl = self.mean_error + recalSDs * std_dev_error

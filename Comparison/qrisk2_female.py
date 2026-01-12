@@ -58,20 +58,20 @@ df.loc[df['chinese'] == 1, 'other_asian'] = 1
 df.drop('chinese', axis=1, inplace=True)
 predictors.remove('chinese')
 
-df['bmi'] = df['bmi'].astype(float)
-df['townsend_score'] = df['townsend_score'].astype(float)
-
-# scale continuous variables:
-scaler = StandardScaler()
-
-scaled_age = scaler.fit_transform(df[['age']])
-df['age'] = pd.DataFrame(scaled_age, columns=['age'])
-scaled_chol_hdl_ratio = scaler.fit_transform(df[['chol_hdl_ratio']])
-df['chol_hdl_ratio'] = pd.DataFrame(scaled_chol_hdl_ratio, columns=['chol_hdl_ratio'])
-scaled_bmi = scaler.fit_transform(df[['bmi']])
-df['bmi'] = pd.DataFrame(scaled_bmi, columns=['bmi'])
-scaled_townsend = scaler.fit_transform(df[['townsend_score']])
-df['townsend_score'] = pd.DataFrame(scaled_townsend, columns=['townsend_score'])
+# scale continuous variables using saved scaler parameters; require the scaler JSON to exist
+scaler_file = f'qrisk2_{gender}_scaler.json'
+if os.path.exists(scaler_file):
+    with open(scaler_file, 'r') as sf:
+        scaler_params = json.load(sf)
+    for var in ['age', 'chol_hdl_ratio', 'bmi', 'townsend_score']:
+        params = scaler_params.get(var)
+        if params is None:
+            raise KeyError(f"Scaler parameters for {var} not found in {scaler_file}")
+        mean_val = float(params['mean'])
+        scale_val = float(params['scale']) if float(params['scale']) != 0 else 1.0
+        df[var] = (df[var].astype(float) - mean_val) / scale_val
+else:
+    raise FileNotFoundError(f"Scaler file '{scaler_file}' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate it before running this script.")
 
 
 df['age_bmi'] = df['age']*df['bmi']

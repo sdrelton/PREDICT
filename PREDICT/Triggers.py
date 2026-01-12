@@ -57,6 +57,91 @@ def __AUROCThreshold(self, input_data, pos_threshold, update_threshold):
         return False
     else:
         return True
+    
+    
+def CalibrationSlopeThreshold(model, lower_limit=None, upper_limit=None):
+    """Create a trigger that fires when calibration slope falls outside provided bounds.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        lower_limit (float, optional): Lower acceptable bound for calibration slope. If None, only upper_limit is used.
+        upper_limit (float, optional): Upper acceptable bound for calibration slope. If None, only lower_limit is used.
+
+    Returns:
+        MethodType: Bound method that accepts (self, input_data) and returns True when calibration slope is outside bounds.
+    """
+    return MethodType(lambda self, x: __CalibrationSlopeThreshold(self, x, lower_limit, upper_limit), model)
+
+
+def __CalibrationSlopeThreshold(self, input_data, lower_limit, upper_limit):
+    """Trigger implementation that computes calibration slope for the provided input_data and compares to limits.
+
+    Uses the shared Metrics.CalibrationSlope hook to ensure consistent calculation across the project.
+
+    Returns:
+        bool: True if calibration slope is outside [lower_limit, upper_limit] (i.e. requires update), False otherwise.
+    """
+    if lower_limit is None and upper_limit is None:
+        raise ValueError("At least one of lower_limit or upper_limit must be provided for CalibrationSlopeThreshold.")
+
+    # Use the Metrics.CalibrationSlope loghook to compute the calibration slope value
+    try:
+        _, slope_value = Metrics.CalibrationSlope(self)(input_data)
+    except Exception as e:
+        # If computation fails, be conservative and trigger an update
+        if hasattr(self, 'verbose') and self.verbose:
+            print(f"Calibration slope computation failed: {e}. Triggering update by default.")
+        return True
+
+    # Check bounds
+    if (lower_limit is not None) and (slope_value < lower_limit):
+        return True
+    if (upper_limit is not None) and (slope_value > upper_limit):
+        return True
+
+    return False
+
+def CITLThreshold(model, lower_limit=None, upper_limit=None):
+    """Create a trigger that fires when Calibration-In-The-Large (CITL) falls outside provided bounds.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        lower_limit (float, optional): Lower acceptable bound for CITL. If None, only upper_limit is used.
+        upper_limit (float, optional): Upper acceptable bound for CITL. If None, only lower_limit is used.
+
+    Returns:
+        MethodType: Bound method that accepts (self, input_data) and returns True when CITL is outside bounds.
+    """
+    return MethodType(lambda self, x: __CITLThreshold(self, x, lower_limit, upper_limit), model)
+
+
+def __CITLThreshold(self, input_data, lower_limit, upper_limit):
+    """Trigger implementation that computes CITL for the provided input_data and compares to limits.
+
+    The CITL is computed using the shared Metrics.CITL hook to ensure consistent calculation across the project.
+
+    Returns:
+        bool: True if CITL is outside [lower_limit, upper_limit] (i.e. requires update), False otherwise.
+    """
+    if lower_limit is None and upper_limit is None:
+        raise ValueError("At least one of lower_limit or upper_limit must be provided for CITLThreshold.")
+
+    # Use the Metrics.CITL loghook to compute the CITL value
+    try:
+        _, citl_value = Metrics.CITL(self)(input_data)
+    except Exception as e:
+        # If computation fails, be conservative and trigger an update
+        if hasattr(self, 'verbose') and self.verbose:
+            print(f"CITL computation failed: {e}. Triggering update by default.")
+        return True
+
+    # Check bounds
+    if (lower_limit is not None) and (citl_value < lower_limit):
+        return True
+    if (upper_limit is not None) and (citl_value > upper_limit):
+        return True
+
+    return False
 
     
 def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
@@ -175,11 +260,18 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
 
 
     u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+    
+    if verbose:
+        print(f"SPC limits set:")
+        print(f" - Upper 2-sigma limit: {u2sdl}")
+        print(f" - Upper 3-sigma limit: {u3sdl}")
+        print(f" - Lower 2-sigma limit: {l2sdl}")
+        print(f" - Lower 3-sigma limit: {l3sdl}")
 
-    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose), model)
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl, endCLDate, verbose), model)
 
-def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
-    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, endCLDate, verbose):
+    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be
     displayed prompting the user to investigate increasing errors in the model.
 
     Args:
@@ -193,9 +285,16 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
     Returns:
         bool: True to trigger model recalibration.
     """
-
+    # if current date <= endCLDate then don't do anything (using that to set the limits)
+    curDate = input_data[self.dateCol].max()
+    if curDate <= endCLDate:
+        return False
+    
     _, error = Metrics.__SumOfDiffComputation(model, input_data, self.outcomeColName)
+    
     # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
+    if verbose:
+        print(f'Mean error is currently {error}.\n')
     if error > u2sdl and error < u3sdl:
         curDate = input_data[self.dateCol].max()
         if verbose:
@@ -222,3 +321,4 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
     
     else:
         return False
+    

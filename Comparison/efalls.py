@@ -68,11 +68,19 @@ df['date'] = pd.to_datetime(df['date'])
 df["Female"] = df["Female"].astype(int)
 df["Current_Smoker"] = df["Current_Smoker"].astype(int)
 
-# scale continuous variables:
-scaler = StandardScaler()
-
-scaled_age = scaler.fit_transform(df[['Age']])
-df['Age'] = pd.DataFrame(scaled_age, columns=['Age'])
+# scale continuous variables using saved scaler parameters; require the scaler JSON to exist
+scaler_file = 'efalls_scaler.json'
+if os.path.exists(scaler_file):
+    with open(scaler_file, 'r') as sf:
+        scaler_params = json.load(sf)
+    params = scaler_params.get('Age')
+    if params is None:
+        raise KeyError(f"Scaler parameters for Age not found in {scaler_file}")
+    mean_val = float(params['mean'])
+    scale_val = float(params['scale']) if float(params['scale']) != 0 else 1.0
+    df['Age'] = (df['Age'].astype(float) - mean_val) / scale_val
+else:
+    raise FileNotFoundError(f"Scaler file '{scaler_file}' not found. Please run 'refit_efalls_model.py' to generate it before running this script.")
 
 # # TODO: Do we want to scale Polypharmacy too?
 # scaled_Polypharmacy = scaler.fit_transform(df[['Polypharmacy']])

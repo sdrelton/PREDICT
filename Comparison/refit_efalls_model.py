@@ -68,16 +68,36 @@ predictors = ["Age", "Female", "Polypharmacy", "Underweight", "Normal", "Obese",
 df = df[["Fall_Outcome", "DateOnly"]+predictors]
 # change some of the column names
 df.rename(columns={"DateOnly": "date", "Fall_Outcome":"outcome"}, inplace=True)
+# convert the date column to datetime
 df['date'] = pd.to_datetime(df['date'])
-df["Female"] = df["Female"].astype(int)
-df["Current_Smoker"] = df["Current_Smoker"].astype(int)
 
+# define analysis window
+startDate = pd.to_datetime('01-01-2019', dayfirst=True)
 
-# scale continuous variables:
-scaler = StandardScaler()
+# restrict to endDate if present - refit efalls uses records before 2019-01-01 so ensure we filter
+# (original selection already queried DateOnly < '2019-01-01')
+plot_patients_per_month(df, model_type='efalls')
 
-scaled_age = scaler.fit_transform(df[['Age']])
-df['Age'] = pd.DataFrame(scaled_age, columns=['Age'])
+# select prior six months used to fit scalers
+prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
+
+# fit scaler on prior six months only and apply to entire dataframe
+scaler_params = {}
+from sklearn.preprocessing import StandardScaler
+sc = StandardScaler()
+arr = prior_six_months[['Age']].astype(float).values
+sc.fit(arr)
+mean_val = float(sc.mean_[0])
+scale_val = float(sc.scale_[0]) if float(sc.scale_[0]) != 0 else 1.0
+scaler_params['Age'] = {'mean': mean_val, 'scale': scale_val}
+df['Age'] = (df['Age'].astype(float) - mean_val) / scale_val
+
+# persist scaler parameters to JSON
+with open('efalls_scaler.json', 'w') as sf:
+    json.dump(scaler_params, sf)
+
+# select prior six months for model fitting
+prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
 
 # # TODO: Do we want to scale Polypharmacy too?
 # scaled_Polypharmacy = scaler.fit_transform(df[['Polypharmacy']])
@@ -113,7 +133,34 @@ coefs_std = {key: 0.25 for key in coefs} # make all the coef stds 0.25
 
 y_prob = model.predict_proba(X_test)[:, 1]
 auroc = roc_auc_score(y_test, y_prob)
-recalthreshold = auroc - (0.1*auroc) # refitted AUROC
+# bootstrap AUROC to estimate mean and SD, then set recalthreshold = mean - 1.96*SD
+n_boot = 2000
+rng = np.random.RandomState(5)
+y_true = y_test.values.ravel()
+y_scores = y_prob
+boot_aucs = []
+n = len(y_true)
+for _ in range(n_boot):
+    idx = rng.randint(0, n, n)
+    y_t = y_true[idx]
+    y_s = y_scores[idx]
+    if y_t.min() == y_t.max():
+        continue
+    try:
+        boot_aucs.append(roc_auc_score(y_t, y_s))
+    except ValueError:
+        continue
+
+boot_aucs = np.array(boot_aucs)
+if boot_aucs.size == 0:
+    print('Bootstrap sampling failed.')
+    recalthreshold = auroc - (0.1 * auroc)
+else:
+    mean_auc = float(np.mean(boot_aucs))
+    sd_auc = float(np.std(boot_aucs, ddof=1))
+    recalthreshold = mean_auc - 1.96 * sd_auc
+
+print(f"Bootstrap AUROC mean: {mean_auc:.6f}, SD: {sd_auc:.6f}, recalthreshold: {recalthreshold:.6f}")
 # save the auroc recal threshold for bayesian batching
 with open(f"efalls_auroc_thresh.txt", "w") as file:
     file.write(str(recalthreshold))

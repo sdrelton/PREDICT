@@ -58,21 +58,22 @@ df.loc[df['chinese'] == 1, 'other_asian'] = 1
 df.drop('chinese', axis=1, inplace=True)
 predictors.remove('chinese')
 
-df['bmi'] = df['bmi'].astype(float)
-df['townsend_score'] = df['townsend_score'].astype(float)
-
-# scale continuous variables:
-scaler = StandardScaler()
-
-scaled_age = scaler.fit_transform(df[['age']])
-df['age'] = pd.DataFrame(scaled_age, columns=['age'])
-scaled_chol_hdl_ratio = scaler.fit_transform(df[['chol_hdl_ratio']])
-df['chol_hdl_ratio'] = pd.DataFrame(scaled_chol_hdl_ratio, columns=['chol_hdl_ratio'])
-scaled_bmi = scaler.fit_transform(df[['bmi']])
-df['bmi'] = pd.DataFrame(scaled_bmi, columns=['bmi'])
-scaled_townsend = scaler.fit_transform(df[['townsend_score']])
-df['townsend_score'] = pd.DataFrame(scaled_townsend, columns=['townsend_score'])
-
+# scale continuous variables using saved scaler parameters; require the scaler JSON to exist
+scaler_file = f'qrisk2_{gender}_scaler.json'
+if os.path.exists(scaler_file):
+    with open(scaler_file, 'r') as sf:
+        scaler_params = json.load(sf)
+    for var in ['age', 'chol_hdl_ratio', 'bmi', 'townsend_score']:
+        # ensure floats and handle missing keys safely
+        params = scaler_params.get(var)
+        if params is None:
+            raise KeyError(f"Scaler parameters for {var} not found in {scaler_file}")
+        mean_val = float(params['mean'])
+        scale_val = float(params['scale']) if float(params['scale']) != 0 else 1.0
+        df[var] = (df[var].astype(float) - mean_val) / scale_val
+else:
+    # Do not attempt to compute scalers here; require refit script to produce the scaler JSON.
+    raise FileNotFoundError(f"Scaler file '{scaler_file}' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate it before running this script.")
 
 df['age_bmi'] = df['age']*df['bmi']
 df['age_townsend'] = df['age']*df['townsend_score']
@@ -96,7 +97,8 @@ if not os.path.exists(f"qrisk2_{gender}_model_updates.csv"):
     perform_metrics_df.to_csv(f"qrisk2_{gender}_model_updates.csv", index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+method_strs = ['Static Threshold']
 #method_strs = ['Bayesian']
 
 for method_str in method_strs:
@@ -113,12 +115,45 @@ for method_str in method_strs:
     df = df[df['date']<= endDate]
 
     plot_patients_per_month(df, model_type='qrisk2', gender=gender)
-    if not os.path.exists(f"qrisk_{gender}_auroc_thresh.txt"):
-        print(f"Threshold file qrisk_{gender}_auroc_thresh.txt not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the threshold file before running this script.\nSetting threshold to 0.7 for now.")
-        recalthreshold = 0.7
+    # Prefer the JSON file produced by the refit script which contains bootstrap summaries
+    thresh_json = f"qrisk_{gender}_thresh.json"
+    # Initialize threshold variables
+    recalthreshold = None
+    citl_thresh_lower = None
+    citl_thresh_upper = None
+    slope_thresh_lower = None
+    slope_thresh_upper = None
+
+    if os.path.exists(thresh_json):
+        with open(thresh_json, 'r') as jf:
+            thresh_data = json.load(jf)
+        # AUROC recalthreshold
+        if 'auroc_recalthreshold' not in thresh_data:
+            raise KeyError(f"Key 'auroc_recalthreshold' not found in {thresh_json}. Please re-run the refit script.")
+        recalthreshold = float(thresh_data['auroc_recalthreshold'])
+        # Other calibration thresholds
+        citl_thresh_lower = float(thresh_data.get('citl_recalthreshold_lower')) if thresh_data.get('citl_recalthreshold_lower') is not None else None
+        citl_thresh_upper = float(thresh_data.get('citl_recalthreshold_upper')) if thresh_data.get('citl_recalthreshold_upper') is not None else None
+        slope_thresh_lower = float(thresh_data.get('slope_recalthreshold_lower')) if thresh_data.get('slope_recalthreshold_lower') is not None else None
+        slope_thresh_upper = float(thresh_data.get('slope_recalthreshold_upper')) if thresh_data.get('slope_recalthreshold_upper') is not None else None
     else:
-        with open(f"qrisk_{gender}_auroc_thresh.txt", "r") as file:
-            recalthreshold = float(file.read())
+        print(f"Threshold file {thresh_json} not found. Please run 'refit_qrisk2_{gender}_model.py' to generate it before running this script.\nSetting AUROC threshold to 0.7 for now.")
+        recalthreshold = 0.7
+
+    # expose optional thresholds in case other code wants them later
+    thresh_summary = {
+        'auroc': recalthreshold,
+        'citl_lower': citl_thresh_lower,
+        'citl_upper': citl_thresh_upper,
+        'slope_lower': slope_thresh_lower,
+        'slope_upper': slope_thresh_upper
+    }
+
+    # map loaded threshold names to the parameter names expected by the trigger
+    lower_limit_citl = citl_thresh_lower
+    upper_limit_citl = citl_thresh_upper
+    lower_limit_cslope = slope_thresh_lower
+    upper_limit_cslope = slope_thresh_upper
 
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == startOfAnalysis:
@@ -196,14 +231,19 @@ for method_str in method_strs:
     # Static Threshold Testing
     if method_str == 'Static Threshold':
         model = RecalibratePredictions()
-        model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+        #model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+        def custom_trigger(model, lower_limit_citl, upper_limit_citl, lower_limit_cslope, upper_limit_cslope):
+            return CITLThreshold(model=model, lower_limit=lower_limit_citl, upper_limit=upper_limit_citl) or \
+                CalibrationSlopeThreshold(model=model, lower_limit=lower_limit_cslope, upper_limit=upper_limit_cslope)
+
+        model.trigger = custom_trigger(model, lower_limit_citl, upper_limit_citl, lower_limit_cslope, upper_limit_cslope)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=365, model_name=f'{method_str}_qrisk2_{gender}')
 
 
     # SPC Testing
     if method_str == 'SPC':
         model = RecalibratePredictions()
-        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=False)
+        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=True)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=365, model_name=f'{method_str}_qrisk2_{gender}')
 
 
