@@ -173,3 +173,6 @@ cython_debug/
 # Images generated from notebooks
 docs/images/monitoring/*
 docs/images/performance_comparison/*
+
+# Local settings
+.vscode/settings.json
