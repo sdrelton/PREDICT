@@ -26,9 +26,9 @@ def get_model_updated_log(df, model, model_name, undetected, detectDate):
         int: Time to detect (ttd) in days, or None if no model update detected.
     """
     if model_name == "Regular Testing": # if regular testing then recalibrate using the last 3 years 
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', recal_period=3*365, model_name=model_name)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     else:
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
     log = mytest.getLog()
     
@@ -310,7 +310,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     # Regular Testing
     model = RecalibratePredictions()
     model.trigger = TimeframeTrigger(model=model, updateTimestep=182, dataStart=df['date'].min(), dataEnd=df['date'].max())
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
@@ -335,7 +335,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     # Static Threshold Testing
     model = RecalibratePredictions()
     model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
-    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
     mytest.addLogHook(Precision(model))
@@ -361,7 +361,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     for numMonths in [3, 5, 7]:
         model = RecalibratePredictions()
         model.trigger = SPCTrigger(model=model, input_data=df, numMonths=numMonths, verbose=False)
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month', model_name=model_name)
+        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
         mytest.addLogHook(Accuracy(model))
         mytest.addLogHook(AUROC(model))
         mytest.addLogHook(Precision(model))
@@ -474,7 +474,11 @@ def update_ttd_table(regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, baye
     
     
     # Load ttd dataframe
-    ttd_df = pd.read_csv(ttd_csv_file)
+    required_cols = ['regular_ttd', 'static_ttd', 'spc_ttd3', 'spc_ttd5', 'spc_ttd7', 'bayesian_ttd', 'impact_val']
+    try:
+        ttd_df = pd.read_csv(ttd_csv_file)
+    except FileNotFoundError:
+        ttd_df = pd.DataFrame(columns=required_cols)
 
     # Update time to detect values
     if regular_ttd and regular_ttd[0] is not None:

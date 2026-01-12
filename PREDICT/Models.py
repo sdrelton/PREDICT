@@ -43,7 +43,7 @@ class PREDICTModel:
         """
         return False
 
-    def update(self, input_data):
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
         """
         Updates the model if required based on the input data.
 
@@ -126,16 +126,21 @@ class RecalibratePredictions(PREDICTModel):
             preds = hook(preds)
         return preds
     
-    def update(self, input_data):
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
         # Get predictions
-        preds = self.predict(input_data)
+        if recalPeriod is None:
+            curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
+        else:
+            curdata = input_data[(input_data[self.dateCol] >= (windowEnd - pd.Timedelta(days=recalPeriod))) & (input_data[self.dateCol] < windowEnd)]
+        
+        preds = self.predict(curdata)
         
         # Convert to linear predictor scale
         lp = self.__inverseSigmoid(preds)
         
         # Work out model calibration
-        logreg = LogisticRegression(penalty=None, max_iter=1000) # 'l1', 'elasticnet', 'l2' or None
-        logreg.fit(np.array(lp).reshape(-1, 1), input_data[self.outcomeColName].astype(int))
+        logreg = LogisticRegression(penalty=None, max_iter=5000) # 'l1', 'elasticnet', 'l2' or None
+        logreg.fit(np.array(lp).reshape(-1, 1), curdata[self.outcomeColName].astype(int))
         intercept = logreg.intercept_
         scale = logreg.coef_[0]
         
@@ -145,7 +150,7 @@ class RecalibratePredictions(PREDICTModel):
         return intercept, scale
 
 
-    def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
+    #def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
         """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate) or 
         the inputted control limits (warningCL, recalCL).
 
