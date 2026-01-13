@@ -233,20 +233,20 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
 
     timestamps = sorted(bayesian_coefficients.keys()) 
 
-    for i in range(len(timestamps) - 1):
-        curr_timestamp = timestamps[i]
-        next_timestamp = timestamps[i + 1]
+    for i in range(1,len(timestamps)):
+        orig_timestamp = timestamps[0]
+        cur_timestamp = timestamps[i]
 
-        curr_coeffs = bayesian_coefficients[curr_timestamp]
-        next_coeffs = bayesian_coefficients[next_timestamp]
+        orig_coeffs = bayesian_coefficients[orig_timestamp]
+        cur_coeffs = bayesian_coefficients[cur_timestamp]
 
-        for key in curr_coeffs:
-            curr_value = curr_coeffs[key][0]  # Get coefficient value
-            next_value = next_coeffs[key][0]
-
-            if abs(next_value - curr_value) > abs(curr_value) * threshold:  # More than X% difference
-                significant_timestamps.append(next_timestamp)
-                print(f"Significant change detected in coefficient '{key}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
+        for key in orig_coeffs:
+            orig_value = orig_coeffs[key][0]  # Get coefficient value
+            cur_value = cur_coeffs[key][0]
+            rel_diff = abs(cur_value - orig_value)/abs(orig_value)
+            if (rel_diff > 1+threshold or rel_diff < 1-threshold):  # More than X% difference
+                significant_timestamps.append(cur_timestamp)
+                print(f"Significant change detected in coefficient '{key}' from {orig_value} to {cur_value} at timestamp {cur_timestamp}")
                 break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
     
     # Assuming the first significant increase after the start time or switch time is the one we want to calculate time to detect from
