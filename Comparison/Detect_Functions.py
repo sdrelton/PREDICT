@@ -165,7 +165,7 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     
 
 
-def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold_lower, recalthreshold_upper):
     """Run recalibration tests on the given DataFrame using various triggers and return the updated undetected counts and time to detect (ttd) for each method.
 
     Args:
@@ -196,7 +196,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
-    model.trigger = F1Threshold(model=model, update_threshold=recalthreshold)
+    model.trigger = OEThreshold(model=model, update_threshold=(recalthreshold_lower, recalthreshold_upper))
     ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
@@ -295,13 +295,14 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
 
 
 
-def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
+def get_metrics_recal_methods(df, custom_impact, recalthreshold_lower, recalthreshold_upper, model_name):
     """Get metrics for different recalibration methods on the given DataFrame.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         custom_impact (float): Either the custom impact on the outcome or the prevalence of a condition.
-        recalthreshold (float): Threshold for the static threshold recalibration method.
+        recalthreshold_lower (float): Lower threshold for the static threshold recalibration method.
+        recalthreshold_upper (float): Upper threshold for the static threshold recalibration method.
         model_name (str): Name of the model being evaluated.
 
     Returns:
@@ -338,7 +339,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
 
     # Static Threshold Testing
     model = RecalibratePredictions()
-    model.trigger = F1Threshold(model=model, update_threshold=recalthreshold)
+    model.trigger = OEThreshold(model=model, update_threshold=(recalthreshold_lower, recalthreshold_upper))
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
