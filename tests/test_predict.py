@@ -43,7 +43,7 @@ def predict_instance(sample_data):
         An instance of the PREDICT class.
     """
     model = MockModel()
-    return PREDICT(sample_data, model, model_name='Bayesian')
+    return PREDICT(sample_data, model)
 
 def test_initialisation(predict_instance):
     """Test that the PREDICT class is initialised correctly.
