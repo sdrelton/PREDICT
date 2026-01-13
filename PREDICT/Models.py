@@ -43,7 +43,7 @@ class PREDICTModel:
         """
         return False
 
-    def update(self, input_data):
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
         """
         Updates the model if required based on the input data.
 
@@ -126,75 +126,28 @@ class RecalibratePredictions(PREDICTModel):
             preds = hook(preds)
         return preds
     
-    def update(self, input_data):
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
         # Get predictions
-        preds = self.predict(input_data)
+        if recalPeriod is None:
+            curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
+        else:
+            curdata = input_data[(input_data[self.dateCol] >= (windowEnd - pd.Timedelta(days=recalPeriod))) & (input_data[self.dateCol] < windowEnd)]
+        
+        preds = self.predict(curdata)
         
         # Convert to linear predictor scale
         lp = self.__inverseSigmoid(preds)
         
         # Work out model calibration
-        logreg = LogisticRegression(penalty=None, max_iter=1000) # 'l1', 'elasticnet', 'l2' or None
-        logreg.fit(np.array(lp).reshape(-1, 1), input_data[self.outcomeColName].astype(int))
+        logreg = LogisticRegression(penalty=None, max_iter=5000) # 'l1', 'elasticnet', 'l2' or None
+        logreg.fit(np.array(lp).reshape(-1, 1), curdata[self.outcomeColName].astype(int))
         intercept = logreg.intercept_
         scale = logreg.coef_[0]
         
         # Add hook to adjust predictions accordingly
         recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
-
-
-    def CalculateControlLimits(self, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
-        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate) or 
-        the inputted control limits (warningCL, recalCL).
-
-        Args:
-            input_data (pd.DataFrame): The input data for updating the model.
-            startCLDate (str): Start date to determine control limits from.
-            endCLDate (str): End date to determine control limits from.
-            warningCL (float): A manually set control limit for the warning control limit.
-            recalCL (float): A manually set control limit for the recalibration trigger limit.
-            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to
-            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
-
-        Returns:
-            float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
-        """
-        def CalculateError(group):
-            predictions = group['predictions']
-            differences = abs(group[self.outcomeColName] - predictions)
-            sum_of_differences = np.sum(differences)/len(group[self.outcomeColName])
-            return sum_of_differences
-        
-        if startCLDate is not None and endCLDate is not None:
-            # Get the logreg error at each timestep within the control limit determination period
-            createCLdf = input_data[(input_data[self.dateCol] >= startCLDate) & (input_data[self.dateCol] <= endCLDate)].copy()
-            
-            # Predictions column
-            createCLdf['predictions'] = self.predict(createCLdf)
-
-            errors_by_date = createCLdf.groupby(self.dateCol).apply(CalculateError)
-            self.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std()
-            
-            self.u2sdl = self.mean_error + warningSDs * std_dev_error
-            self.u3sdl = self.mean_error + recalSDs * std_dev_error
-            self.l2sdl = self.mean_error - warningSDs * std_dev_error
-            self.l3sdl = self.mean_error - recalSDs * std_dev_error
-
-        #elif warningCL is not None and recalCL is not None:
-        else:
-            # Predictions column
-            input_data['predictions'] = self.predict(input_data)
-            errors_by_date = input_data.groupby(self.dateCol).apply(CalculateError)
-            self.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std()
-            self.u3sdl = recalCL
-            self.u2sdl = warningCL
-            self.l3sdl = -recalCL
-            self.l2sdl = -warningCL
-    
-        return self.u2sdl, self.u3sdl, self.l2sdl, self.l3sdl
+        return intercept, scale
 
 class BayesianModel(PREDICTModel):
     """ A class which uses Bayesian regression to update the coefficients of a logistic regression model.

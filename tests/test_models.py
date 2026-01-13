@@ -32,9 +32,14 @@ def test_recalibrate_predictions():
     """Test that the recalibrate predictions model produces a non-None output
         and checking the recalibration hook is added.
     """
-    data = {'prediction': np.array([0.2, 0.5, 0.8]), 'outcome': np.array([0, 1, 1])}
+    data = pd.DataFrame.from_dict(
+        {'prediction': np.array([0.2, 0.5, 0.8]), 
+        'outcome': np.array([0, 1, 1]), 
+        'date': np.array([pd.Timestamp('2024-01-01'), pd.Timestamp('2024-01-02'), 
+                        pd.Timestamp('2024-01-03')])
+        })
     model = Models.RecalibratePredictions()
-    model.update(data)
+    model.update(data, data.date.min(), data.date.max(), None)
     recalibrated_predictions = model.predict(data)
 
     assert recalibrated_predictions is not None
@@ -96,17 +101,22 @@ def test_regular_recalibrations():
     updatedDates = log['Model Updated']
 
     # Assuming the model gets checked every week and is updated every month
-    trueUpdateDates = {pd.Timestamp('2024-02-05 00:00:00'): True, 
+    trueUpdateDates = {
+            pd.Timestamp('2024-01-29 00:00:00'): True,
+            pd.Timestamp('2024-02-05 00:00:00'): True, 
+            pd.Timestamp('2024-02-26 00:00:00'): True,
             pd.Timestamp('2024-03-04 00:00:00'): True, 
-            pd.Timestamp('2024-04-08 00:00:00'): True, 
+            pd.Timestamp('2024-04-01 00:00:00'): True,
+            pd.Timestamp('2024-04-29 00:00:00'): True,
             pd.Timestamp('2024-05-06 00:00:00'): True, 
             pd.Timestamp('2024-06-03 00:00:00'): True, 
-            pd.Timestamp('2024-07-08 00:00:00'): True, 
+            pd.Timestamp('2024-07-01 00:00:00'): True,
+            pd.Timestamp('2024-07-29 00:00:00'): True,
             pd.Timestamp('2024-08-05 00:00:00'): True, 
             pd.Timestamp('2024-09-02 00:00:00'): True, 
+            pd.Timestamp('2024-09-30 00:00:00'): True,
             pd.Timestamp('2024-10-07 00:00:00'): True, 
+            pd.Timestamp('2024-10-28 00:00:00'): True,
             pd.Timestamp('2024-11-04 00:00:00'): True, 
             pd.Timestamp('2024-12-02 00:00:00'): True}
-    
-
     assert updatedDates == trueUpdateDates

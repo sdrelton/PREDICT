@@ -19,3 +19,4 @@ dependencies:
     - ghp-import
     - pymc
     - ipywidgets
+    - furo

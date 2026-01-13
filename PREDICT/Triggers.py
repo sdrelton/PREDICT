@@ -57,6 +57,91 @@ def __AUROCThreshold(self, input_data, pos_threshold, update_threshold):
         return False
     else:
         return True
+    
+    
+def CalibrationSlopeThreshold(model, lower_limit=None, upper_limit=None):
+    """Create a trigger that fires when calibration slope falls outside provided bounds.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        lower_limit (float, optional): Lower acceptable bound for calibration slope. If None, only upper_limit is used.
+        upper_limit (float, optional): Upper acceptable bound for calibration slope. If None, only lower_limit is used.
+
+    Returns:
+        MethodType: Bound method that accepts (self, input_data) and returns True when calibration slope is outside bounds.
+    """
+    return MethodType(lambda self, x: __CalibrationSlopeThreshold(self, x, lower_limit, upper_limit), model)
+
+
+def __CalibrationSlopeThreshold(self, input_data, lower_limit, upper_limit):
+    """Trigger implementation that computes calibration slope for the provided input_data and compares to limits.
+
+    Uses the shared Metrics.CalibrationSlope hook to ensure consistent calculation across the project.
+
+    Returns:
+        bool: True if calibration slope is outside [lower_limit, upper_limit] (i.e. requires update), False otherwise.
+    """
+    if lower_limit is None and upper_limit is None:
+        raise ValueError("At least one of lower_limit or upper_limit must be provided for CalibrationSlopeThreshold.")
+
+    # Use the Metrics.CalibrationSlope loghook to compute the calibration slope value
+    try:
+        _, slope_value = Metrics.CalibrationSlope(self)(input_data)
+    except Exception as e:
+        # If computation fails, be conservative and trigger an update
+        if hasattr(self, 'verbose') and self.verbose:
+            print(f"Calibration slope computation failed: {e}. Triggering update by default.")
+        return True
+
+    # Check bounds
+    if (lower_limit is not None) and (slope_value < lower_limit):
+        return True
+    if (upper_limit is not None) and (slope_value > upper_limit):
+        return True
+
+    return False
+
+def CITLThreshold(model, lower_limit=None, upper_limit=None):
+    """Create a trigger that fires when Calibration-In-The-Large (CITL) falls outside provided bounds.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        lower_limit (float, optional): Lower acceptable bound for CITL. If None, only upper_limit is used.
+        upper_limit (float, optional): Upper acceptable bound for CITL. If None, only lower_limit is used.
+
+    Returns:
+        MethodType: Bound method that accepts (self, input_data) and returns True when CITL is outside bounds.
+    """
+    return MethodType(lambda self, x: __CITLThreshold(self, x, lower_limit, upper_limit), model)
+
+
+def __CITLThreshold(self, input_data, lower_limit, upper_limit):
+    """Trigger implementation that computes CITL for the provided input_data and compares to limits.
+
+    The CITL is computed using the shared Metrics.CITL hook to ensure consistent calculation across the project.
+
+    Returns:
+        bool: True if CITL is outside [lower_limit, upper_limit] (i.e. requires update), False otherwise.
+    """
+    if lower_limit is None and upper_limit is None:
+        raise ValueError("At least one of lower_limit or upper_limit must be provided for CITLThreshold.")
+
+    # Use the Metrics.CITL loghook to compute the CITL value
+    try:
+        _, citl_value = Metrics.CITL(self)(input_data)
+    except Exception as e:
+        # If computation fails, be conservative and trigger an update
+        if hasattr(self, 'verbose') and self.verbose:
+            print(f"CITL computation failed: {e}. Triggering update by default.")
+        return True
+
+    # Check bounds
+    if (lower_limit is not None) and (citl_value < lower_limit):
+        return True
+    if (upper_limit is not None) and (citl_value > upper_limit):
+        return True
+
+    return False
 
     
 def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
@@ -65,8 +150,8 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
         updateTimestep (pd.Timedelta): Time interval at which to update the model. Note: The model 
-        can only be recalibrated at the end of the time interval. If the prediction window is less 
-        than the updateTimestep, the model will not be recalibrated.
+            can only be recalibrated at the end of the time interval. If the prediction window is less 
+            than the updateTimestep, the model will not be recalibrated.
         dataStart (pd.Timedelta): Date of when to start regular recalibration.
         dataEnd (pd.Timedelta): Date of when to end regular recalibration.
 
@@ -75,36 +160,30 @@ def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
 
     Returns:
         tuple: A tuple containing:
-        - pd.Timedelta: The calculated time interval for updating the model.
-        - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
+        
+            - pd.Timedelta: The calculated time interval for updating the model.
+            - pd.DatetimeIndex: A range of dates specifying the update schedule, excluding the first window.
     """
 
-    try:
-        if updateTimestep == 'week':
-            updateTimestep = pd.Timedelta(weeks=1)
-        elif updateTimestep == 'day':
-            updateTimestep = pd.Timedelta(days=1)
-        elif updateTimestep == 'month':
-            #updateTimestep = pd.Timedelta(weeks=4)
-            updateTimestep = relativedelta(months=1)
-        elif isinstance(updateTimestep, int):
-            updateTimestep = pd.Timedelta(days=updateTimestep)
-        else:
-            raise TypeError
-    except (ValueError, TypeError):
-        print("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
-        updateTimestep = pd.Timedelta(weeks=1)
+    if updateTimestep == 'week':
+        freq = pd.Timedelta(weeks=1)
+    elif updateTimestep == 'day':
+        freq = pd.Timedelta(days=1)
+    elif updateTimestep == 'month':
+        freq = pd.DateOffset(months=1)
+    elif isinstance(updateTimestep, int):
+        freq = pd.Timedelta(days=updateTimestep)
+    else:
+        freq = pd.Timedelta(weeks=1)
+        raise TypeError("Invalid timestep value, updateTimestep must be 'week', 'day', 'month' or an integer representing days. Defaulting to 'week'.")
+        
 
-    # List of dates to update the model excluding the first window
-    update_dates = []
-    current_date = dataStart + updateTimestep
-    while current_date <= dataEnd:
-        update_dates.append(current_date)
-        current_date += updateTimestep
+    update_dates = pd.date_range(start=dataStart + freq, end=dataEnd, freq=freq)
+
 
     return MethodType(lambda self, x: __TimeframeTrigger(self, x, update_dates), model)
     
-def __TimeframeTrigger(self, input_data, update_dates):
+def __TimeframeTrigger(self, input_data, update_dates, tolerance=pd.Timedelta(days=5)):
     """Trigger function to update model based on a fixed time interval.
 
     Args:
@@ -115,24 +194,71 @@ def __TimeframeTrigger(self, input_data, update_dates):
         bool: Returns True if model update is required.
     """
 
-    # Check if current period is in the list of update dates
-    if any(date in input_data[self.dateCol].values for date in update_dates):
-        return True
-    else:
-        return False
+    current_date = input_data[self.dateCol].max()
+    return any(abs(current_date - d) <= tolerance for d in update_dates)
     
+def __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
+        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate) or 
+        the inputted control limits (warningCL, recalCL).
+
+        Args:
+            input_data (pd.DataFrame): The input data for updating the model.
+            startCLDate (str): Start date to determine control limits from.
+            endCLDate (str): End date to determine control limits from.
+            warningCL (float): A manually set control limit for the warning control limit.
+            recalCL (float): A manually set control limit for the recalibration trigger limit.
+            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to
+            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
+
+        Returns:
+            float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
+        """
+        def CalculateError(group):
+            predictions = group['predictions']
+            differences = group[model.outcomeColName] - predictions
+            sum_of_differences = np.sum(differences)/len(group[model.outcomeColName])
+            return sum_of_differences
+        
+        if startCLDate is not None and endCLDate is not None:
+            # Get the logreg error at each timestep within the control limit determination period
+            createCLdf = input_data[(input_data[model.dateCol] >= startCLDate) & (input_data[model.dateCol] <= endCLDate)].copy()
+            
+            # Predictions column
+            createCLdf['predictions'] = model.predict(createCLdf)
+
+            errors_by_date = createCLdf.groupby(model.dateCol).apply(CalculateError)
+            model.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std() / np.sqrt(len(errors_by_date))
+            
+            model.u2sdl = model.mean_error + warningSDs * std_dev_error
+            model.u3sdl = model.mean_error + recalSDs * std_dev_error
+            model.l2sdl = model.mean_error - warningSDs * std_dev_error
+            model.l3sdl = model.mean_error - recalSDs * std_dev_error
+
+        #elif warningCL is not None and recalCL is not None:
+        else:
+            # Predictions column
+            input_data['predictions'] = model.predict(input_data)
+            errors_by_date = input_data.groupby(model.dateCol).apply(CalculateError)
+            model.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std()
+            model.u3sdl = recalCL
+            model.u2sdl = warningCL
+            model.l3sdl = -recalCL
+            model.l2sdl = -warningCL
+    
+        return model.u2sdl, model.u3sdl, model.l2sdl, model.l3sdl
     
 def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
             numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3, 
             verbose=True):
     """Trigger function to update the model if the error enters an upper control limit.
         The control limits can be set using one of the following methods:
-        - Enter a start (clStartDate) and end date (clEndDate) to determine the control 
-            limits using the error mean and std during this period.
+
+        - Enter a start (clStartDate) and end date (clEndDate) to determine the control limits using the error mean and std during this period.
         - Enter the number of months (numMonths) to base the control limits on from the start of the period.
         - Manually set the control limits by entering the float values for the 'warning' (warningCL) and 'recalibration' (recalCL) zones.
-        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the 
-            recalibration zone (recalSDs).
+        - Enter the number of standard deviations from the mean for the start of the warning zone (warningSDs) and the start of the recalibration zone (recalSDs).
 
     Args:
         model (PREDICTModel): The model to evaluate, must have a predict method.
@@ -149,8 +275,9 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
 
     Returns:
         tuple: A tuple containing:
-        - pd.Timedelta: The calculated time interval for updating the model.
-        - pd.DatetimeIndex: A range of dates specifying the update schedule.
+
+            - pd.Timedelta: The calculated time interval for updating the model.
+            - pd.DatetimeIndex: A range of dates specifying the update schedule.
     """
     if warningSDs > recalSDs:
         raise ValueError(f"warningSDs must be lower than recalSDs. recalSDs {recalSDs} is > warningSDs {warningSDs}")
@@ -183,12 +310,19 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
             alongside either numMonths or clStartDate and clEndDate.""")
 
 
-    u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+    u2sdl, u3sdl, l2sdl, l3sdl = __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+    
+    if verbose:
+        print(f"SPC limits set:")
+        print(f" - Upper 2-sigma limit: {u2sdl}")
+        print(f" - Upper 3-sigma limit: {u3sdl}")
+        print(f" - Lower 2-sigma limit: {l2sdl}")
+        print(f" - Lower 3-sigma limit: {l3sdl}")
 
-    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose), model)
+    return MethodType(lambda self, x: __SPCTrigger(self, x, model, u2sdl, u3sdl, l2sdl, l3sdl, endCLDate, verbose), model)
 
-def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
-    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be 
+def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, endCLDate, verbose):
+    """Trigger function to determine whether recalibration should be carried out and whether a warning message should be
     displayed prompting the user to investigate increasing errors in the model.
 
     Args:
@@ -202,9 +336,16 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
     Returns:
         bool: True to trigger model recalibration.
     """
-
+    # if current date <= endCLDate then don't do anything (using that to set the limits)
+    curDate = input_data[self.dateCol].max()
+    if curDate <= endCLDate:
+        return False
+    
     _, error = Metrics.__SumOfDiffComputation(model, input_data, self.outcomeColName)
+    
     # if error enter yellow zone (usually between 2SD and 3SD unless user has manually changed control limits) then print warning message
+    if verbose:
+        print(f'Mean error is currently {error}.\n')
     if error > u2sdl and error < u3sdl:
         curDate = input_data[self.dateCol].max()
         if verbose:
@@ -232,40 +373,3 @@ def __SPCTrigger(self, input_data, model, u2sdl, u3sdl, l2sdl, l3sdl, verbose):
     else:
         return False
     
-
-def BayesianRefitTrigger(model, input_data, dateCol='date', refitFrequency=1):
-    """Determine the trigger dates for refitting the Bayesian model.
-
-    Args:
-        model (PREDICTModel): The model to evaluate, must have a predict method.
-        input_data (dataframe): DataFrame with column of the predicted outcome.
-        dateCol (str, optional): Column name for date values. Defaults to 'date'.
-        refitFrequency (int, optional): Number of months between refitting the model. Defaults to 6.
-
-    Returns:
-        MethodType: A bound method to determine when to trigger model refitting.
-    """
-    
-    numMonths = relativedelta(months=refitFrequency)
-    refit_dates = []
-    current_date = input_data[dateCol].min() + numMonths
-    while current_date <= input_data[dateCol].max():
-        refit_dates.append(current_date.date())
-        current_date += numMonths
-
-    activated_triggers = set()  # Use a set for tracking activated triggers efficiently
-
-    return MethodType(lambda self, x: __BayesianRefitTrigger(self, x, refit_dates, activated_triggers), model)
-
-def __BayesianRefitTrigger(self, input_data, refit_dates, activated_triggers):
-    """Determine whether the model should be refitted based on trigger dates."""
-    
-    max_date = input_data[self.dateCol].max().date()
-    activate_trigger = False
-    # If max_date surpasses the next trigger date, activate the refitting
-    for date in refit_dates:
-        if date <= max_date and date not in activated_triggers:
-            activated_triggers.add(date)  # Keep track of activated triggers
-            activate_trigger = True
-
-    return activate_trigger
