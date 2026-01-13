@@ -105,7 +105,7 @@ def select_ethnic_group(num_patients):
 
     return ethnicity_assignments
 
-def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None):
+def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None, fileloc='./'):
     """Plot the prevalence of an outcome over time, with vertical lines indicating model update times.
 
     Args:
@@ -117,6 +117,8 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
         spc_ttd5 (list): List of time to detect (ttd) for SPC 5 months model updates.
         spc_ttd7 (list): List of time to detect (ttd) for SPC 7 months model updates.
         bayesian_ttd (list): List of time to detect (ttd) for Bayesian model updates.
+        sim_data (str or None): Identifier for the simulation data, used in the filename. Defaults to None.
+        fileloc (str): Directory to save the plot image. Defaults to current directory.
     """
 
     # If we want to plot a different simulated data prevalence:
@@ -157,7 +159,7 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
     plt.ylabel("Prevalence")
     plt.legend()
     # save figure
-    plt.savefig(f"../docs/images/monitoring/prev_over_time/prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(fileloc, f"prevalence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
     plt.show()
 
     
