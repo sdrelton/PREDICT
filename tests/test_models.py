@@ -39,8 +39,8 @@ def test_recalibrate_predictions():
                         pd.Timestamp('2024-01-03')])
         })
     model = Models.RecalibratePredictions()
-    model.update(data)
-    recalibrated_predictions = model.predict(data, data.date.min(), data.date.max(), None)
+    model.update(data, data.date.min(), data.date.max(), None)
+    recalibrated_predictions = model.predict(data)
 
     assert recalibrated_predictions is not None
     assert len(recalibrated_predictions) == len(data['prediction'])
