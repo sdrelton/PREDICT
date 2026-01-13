@@ -25,10 +25,7 @@ def get_model_updated_log(df, model, model_name, undetected, detectDate):
     Returns:
         int: Time to detect (ttd) in days, or None if no model update detected.
     """
-    if model_name == "Regular Testing": # if regular testing then recalibrate using the last 3 years 
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
-    else:
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
     log = mytest.getLog()
     
@@ -105,8 +102,8 @@ def select_ethnic_group(num_patients):
 
     return ethnicity_assignments
 
-def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None, fileloc='./'):
-    """Plot the prevalence of an outcome over time, with vertical lines indicating model update times.
+def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None, fileloc='./'):
+    """Plot the incidence of an outcome over time, with vertical lines indicating model update times.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
@@ -121,45 +118,45 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
         fileloc (str): Directory to save the plot image. Defaults to current directory.
     """
 
-    # If we want to plot a different simulated data prevalence:
-    # save times and grouped prevalence in a df to plot at the end? - another column to say which number run it is for new lines
-    plt.figure(figsize=(10, 5)) # plot prevalence over time for each switchTime - start with just the final one first
+    # If we want to plot a different simulated data incidence:
+    # save times and grouped incidence in a df to plot at the end? - another column to say which number run it is for new lines
+    plt.figure(figsize=(10, 5)) # plot incidence over time for each switchTime - start with just the final one first
 
     # groupby the date and get the sum of the outcome
     groupby_df = df.groupby('date').agg({'outcome': 'sum'}).reset_index()
 
-    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Prevalence', color='blue')
+    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Incidence', color='blue')
 
     if switchDateStrings is not None:
         switch_time = pd.to_datetime(switchDateStrings[-1], dayfirst=True)
-        plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max(), color='orange', linestyle='--', label='Switch Time')
+        plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max(), color='orange', linestyle='-', label='Shock Time')
     else:
         switch_time = df['date'].min()  # Use the minimum date in the DataFrame if no switch date is provided
 
     if len(regular_ttd) > 0 and regular_ttd[-1] is not None:
         regular_update = switch_time + timedelta(days=regular_ttd[-1])
-        plt.vlines(x=regular_update, ymin=0, ymax=groupby_df['outcome'].max(), color='black', linestyle='--', label='Regular Testing Model Update Time', alpha=0.6)
+        plt.vlines(x=regular_update, ymin=0, ymax=groupby_df['outcome'].max(), color='black', linestyle='dashed', label='Regular Testing Model Update Time', alpha=0.6)
     if len(static_ttd) > 0 and static_ttd[-1] is not None:
         static_update = switch_time + timedelta(days=static_ttd[-1])
-        plt.vlines(x=static_update, ymin=0, ymax=groupby_df['outcome'].max(), color='purple', linestyle='--', label='Static Threshold Model Update Time', alpha=0.6)
+        plt.vlines(x=static_update, ymin=0, ymax=groupby_df['outcome'].max(), color='purple', linestyle='dashdot', label='Static Threshold Model Update Time', alpha=0.6)
     if len(spc_ttd3) > 0 and spc_ttd3[-1] is not None: 
         spc_update3 = switch_time + timedelta(days=spc_ttd3[-1])
-        plt.vlines(x=spc_update3, ymin=0, ymax=groupby_df['outcome'].max(), color='green', linestyle='--', label='SPC 3 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update3, ymin=0, ymax=groupby_df['outcome'].max(), color='green', linestyle='dotted', label='SPC 3 months Model Update Time', alpha=0.6)
     if len(spc_ttd5) > 0 and spc_ttd5[-1] is not None:
         spc_update5 = switch_time + timedelta(days=spc_ttd5[-1])
-        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max(), color='pink',  linestyle='--', label='SPC 5 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max(), color='pink',  linestyle='dotted', label='SPC 5 months Model Update Time', alpha=0.6)
     if len(spc_ttd7) > 0 and spc_ttd7[-1] is not None:
         spc_update7 = switch_time + timedelta(days=spc_ttd7[-1])
-        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max(), color='grey', linestyle='--', label='SPC 7 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max(), color='grey', linestyle='dotted', label='SPC 7 months Model Update Time', alpha=0.6)
     if len(bayesian_ttd) > 0 and bayesian_ttd[-1] is not None:
         bayesian_update = switch_time + timedelta(days=bayesian_ttd[-1])
-        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max(), linestyle='-', label='Bayesian Model Update Time')
+        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max(), linestyle='-', label='Bayesian Model Sig. Change')
 
     plt.xlabel("Date")
-    plt.ylabel("Prevalence")
+    plt.ylabel("Incidence")
     plt.legend()
     # save figure
-    plt.savefig(os.path.join(fileloc, f"prevalence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(fileloc, f"incidence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
     plt.show()
 
     
@@ -196,7 +193,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
-    model.trigger = OEThreshold(model=model, update_threshold=(recalthreshold_lower, recalthreshold_upper))
+    model.trigger = OEThreshold(model, recalthreshold_lower, recalthreshold_upper)
     ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
@@ -339,7 +336,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold_lower, recalthre
 
     # Static Threshold Testing
     model = RecalibratePredictions()
-    model.trigger = OEThreshold(model=model, update_threshold=(recalthreshold_lower, recalthreshold_upper))
+    model.trigger = OEThreshold(model, recalthreshold_lower, recalthreshold_upper)
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))

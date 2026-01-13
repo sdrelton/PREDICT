@@ -168,8 +168,8 @@ def __F1Threshold(self, input_data, pos_threshold, update_threshold):
     
 
 
-def OEThreshold(model, update_threshold=1.0):
-    return MethodType(lambda self, x: __OEThreshold(self, x, update_threshold), model)
+def OEThreshold(model, lower_threshold=0.9, upper_threshold=1.1):
+    return MethodType(lambda self, x: __OEThreshold(self, x, lower_threshold, upper_threshold), model)
 
 
 def __OEThreshold(self, input_data, lower_threshold=0.9, upper_threshold=1.1):
@@ -189,7 +189,7 @@ def __OEThreshold(self, input_data, lower_threshold=0.9, upper_threshold=1.1):
     mean_outcome = input_data[self.outcomeColName].mean()
     oe_value = mean_outcome / mean_pred if mean_pred != 0 else float('inf')
 
-    if oe_value <= lower_threshold or oe_value >= upper_threshold:
+    if (oe_value <= lower_threshold) or (oe_value >= upper_threshold):
         return True
     else:
         return False
