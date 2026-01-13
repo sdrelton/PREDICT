@@ -32,10 +32,15 @@ def test_recalibrate_predictions():
     """Test that the recalibrate predictions model produces a non-None output
         and checking the recalibration hook is added.
     """
-    data = {'prediction': np.array([0.2, 0.5, 0.8]), 'outcome': np.array([0, 1, 1])}
+    data = pd.DataFrame.from_dict(
+        {'prediction': np.array([0.2, 0.5, 0.8]), 
+        'outcome': np.array([0, 1, 1]), 
+        'date': np.array([pd.Timestamp('2024-01-01'), pd.Timestamp('2024-01-02'), 
+                        pd.Timestamp('2024-01-03')])
+        })
     model = Models.RecalibratePredictions()
     model.update(data)
-    recalibrated_predictions = model.predict(data)
+    recalibrated_predictions = model.predict(data, data.date.min(), data.date.max(), None)
 
     assert recalibrated_predictions is not None
     assert len(recalibrated_predictions) == len(data['prediction'])

@@ -390,7 +390,7 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
     y = df[outcomeCol]
     proba = model.predict(df)
     
-    logit_model = sm.Logit(y, sm.add_constant(proba)).fit(disp=False)
+    logit_model = sm.Logit(y, sm.add_constant(proba)).fit(disp=False, maxiter=2000)
 
     # Calculate Cox & Snell's pseudo R²
     ll_full = logit_model.llf  # Log-likelihood of the fitted model

@@ -15,7 +15,7 @@ class MockModel:
         pass
     def trigger(self, data):
         return True
-    def update(self, data):
+    def update(self, data, *args):
         pass
 
 @pytest.fixture
