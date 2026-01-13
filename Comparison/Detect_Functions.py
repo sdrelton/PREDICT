@@ -125,7 +125,7 @@ def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc
     # groupby the date and get the sum of the outcome
     groupby_df = df.groupby('date').agg({'outcome': 'sum'}).reset_index()
 
-    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Incidence', color='blue')
+    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Incidence', color='blue', linewidth=0.75)
 
     if switchDateStrings is not None:
         switch_time = pd.to_datetime(switchDateStrings[-1], dayfirst=True)
@@ -144,13 +144,13 @@ def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc
         plt.vlines(x=spc_update3, ymin=0, ymax=groupby_df['outcome'].max(), color='green', linestyle='dotted', label='SPC 3 months Model Update Time', alpha=0.6)
     if len(spc_ttd5) > 0 and spc_ttd5[-1] is not None:
         spc_update5 = switch_time + timedelta(days=spc_ttd5[-1])
-        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max(), color='pink',  linestyle='dotted', label='SPC 5 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max(), color='red',  linestyle='dotted', label='SPC 5 months Model Update Time', alpha=0.6)
     if len(spc_ttd7) > 0 and spc_ttd7[-1] is not None:
         spc_update7 = switch_time + timedelta(days=spc_ttd7[-1])
-        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max(), color='grey', linestyle='dotted', label='SPC 7 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max(), color='black', linestyle='dotted', label='SPC 7 months Model Update Time', alpha=0.6)
     if len(bayesian_ttd) > 0 and bayesian_ttd[-1] is not None:
         bayesian_update = switch_time + timedelta(days=bayesian_ttd[-1])
-        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max(), linestyle='-', label='Bayesian Model Sig. Change')
+        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max(), color='brown', linestyle='-', label='Bayesian Model Sig. Change', alpha=0.6)
 
     plt.xlabel("Date")
     plt.ylabel("Incidence")
@@ -158,8 +158,6 @@ def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc
     # save figure
     plt.savefig(os.path.join(fileloc, f"incidence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
     plt.show()
-
-    
 
 
 def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold_lower, recalthreshold_upper):
