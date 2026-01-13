@@ -197,6 +197,57 @@ def __TimeframeTrigger(self, input_data, update_dates, tolerance=pd.Timedelta(da
     current_date = input_data[self.dateCol].max()
     return any(abs(current_date - d) <= tolerance for d in update_dates)
     
+def __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs):
+        """Calculate the static control limits of data using either the specific period (startCLDate to endCLDate) or 
+        the inputted control limits (warningCL, recalCL).
+
+        Args:
+            input_data (pd.DataFrame): The input data for updating the model.
+            startCLDate (str): Start date to determine control limits from.
+            endCLDate (str): End date to determine control limits from.
+            warningCL (float): A manually set control limit for the warning control limit.
+            recalCL (float): A manually set control limit for the recalibration trigger limit.
+            warningSDs (int or float): Number of standard deviations from the mean to set the warning limit to
+            recalSDs (int or float): Number of standard deviations from the mean to set the recalibration trigger to.
+
+        Returns:
+            float, float: Two upper control limits for the warning and danger/recalibration trigger zones.
+        """
+        def CalculateError(group):
+            predictions = group['predictions']
+            differences = group[model.outcomeColName] - predictions
+            sum_of_differences = np.sum(differences)/len(group[model.outcomeColName])
+            return sum_of_differences
+        
+        if startCLDate is not None and endCLDate is not None:
+            # Get the logreg error at each timestep within the control limit determination period
+            createCLdf = input_data[(input_data[model.dateCol] >= startCLDate) & (input_data[model.dateCol] <= endCLDate)].copy()
+            
+            # Predictions column
+            createCLdf['predictions'] = model.predict(createCLdf)
+
+            errors_by_date = createCLdf.groupby(model.dateCol).apply(CalculateError)
+            model.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std() / np.sqrt(len(errors_by_date))
+            
+            model.u2sdl = model.mean_error + warningSDs * std_dev_error
+            model.u3sdl = model.mean_error + recalSDs * std_dev_error
+            model.l2sdl = model.mean_error - warningSDs * std_dev_error
+            model.l3sdl = model.mean_error - recalSDs * std_dev_error
+
+        #elif warningCL is not None and recalCL is not None:
+        else:
+            # Predictions column
+            input_data['predictions'] = model.predict(input_data)
+            errors_by_date = input_data.groupby(model.dateCol).apply(CalculateError)
+            model.mean_error = errors_by_date.mean()
+            std_dev_error = errors_by_date.std()
+            model.u3sdl = recalCL
+            model.u2sdl = warningCL
+            model.l3sdl = -recalCL
+            model.l2sdl = -warningCL
+    
+        return model.u2sdl, model.u3sdl, model.l2sdl, model.l3sdl
     
 def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=None, 
             numMonths=None, warningCL=None, recalCL=None, warningSDs=2, recalSDs=3, 
@@ -259,7 +310,7 @@ def SPCTrigger(model, input_data, dateCol='date', clStartDate=None, clEndDate=No
             alongside either numMonths or clStartDate and clEndDate.""")
 
 
-    u2sdl, u3sdl, l2sdl, l3sdl = model.CalculateControlLimits(input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
+    u2sdl, u3sdl, l2sdl, l3sdl = __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warningCL, recalCL, warningSDs, recalSDs)
     
     if verbose:
         print(f"SPC limits set:")

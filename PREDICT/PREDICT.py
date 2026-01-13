@@ -18,10 +18,8 @@ class PREDICT:
         currentWindowEnd (pd.datetime) : The current end date of the prediction window.
         log (dict) : A dictionary to store logs.
         logHooks (list): A list of hooks to be called during logging.
-        recal_period (int) :An integer giving the number of days for the recalibration window. 
-            Defaults to one year (365).
-        saveRecalibratedPredictions (bool) : Save recalibrated predictions into a csv file. Defaults to False.
-        model_name (str) : Name of the model, used to name csv with recalibrated predictions. Defaults to ''.
+        recalPeriod (int) :An integer giving the number of days for the recalibration window. 
+            Defaults to 'timestep'.
         verbose (bool) : Print sample size calculation warnings.
     """
     
