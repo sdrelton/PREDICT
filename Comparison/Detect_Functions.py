@@ -332,7 +332,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()),
-                                'F1Score': list(log["F1Score"].values()),
+                                'F1Score': list(log["F1score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Regular Testing'] * len(log["Accuracy"])}))
 
@@ -359,7 +359,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()), 
-                                'F1Score': list(log["F1Score"].values()),
+                                'F1Score': list(log["F1score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Static Threshold'] * len(log["Accuracy"])}))
 
@@ -387,7 +387,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                     'CITL': list(log["CITL"].values()),
                                     'OE': list(log["O/E"].values()),
                                     'AUPRC': list(log["AUPRC"].values()),
-                                    'F1Score': list(log["F1Score"].values()),
+                                    'F1Score': list(log["F1score"].values()),
                                     'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
 
