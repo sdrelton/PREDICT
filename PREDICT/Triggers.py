@@ -48,17 +48,40 @@ def __AUROCThreshold(self, input_data, pos_threshold, update_threshold):
     """
     preds = self.predict(input_data)
     outcomes = input_data[self.outcomeColName].astype(int)
-    preds_rounded = np.array(preds >= pos_threshold).astype(int)
-
-    fpr, tpr, _ = skl.metrics.roc_curve(outcomes, preds_rounded)
-    auroc = skl.metrics.auc(fpr, tpr)
-
+    auroc = skl.metrics.roc_auc_score(outcomes, preds)
+    
     if auroc >= update_threshold:
         return False
     else:
         return True
     
     
+def F1Threshold(model, pos_threshold=0.5, update_threshold=0.7):
+    return MethodType(lambda self, x: __F1Threshold(self, x, pos_threshold, update_threshold), model)
+
+def __F1Threshold(self, input_data, pos_threshold, update_threshold):
+    """Trigger function to update model if F1 score falls below a given threshold.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
+        update_threshold (float): Static F1 threshold to trigger model update. Defaults to 0.7.
+
+    Returns:
+        bool: Returns True if model update is required.
+    """
+    preds = self.predict(input_data)
+    outcomes = input_data[self.outcomeColName].astype(int)
+    preds_rounded = np.array(preds >= pos_threshold).astype(int)
+
+    f1 = skl.metrics.f1_score(outcomes, preds_rounded)
+
+    if f1 >= update_threshold:
+        return False
+    else:
+        return True
+
+
 def CalibrationSlopeThreshold(model, lower_limit=None, upper_limit=None):
     """Create a trigger that fires when calibration slope falls outside provided bounds.
 

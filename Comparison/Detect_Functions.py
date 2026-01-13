@@ -196,7 +196,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
-    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    model.trigger = F1Threshold(model=model, update_threshold=recalthreshold)
     ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
@@ -320,6 +320,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     mytest.addLogHook(CITL(model))
     mytest.addLogHook(OE(model))
     mytest.addLogHook(AUPRC(model))
+    mytest.addLogHook(F1Score(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -331,12 +332,13 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()),
+                                'F1Score': list(log["F1Score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Regular Testing'] * len(log["Accuracy"])}))
 
     # Static Threshold Testing
     model = RecalibratePredictions()
-    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    model.trigger = F1Threshold(model=model, update_threshold=recalthreshold)
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
@@ -345,6 +347,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     mytest.addLogHook(CITL(model))
     mytest.addLogHook(OE(model))
     mytest.addLogHook(AUPRC(model))
+    mytest.addLogHook(F1Score(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -356,6 +359,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()), 
+                                'F1Score': list(log["F1Score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Static Threshold'] * len(log["Accuracy"])}))
 
@@ -371,6 +375,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
         mytest.addLogHook(CITL(model))
         mytest.addLogHook(OE(model))
         mytest.addLogHook(AUPRC(model))
+        mytest.addLogHook(F1Score(model))
         mytest.run()
         log = mytest.getLog()
 
@@ -382,6 +387,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                     'CITL': list(log["CITL"].values()),
                                     'OE': list(log["O/E"].values()),
                                     'AUPRC': list(log["AUPRC"].values()),
+                                    'F1Score': list(log["F1Score"].values()),
                                     'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
 
