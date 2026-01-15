@@ -1,0 +1,28 @@
+name: predict_env-gpu
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scipy=1.10.1
+  - matplotlib
+  - pytest
+  - seaborn
+  - pip
+  - gxx
+  - bambi
+  - cuda
+  - pip:
+    - scikit-learn
+    - statsmodels
+    - ipykernel
+    - sphinx
+    - ghp-import
+    - pymc
+    - ipywidgets
+    - furo
+    - jax[cuda12]
+    - blackjax
+    - numpyro
+    - bayeux-ml
