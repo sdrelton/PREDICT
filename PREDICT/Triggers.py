@@ -31,6 +31,9 @@ def __AccuracyThreshold(self, input_data, pos_threshold, update_threshold):
     else:
         return True
     
+def AlwaysTrigger(model):
+    return MethodType(lambda self, x: True, model)
+    
 
 def AUROCThreshold(model, pos_threshold=0.5, update_threshold=0.7):
     return MethodType(lambda self, x: __AUROCThreshold(self, x, pos_threshold, update_threshold), model)

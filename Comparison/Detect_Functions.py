@@ -154,6 +154,7 @@ def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc
 
     plt.xlabel("Date")
     plt.ylabel("Incidence")
+    plt.ylim(40, groupby_df['outcome'].max()+10)
     plt.legend()
     # save figure
     plt.savefig(os.path.join(fileloc, f"incidence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
@@ -212,7 +213,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
     return undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
-def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_name="Bayesian", threshold=0.1):
+def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresholds, model_name="Bayesian"):
     """Find the first significant change in Bayesian coefficients after a given detection date. 
     Work out the time to detect (ttd) from the first significant change in coefficients.
 
@@ -232,20 +233,17 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
     timestamps = sorted(bayesian_coefficients.keys()) 
 
     for i in range(1,len(timestamps)):
-        orig_timestamp = timestamps[0]
         cur_timestamp = timestamps[i]
-
-        orig_coeffs = bayesian_coefficients[orig_timestamp]
         cur_coeffs = bayesian_coefficients[cur_timestamp]
 
-        for key in orig_coeffs:
-            orig_value = orig_coeffs[key][0]  # Get coefficient value
+        for key in cur_coeffs.keys():  # Get coefficient value
             cur_value = cur_coeffs[key][0]
-            rel_diff = abs(cur_value - orig_value)/abs(orig_value)
-            if (rel_diff > 1+threshold or rel_diff < 1-threshold):  # More than X% difference
+            # If outside of thresholds
+            lower_bound = thresholds[key][0]
+            upper_bound = thresholds[key][1]
+            if cur_value < lower_bound or cur_value > upper_bound:
+                print(f"Significant change detected in coefficient '{key}'= {cur_value} at timestamp {cur_timestamp}")
                 significant_timestamps.append(cur_timestamp)
-                print(f"Significant change detected in coefficient '{key}' from {orig_value} to {cur_value} at timestamp {cur_timestamp}")
-                break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
     
     # Assuming the first significant increase after the start time or switch time is the one we want to calculate time to detect from
     filtered_timestamps = [ts for ts in significant_timestamps if ts >= detectDate]

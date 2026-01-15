@@ -5,12 +5,13 @@ dependencies:
   - python=3.10
   - numpy
   - pandas
-  - bambi=0.15.0
   - scipy=1.10.1
   - matplotlib
   - pytest
   - seaborn
   - pip
+  - gxx
+  - bambi
   - pip:
     - scikit-learn
     - statsmodels
@@ -20,3 +21,4 @@ dependencies:
     - pymc
     - ipywidgets
     - furo
+    - jax==0.6.0
