@@ -278,8 +278,8 @@ class BayesianModel(PREDICTModel):
         self.priors = {
             predictor: (
                 posterior_samples[predictor].values.flatten().mean(),
-                posterior_samples[predictor].values.flatten().std() 
-                #self.priors[predictor][1]  # retain original std
+                #posterior_samples[predictor].values.flatten().std() 
+                self.priors[predictor][1]  # retain original std
             )
             for predictor in self.coef_names
         }

@@ -213,7 +213,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
     return undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
-def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresholds, model_name="Bayesian"):
+def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresholds, model_name="Bayesian", intercept_only=False):
     """Find the first significant change in Bayesian coefficients after a given detection date. 
     Work out the time to detect (ttd) from the first significant change in coefficients.
 
@@ -222,8 +222,9 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresh
         detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
         bayes_dict (dict): Dictionary to store Bayesian coefficients and other information.
         undetected (dict): Dictionary to keep track of undetected models and their counts.
+        thresholds (float): Threshold for significant coefficient change. Defaults to 0.1.
         model_name (str): Name of the method being used. Defaults to "Bayesian".
-        threshold (float): Threshold for significant coefficient change. Defaults to 0.1.
+        intercept_only (bool): Whether to only consider the intercept coefficient for changes. Defaults to False.
 
     Returns:
         int: Number of days to detect drift in the model.
@@ -237,6 +238,8 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresh
         cur_coeffs = bayesian_coefficients[cur_timestamp]
 
         for key in cur_coeffs.keys():  # Get coefficient value
+            if intercept_only and (key != 'Intercept'):
+                continue
             cur_value = cur_coeffs[key][0]
             # If outside of thresholds
             lower_bound = thresholds[key][0]
