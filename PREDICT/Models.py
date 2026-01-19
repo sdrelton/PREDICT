@@ -262,10 +262,10 @@ class BayesianModel(PREDICTModel):
                 print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
 
         curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
-        self.bayes_model = bmb.Model(self.model_formula, data=curdata, family="bernoulli", priors=bmb_priors)
+        self.bayes_model = bmb.Model(self.model_formula, data=curdata, family="bernoulli", priors=bmb_priors, center_predictors=False)
             
 
-        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, target_accept = self.target_accept)#, inference_method='mcmc')
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, target_accept = self.target_accept,)#, inference_method='mcmc')
         posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
@@ -278,8 +278,8 @@ class BayesianModel(PREDICTModel):
         self.priors = {
             predictor: (
                 posterior_samples[predictor].values.flatten().mean(),
-                #posterior_samples[predictor].values.flatten().std() 
-                self.priors[predictor][1]  # retain original std
+                posterior_samples[predictor].values.flatten().std() 
+                #self.priors[predictor][1]  # retain original std
             )
             for predictor in self.coef_names
         }
