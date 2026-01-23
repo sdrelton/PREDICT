@@ -65,6 +65,12 @@ def get_binom_from_normal(mean, std, num_patients, threshold):
     
     # Calculate the percentage of patients above the threshold
     perc_over_threshold = np.sum(normal_dist >= threshold) / num_patients
+    if perc_over_threshold < 0:
+        perc_over_threshold = 0
+    elif perc_over_threshold > 1:
+        perc_over_threshold = 1
+    elif np.isnan(perc_over_threshold):
+        perc_over_threshold = 0
     
     # Generate binomial distribution based on the percentage
     binom_dist = np.random.binomial(1, perc_over_threshold, num_patients)
@@ -153,7 +159,7 @@ def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc
         plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max()+30, color='brown', linestyle='-', label='Bayesian Model Sig. Change', alpha=0.6)
     plt.xlabel("Date")
     plt.ylabel("Incidence")
-    plt.ylim(190, groupby_df['outcome'].max()+10)
+    plt.ylim(groupby_df['outcome'].min()-10, groupby_df['outcome'].max()+10)
     plt.legend()
     # save figure
     plt.savefig(os.path.join(fileloc, f"incidence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
@@ -409,26 +415,29 @@ def prevent_constant_variable(df, startDate, endDate, ):
 
         # if any of the diseases are constant (e.g. all 0s or all 1s), flip a value in the dataframe
         for col in ['Family_CHD', 'Current_smoker', 'Treated_HTN', 'DM', 'RA', 'AF', 'Renal_disease']:
-            if df_window[col].nunique() == 1:
-                logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
-                # copy a random row of data and flip the value of the disease
-                random_idx = np.random.choice(df_window.index)
-                # add new rows to original dataframe
-                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
-                df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+            try:
+                if df_window[col].nunique() == 1:
+                    logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                    # copy a random row of data and flip the value of the disease
+                    random_idx = np.random.choice(df_window.index)
+                    # add new rows to original dataframe
+                    df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                    df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+            except:
+                continue
         
         # if any of the ethnicities are constant (e.g. all 0s or all 1s), switch the 1 to to the column that is constant
-        ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
-                    'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
-        for col in ethnicity_cols:
-            if df_window[col].nunique()==1:
-                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
-                random_idx = np.random.choice(df_window.index)
-                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
-                df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
-
-                # Assign the current ethnicity to the newly added row
-                df.loc[df.index[-1], col] = 1
+        #ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
+        #            'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
+        #for col in ethnicity_cols:
+        #    if df_window[col].nunique()==1:
+        #        #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+        #        random_idx = np.random.choice(df_window.index)
+        #        df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+        #        df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
+        #
+        #        # Assign the current ethnicity to the newly added row
+        #        df.loc[df.index[-1], col] = 1
 
         
         # move to the next window
