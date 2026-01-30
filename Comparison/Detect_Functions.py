@@ -243,8 +243,6 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresh
         cur_coeffs = bayesian_coefficients[cur_timestamp]
 
         for key in cur_coeffs.keys():  # Get coefficient value
-            #if intercept_only and (key != 'Intercept'):
-            #    continue
             cur_value = cur_coeffs[key][0]
             # If outside of thresholds
             lower_bound = thresholds[key][0]
