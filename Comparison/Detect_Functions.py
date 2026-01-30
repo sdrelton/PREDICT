@@ -421,7 +421,7 @@ def prevent_constant_variable(df, startDate, endDate, ):
                     # add new rows to original dataframe
                     df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
                     df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
-            except:
+            except Exception:
                 continue
         
         # if any of the ethnicities are constant (e.g. all 0s or all 1s), switch the 1 to to the column that is constant
