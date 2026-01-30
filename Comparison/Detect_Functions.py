@@ -25,10 +25,7 @@ def get_model_updated_log(df, model, model_name, undetected, detectDate):
     Returns:
         int: Time to detect (ttd) in days, or None if no model update detected.
     """
-    if model_name == "Regular Testing": # if regular testing then recalibrate using the last 3 years 
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
-    else:
-        mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
+    mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.run()
     log = mytest.getLog()
     
@@ -68,6 +65,12 @@ def get_binom_from_normal(mean, std, num_patients, threshold):
     
     # Calculate the percentage of patients above the threshold
     perc_over_threshold = np.sum(normal_dist >= threshold) / num_patients
+    if perc_over_threshold < 0:
+        perc_over_threshold = 0
+    elif perc_over_threshold > 1:
+        perc_over_threshold = 1
+    elif np.isnan(perc_over_threshold):
+        perc_over_threshold = 0
     
     # Generate binomial distribution based on the percentage
     binom_dist = np.random.binomial(1, perc_over_threshold, num_patients)
@@ -105,8 +108,8 @@ def select_ethnic_group(num_patients):
 
     return ethnicity_assignments
 
-def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None):
-    """Plot the prevalence of an outcome over time, with vertical lines indicating model update times.
+def plot_incidence_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, bayesian_ttd, sim_data=None, fileloc='./'):
+    """Plot the incidence of an outcome over time, with vertical lines indicating model update times.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
@@ -117,53 +120,53 @@ def plot_prev_over_time(df, switchDateStrings, regular_ttd, static_ttd, spc_ttd3
         spc_ttd5 (list): List of time to detect (ttd) for SPC 5 months model updates.
         spc_ttd7 (list): List of time to detect (ttd) for SPC 7 months model updates.
         bayesian_ttd (list): List of time to detect (ttd) for Bayesian model updates.
+        sim_data (str or None): Identifier for the simulation data, used in the filename. Defaults to None.
+        fileloc (str): Directory to save the plot image. Defaults to current directory.
     """
 
-    # If we want to plot a different simulated data prevalence:
-    # save times and grouped prevalence in a df to plot at the end? - another column to say which number run it is for new lines
-    plt.figure(figsize=(10, 5)) # plot prevalence over time for each switchTime - start with just the final one first
+    # If we want to plot a different simulated data incidence:
+    # save times and grouped incidence in a df to plot at the end? - another column to say which number run it is for new lines
+    plt.figure(figsize=(10, 5)) # plot incidence over time for each switchTime - start with just the final one first
 
     # groupby the date and get the sum of the outcome
     groupby_df = df.groupby('date').agg({'outcome': 'sum'}).reset_index()
 
-    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Prevalence', color='blue')
+    plt.plot(groupby_df['date'], groupby_df['outcome'], label='Incidence', color='blue', linewidth=0.75)
 
     if switchDateStrings is not None:
         switch_time = pd.to_datetime(switchDateStrings[-1], dayfirst=True)
-        plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max(), color='orange', linestyle='--', label='Switch Time')
+        plt.vlines(x=switch_time, ymin=0, ymax=groupby_df['outcome'].max()+30, color='orange', linestyle='-', label='Shock Time')
     else:
         switch_time = df['date'].min()  # Use the minimum date in the DataFrame if no switch date is provided
 
     if len(regular_ttd) > 0 and regular_ttd[-1] is not None:
         regular_update = switch_time + timedelta(days=regular_ttd[-1])
-        plt.vlines(x=regular_update, ymin=0, ymax=groupby_df['outcome'].max(), color='black', linestyle='--', label='Regular Testing Model Update Time', alpha=0.6)
+        plt.vlines(x=regular_update, ymin=0, ymax=groupby_df['outcome'].max()+30, color='black', linestyle='dashed', label='Regular Testing Model Update Time', alpha=0.6)
     if len(static_ttd) > 0 and static_ttd[-1] is not None:
         static_update = switch_time + timedelta(days=static_ttd[-1])
-        plt.vlines(x=static_update, ymin=0, ymax=groupby_df['outcome'].max(), color='purple', linestyle='--', label='Static Threshold Model Update Time', alpha=0.6)
+        plt.vlines(x=static_update, ymin=0, ymax=groupby_df['outcome'].max()+30, color='purple', linestyle='dashdot', label='Static Threshold Model Update Time', alpha=0.6)
     if len(spc_ttd3) > 0 and spc_ttd3[-1] is not None: 
         spc_update3 = switch_time + timedelta(days=spc_ttd3[-1])
-        plt.vlines(x=spc_update3, ymin=0, ymax=groupby_df['outcome'].max(), color='green', linestyle='--', label='SPC 3 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update3, ymin=0, ymax=groupby_df['outcome'].max()+30, color='green', linestyle='dotted', label='SPC 3 months Model Update Time', alpha=0.6)
     if len(spc_ttd5) > 0 and spc_ttd5[-1] is not None:
         spc_update5 = switch_time + timedelta(days=spc_ttd5[-1])
-        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max(), color='pink',  linestyle='--', label='SPC 5 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update5, ymin=0, ymax=groupby_df['outcome'].max()+30, color='red',  linestyle='dotted', label='SPC 5 months Model Update Time', alpha=0.6)
     if len(spc_ttd7) > 0 and spc_ttd7[-1] is not None:
         spc_update7 = switch_time + timedelta(days=spc_ttd7[-1])
-        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max(), color='grey', linestyle='--', label='SPC 7 months Model Update Time', alpha=0.6)
+        plt.vlines(x=spc_update7, ymin=0, ymax=groupby_df['outcome'].max()+30, color='black', linestyle='dotted', label='SPC 7 months Model Update Time', alpha=0.6)
     if len(bayesian_ttd) > 0 and bayesian_ttd[-1] is not None:
         bayesian_update = switch_time + timedelta(days=bayesian_ttd[-1])
-        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max(), linestyle='-', label='Bayesian Model Update Time')
-
+        plt.vlines(x=bayesian_update, ymin=0, ymax=groupby_df['outcome'].max()+30, color='brown', linestyle='-', label='Bayesian Model Sig. Change', alpha=0.6)
     plt.xlabel("Date")
-    plt.ylabel("Prevalence")
+    plt.ylabel("Incidence")
+    plt.ylim(groupby_df['outcome'].min()-10, groupby_df['outcome'].max()+10)
     plt.legend()
     # save figure
-    plt.savefig(f"../docs/images/monitoring/prev_over_time/prevalence_over_time_{sim_data}.png", dpi=600, bbox_inches='tight')
+    plt.savefig(os.path.join(fileloc, f"incidence_over_time_{sim_data}.png"), dpi=600, bbox_inches='tight')
     plt.show()
 
-    
 
-
-def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold):
+def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7, recalthreshold_lower, recalthreshold_upper):
     """Run recalibration tests on the given DataFrame using various triggers and return the updated undetected counts and time to detect (ttd) for each method.
 
     Args:
@@ -194,7 +197,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
 
     ############################ Static Threshold ############################
     model = RecalibratePredictions()
-    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    model.trigger = OEThreshold(model, recalthreshold_lower, recalthreshold_upper)
     ttd = get_model_updated_log(df, model, model_name="Static Threshold", undetected=undetected, detectDate=detectDate)
     static_ttd.append(ttd)
 
@@ -215,7 +218,7 @@ def run_recalibration_tests(df, detectDate, undetected, regular_ttd, static_ttd,
     return undetected, regular_ttd, static_ttd, spc_ttd3, spc_ttd5, spc_ttd7
 
 
-def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_name="Bayesian", threshold=0.1):
+def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, thresholds, model_name="Bayesian", intercept_only=False):
     """Find the first significant change in Bayesian coefficients after a given detection date. 
     Work out the time to detect (ttd) from the first significant change in coefficients.
 
@@ -224,8 +227,9 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
         detectDate (datetime64[ns]): Date when the model is either deployed (non-COVID) or when the switch date is given (COVID).
         bayes_dict (dict): Dictionary to store Bayesian coefficients and other information.
         undetected (dict): Dictionary to keep track of undetected models and their counts.
+        thresholds (float): Threshold for significant coefficient change. Defaults to 0.1.
         model_name (str): Name of the method being used. Defaults to "Bayesian".
-        threshold (float): Threshold for significant coefficient change. Defaults to 0.1.
+        intercept_only (bool): Whether to only consider the intercept coefficient for changes. Defaults to False.
 
     Returns:
         int: Number of days to detect drift in the model.
@@ -234,21 +238,18 @@ def find_bayes_coef_change(bayesian_coefficients, detectDate, undetected, model_
 
     timestamps = sorted(bayesian_coefficients.keys()) 
 
-    for i in range(len(timestamps) - 1):
-        curr_timestamp = timestamps[i]
-        next_timestamp = timestamps[i + 1]
+    for i in range(1,len(timestamps)):
+        cur_timestamp = timestamps[i]
+        cur_coeffs = bayesian_coefficients[cur_timestamp]
 
-        curr_coeffs = bayesian_coefficients[curr_timestamp]
-        next_coeffs = bayesian_coefficients[next_timestamp]
-
-        for key in curr_coeffs:
-            curr_value = curr_coeffs[key][0]  # Get coefficient value
-            next_value = next_coeffs[key][0]
-
-            if abs(next_value - curr_value) > abs(curr_value) * threshold:  # More than X% difference
-                significant_timestamps.append(next_timestamp)
-                print(f"Significant change detected in coefficient '{key}' from {curr_value} to {next_value} at timestamp {next_timestamp}")
-                break  # Move to the next timestamp after finding a change in a coefficient at that timestamp
+        for key in cur_coeffs.keys():  # Get coefficient value
+            cur_value = cur_coeffs[key][0]
+            # If outside of thresholds
+            lower_bound = thresholds[key][0]
+            upper_bound = thresholds[key][1]
+            if cur_value < lower_bound or cur_value > upper_bound:
+                print(f"Significant change detected in coefficient '{key}'= {cur_value} at timestamp {cur_timestamp}")
+                significant_timestamps.append(cur_timestamp)
     
     # Assuming the first significant increase after the start time or switch time is the one we want to calculate time to detect from
     filtered_timestamps = [ts for ts in significant_timestamps if ts >= detectDate]
@@ -293,13 +294,14 @@ def run_bayes_model(undetected, bay_model, bayes_dict, df, bayesian_ttd, detectD
 
 
 
-def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
+def get_metrics_recal_methods(df, custom_impact, recalthreshold_lower, recalthreshold_upper, model_name):
     """Get metrics for different recalibration methods on the given DataFrame.
 
     Args:
         df (pd.DataFrame): DataFrame containing the simulation data with 'date' and 'outcome' columns.
         custom_impact (float): Either the custom impact on the outcome or the prevalence of a condition.
-        recalthreshold (float): Threshold for the static threshold recalibration method.
+        recalthreshold_lower (float): Lower threshold for the static threshold recalibration method.
+        recalthreshold_upper (float): Upper threshold for the static threshold recalibration method.
         model_name (str): Name of the model being evaluated.
 
     Returns:
@@ -318,6 +320,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     mytest.addLogHook(CITL(model))
     mytest.addLogHook(OE(model))
     mytest.addLogHook(AUPRC(model))
+    mytest.addLogHook(F1Score(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -329,12 +332,13 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()),
+                                'F1Score': list(log["F1score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Regular Testing'] * len(log["Accuracy"])}))
 
     # Static Threshold Testing
     model = RecalibratePredictions()
-    model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
+    model.trigger = OEThreshold(model, recalthreshold_lower, recalthreshold_upper)
     mytest = PREDICT(data=df, model=model, startDate='min', endDate='max', timestep='month')
     mytest.addLogHook(Accuracy(model))
     mytest.addLogHook(AUROC(model))
@@ -343,6 +347,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
     mytest.addLogHook(CITL(model))
     mytest.addLogHook(OE(model))
     mytest.addLogHook(AUPRC(model))
+    mytest.addLogHook(F1Score(model))
     mytest.run()
     log = mytest.getLog()
 
@@ -354,6 +359,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                 'CITL': list(log["CITL"].values()),
                                 'OE': list(log["O/E"].values()),
                                 'AUPRC': list(log["AUPRC"].values()), 
+                                'F1Score': list(log["F1score"].values()),
                                 'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                 'Method': ['Static Threshold'] * len(log["Accuracy"])}))
 
@@ -369,6 +375,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
         mytest.addLogHook(CITL(model))
         mytest.addLogHook(OE(model))
         mytest.addLogHook(AUPRC(model))
+        mytest.addLogHook(F1Score(model))
         mytest.run()
         log = mytest.getLog()
 
@@ -380,6 +387,7 @@ def get_metrics_recal_methods(df, custom_impact, recalthreshold, model_name):
                                     'CITL': list(log["CITL"].values()),
                                     'OE': list(log["O/E"].values()),
                                     'AUPRC': list(log["AUPRC"].values()),
+                                    'F1Score': list(log["F1score"].values()),
                                     'impact_or_prev': [str(custom_impact)] * len(log["Accuracy"]), 
                                     'Method': [f'SPC{numMonths}'] * len(log["Accuracy"])}))
 
@@ -405,26 +413,29 @@ def prevent_constant_variable(df, startDate, endDate, ):
 
         # if any of the diseases are constant (e.g. all 0s or all 1s), flip a value in the dataframe
         for col in ['Family_CHD', 'Current_smoker', 'Treated_HTN', 'DM', 'RA', 'AF', 'Renal_disease']:
-            if df_window[col].nunique() == 1:
-                logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
-                # copy a random row of data and flip the value of the disease
-                random_idx = np.random.choice(df_window.index)
-                # add new rows to original dataframe
-                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
-                df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+            try:
+                if df_window[col].nunique() == 1:
+                    logging.warning(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+                    # copy a random row of data and flip the value of the disease
+                    random_idx = np.random.choice(df_window.index)
+                    # add new rows to original dataframe
+                    df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+                    df.loc[df.index[-1], col] = 1 - df[col].iloc[-1]
+            except Exception:
+                continue
         
         # if any of the ethnicities are constant (e.g. all 0s or all 1s), switch the 1 to to the column that is constant
-        ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
-                    'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
-        for col in ethnicity_cols:
-            if df_window[col].nunique()==1:
-                #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
-                random_idx = np.random.choice(df_window.index)
-                df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
-                df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
-
-                # Assign the current ethnicity to the newly added row
-                df.loc[df.index[-1], col] = 1
+        #ethnicity_cols = ['White', 'Indian', 'Pakistani', 'Bangladeshi', 'Other_Asian',
+        #            'Black_Caribbean', 'Black_African', 'Chinese', 'Other']
+        #for col in ethnicity_cols:
+        #    if df_window[col].nunique()==1:
+        #        #print(f"Warning: '{col}' has no assigned patients between {currentWindowStart} and {currentWindowEnd}. Forcing one assignment to prevent constant error.")
+        #        random_idx = np.random.choice(df_window.index)
+        #        df = pd.concat([df, df_window.loc[[random_idx]].copy()], ignore_index=False)
+        #        df.loc[df.index[-1], ethnicity_cols] = 0  # Clear previous one-hot encoding
+        #
+        #        # Assign the current ethnicity to the newly added row
+        #        df.loc[df.index[-1], col] = 1
 
         
         # move to the next window

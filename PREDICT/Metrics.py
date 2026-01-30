@@ -390,6 +390,10 @@ def __CoxSnellR2Computation(model, df, outcomeCol):
     y = df[outcomeCol]
     proba = model.predict(df)
     
+    # If predictions are constant, R2 is 0 as the model explains no variation beyond the intercept
+    if np.std(proba) == 0:
+        return 'CoxSnellR2', 0.0
+
     logit_model = sm.Logit(y, sm.add_constant(proba)).fit(disp=False, maxiter=2000)
 
     # Calculate Cox & Snell's pseudo R²

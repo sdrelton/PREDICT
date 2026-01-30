@@ -434,7 +434,7 @@ def PredictorBasedPlot(log, x_axis_min=None, x_axis_max=None, predictor=None, ou
     plt.grid(True)
     plt.show()
 
-def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
+def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10, fileloc='./'):
     """
     Plots the mean coefficients (with standard deviation as the error bar) of the Bayesian model over time.
         Note: this is only suitable for the BayesianModel and .addLogHook(TrackBayesianCoefs(model)) must be used.
@@ -443,6 +443,7 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
         log (dict, pd.DataFrame): Log or dataframe of model metrics over time and when the model was updated.
         model_name (str, optional): Name of model or domain used in filename e.g. 'COVID_data_simulation'.
         max_predictors_per_plot (int): Max number of predictors per plot to avoid clutter.
+        fileloc (str): Location to save the plots.
     """
     if isinstance(log, dict):
         bayesianCoefs = log["BayesianCoefficients"]
@@ -484,12 +485,18 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10):
             plt.xlabel("Time")
             plt.ylabel("Coefficient")
             plt.title(f"Bayesian Priors Over Time (Predictor Set {i+1})")
-            plt.yscale('symlog', linthresh=1)
+            plt.yscale('symlog', linthresh=2)
+            ymin, ymax = plt.ylim()
+            ymin = np.floor(ymin)
+            ymax = np.ceil(ymax)
+            plt.ylim(ymin-0.5, ymax+0.5)
             plt.xticks(timestamps, rotation=90)
+            ytickstep = 0.5
+            plt.yticks(np.arange(ymin, ymax+ytickstep, ytickstep), fontsize=8)
             plt.grid(True)
             plt.legend(title="Predictor", fontsize=8, markerscale=0.8, frameon=True)
             plt.tight_layout()
-            filename = f"../docs/images/monitoring/bayesian_coefs/bayesian_coefs_{model_name + '_' if model_name is not None else ''}chunk{i+1}_plot.png"
+            filename = os.path.join(fileloc, f"bayesian_coefs_{model_name + '_' if model_name is not None else ''}chunk{i+1}_plot.png")
             plt.savefig(filename, dpi=600)
             plt.show()
 

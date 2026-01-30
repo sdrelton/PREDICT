@@ -1,4 +1,4 @@
-name: predict_env
+name: predict_env-gpu
 channels:
   - conda-forge
 dependencies:
@@ -12,6 +12,7 @@ dependencies:
   - pip
   - gxx
   - bambi
+  - cuda
   - pip:
     - scikit-learn
     - statsmodels
@@ -21,4 +22,7 @@ dependencies:
     - pymc
     - ipywidgets
     - furo
-    - jax==0.6.0
+    - jax[cuda12]
+    - blackjax
+    - numpyro
+    - bayeux-ml

@@ -108,7 +108,7 @@ class RecalibratePredictions(PREDICTModel):
     """
     
     def __init__(self, predictColName='prediction', outcomeColName='outcome', dateCol='date'):
-        super(RecalibratePredictions, self).__init__()
+        super().__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
         self.dateCol = dateCol
@@ -167,6 +167,7 @@ class BayesianModel(PREDICTModel):
         cores (int): Number of cores to use in the Bayesian model (default=1).
         chains (int): Number of chains to use in the Bayesian model (default=4).
         model_formula (str): The formula to use in the Bayesian model (default=None, if None then a standard linear model formula is used without interactions).
+        target_accept (float): The target acceptance rate for the NUTS sampler (default=0.9).
 
     Raises:
         ValueError: If the priors are not in a dictionary format.
@@ -181,8 +182,8 @@ class BayesianModel(PREDICTModel):
     model.trigger = BayesianRefitTrigger(model=model, input_data=df, refitFrequency=1)
     """
     def __init__(self, priors, input_data=None, predictColName='prediction', outcomeColName='outcome', dateCol='date', verbose=True, plot_idata=False, draws=1000,
-                tune=250, cores=1, chains=4, model_formula=None):
-        super(BayesianModel, self).__init__()
+                tune=250, cores=1, chains=4, model_formula=None, target_accept=0.9):
+        super().__init__()
         self.predictColName = predictColName
         self.outcomeColName = outcomeColName
         self.dateCol = dateCol
@@ -196,6 +197,7 @@ class BayesianModel(PREDICTModel):
         self.model_formula = model_formula
         self.bayes_model = None
         self.inference_data = None
+        self.target_accept = target_accept
 
         if not isinstance(self.priors, dict):
             raise ValueError("Provided priors are not in a dictionary format. Either provide no priors or provide them in a dictionary form e.g. {'blood_pressure': (2.193, 0.12)} ")
@@ -248,7 +250,7 @@ class BayesianModel(PREDICTModel):
 
 
     
-    def update(self, input_data):
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
         if self.verbose:
             print("\n*** PRIORS ***")
         bmb_priors = {}
@@ -259,10 +261,11 @@ class BayesianModel(PREDICTModel):
             if self.verbose:
                 print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
 
-        self.bayes_model = bmb.Model(self.model_formula, data=input_data, family="bernoulli", priors=bmb_priors)
+        curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
+        self.bayes_model = bmb.Model(self.model_formula, data=curdata, family="bernoulli", priors=bmb_priors, center_predictors=False)
             
 
-        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, max_treedepth=10, target_accept=0.9)#, inference_method='mcmc')
+        self.inference_data = self.bayes_model.fit(draws=self.draws, tune=self.tune, cores=self.cores, chains=self.chains, target_accept = self.target_accept,)#, inference_method='mcmc')
         posterior_samples = self.inference_data.posterior 
 
         if self.verbose:
@@ -275,7 +278,8 @@ class BayesianModel(PREDICTModel):
         self.priors = {
             predictor: (
                 posterior_samples[predictor].values.flatten().mean(),
-                self.priors[predictor][1]  # retain original std
+                posterior_samples[predictor].values.flatten().std() 
+                #self.priors[predictor][1]  # retain original std
             )
             for predictor in self.coef_names
         }

@@ -31,6 +31,9 @@ def __AccuracyThreshold(self, input_data, pos_threshold, update_threshold):
     else:
         return True
     
+def AlwaysTrigger(model):
+    return MethodType(lambda self, x: True, model)
+    
 
 def AUROCThreshold(model, pos_threshold=0.5, update_threshold=0.7):
     return MethodType(lambda self, x: __AUROCThreshold(self, x, pos_threshold, update_threshold), model)
@@ -48,17 +51,15 @@ def __AUROCThreshold(self, input_data, pos_threshold, update_threshold):
     """
     preds = self.predict(input_data)
     outcomes = input_data[self.outcomeColName].astype(int)
-    preds_rounded = np.array(preds >= pos_threshold).astype(int)
-
-    fpr, tpr, _ = skl.metrics.roc_curve(outcomes, preds_rounded)
-    auroc = skl.metrics.auc(fpr, tpr)
-
+    auroc = skl.metrics.roc_auc_score(outcomes, preds)
+    
     if auroc >= update_threshold:
         return False
     else:
         return True
     
     
+
 def CalibrationSlopeThreshold(model, lower_limit=None, upper_limit=None):
     """Create a trigger that fires when calibration slope falls outside provided bounds.
 
@@ -143,7 +144,59 @@ def __CITLThreshold(self, input_data, lower_limit, upper_limit):
 
     return False
 
+def F1Threshold(model, pos_threshold=0.5, update_threshold=0.7):
+    return MethodType(lambda self, x: __F1Threshold(self, x, pos_threshold, update_threshold), model)
+
+def __F1Threshold(self, input_data, pos_threshold, update_threshold):
+    """Trigger function to update model if F1 score falls below a given threshold.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        pos_threshold (float, optional): Probability threshold at which to classify individuals. Defaults to 0.5.
+        update_threshold (float): Static F1 threshold to trigger model update. Defaults to 0.7.
+
+    Returns:
+        bool: Returns True if model update is required.
+    """
+    preds = self.predict(input_data)
+    outcomes = input_data[self.outcomeColName].astype(int)
+    preds_rounded = np.array(preds >= pos_threshold).astype(int)
+
+    f1 = skl.metrics.f1_score(outcomes, preds_rounded)
+
+    if f1 >= update_threshold:
+        return False
+    else:
+        return True
     
+
+
+def OEThreshold(model, lower_threshold=0.9, upper_threshold=1.1):
+    return MethodType(lambda self, x: __OEThreshold(self, x, lower_threshold, upper_threshold), model)
+
+
+def __OEThreshold(self, input_data, lower_threshold=0.9, upper_threshold=1.1):
+    """Trigger function to update model if O/E falls above or below a given threshold.
+
+    Args:
+        input_data (dataframe): DataFrame with column of the predicted outcome.
+        lower_threshold (float, optional): Lower threshold for O/E. Defaults to 0.9.
+        upper_threshold (float, optional): Upper threshold for O/E. Defaults to 1.1.
+
+    Returns:
+        bool: Returns True if model update is required.
+    """
+    
+    predictions = self.predict(input_data)
+    mean_pred = predictions.mean()
+    mean_outcome = input_data[self.outcomeColName].mean()
+    oe_value = mean_outcome / mean_pred if mean_pred != 0 else float('inf')
+
+    if (oe_value <= lower_threshold) or (oe_value >= upper_threshold):
+        return True
+    else:
+        return False
+
 def TimeframeTrigger(model, updateTimestep, dataStart, dataEnd):
     """Create a list of dates to update the model based on a fixed time interval.
 
@@ -228,7 +281,7 @@ def __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warni
 
             errors_by_date = createCLdf.groupby(model.dateCol).apply(CalculateError)
             model.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std() / np.sqrt(len(errors_by_date))
+            std_dev_error = errors_by_date.std()
             
             model.u2sdl = model.mean_error + warningSDs * std_dev_error
             model.u3sdl = model.mean_error + recalSDs * std_dev_error
