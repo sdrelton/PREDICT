@@ -390,7 +390,7 @@ def test_coxsnell_R2_calculation():
     model_imperfect = MockModel()
     df_imperfect = pd.DataFrame({
         'probability': [0.2, 0.3, 0.5, 0.7, 0.2],
-        'outcome': [0, 0, 1, 1, 0]
+        'outcome': [0, 0, 1, 1, 1]
     })
     coxsnell_imperfect = Metrics.CoxSnellR2(model_imperfect, 'outcome')
     hookname_imperfect, result_imperfect = coxsnell_imperfect(df_imperfect)
