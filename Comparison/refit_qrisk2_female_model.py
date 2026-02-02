@@ -121,7 +121,7 @@ df['age_af'] = df['age']*df['af']
 prior_six_months = df[(df['date'] >= pd.to_datetime(startDate) - relativedelta(months=6) ) & (df['date'] < pd.to_datetime(startDate))]
 
 X = prior_six_months[predictors + interactions]
-y = prior_six_months[['outcome']]
+y = prior_six_months['outcome']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=5)
 
 model = LogisticRegression(penalty=None, solver='lbfgs', tol=1e-8, max_iter=20000)

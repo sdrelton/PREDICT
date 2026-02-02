@@ -102,9 +102,9 @@ if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.c
     perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
 #method_strs = ['Static Threshold']
-method_strs = ['Bayesian']
+#method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
