@@ -25,6 +25,9 @@ from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 from sklearn.calibration import calibration_curve
 from sklearn.preprocessing import StandardScaler
 import json
+from experiment_plots import *
+
+
 
 
 
@@ -39,6 +42,9 @@ conn = pyodbc.connect(
 )
 
 gender = "male"
+
+resultsloc = f'results/qrisk2_{gender}'
+os.makedirs(resultsloc, exist_ok=True)
 
 # Query data from a table
 query = f"SELECT * FROM qrisk_{gender}s"
@@ -78,7 +84,7 @@ endDate = pd.to_datetime('19-08-2015', dayfirst=True) # Most recent record minus
 
 # restrict to endDate and plot
 df = df[df['date']<= endDate]
-plot_patients_per_month(df, model_type='qrisk2', gender=gender)
+plot_patients_per_month(df, model_type='qrisk2', gender=gender, resultsloc=resultsloc)
 
 # select the prior six months used to fit the prefit model and the scalers
 prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
@@ -98,7 +104,7 @@ for var in ['age', 'chol_hdl_ratio', 'bmi', 'townsend_score']:
     df[var] = (df[var].astype(float) - mean_val) / scale_val
 
 # persist scaler parameters to JSON for downstream scripts
-with open(f'qrisk2_{gender}_scaler.json', 'w') as sf:
+with open(os.path.join(resultsloc, f'qrisk2_{gender}_scaler.json'), 'w') as sf:
     json.dump(scaler_params, sf)
 
 # create interaction terms after scaling
@@ -219,9 +225,9 @@ out = {
     "bootstrap_samples_used": int(boot_aucs.size)
 }
 
-with open(f"qrisk_{gender}_thresh.json", "w") as jf:
+with open(os.path.join(resultsloc, f"qrisk_{gender}_thresh.json"), "w") as jf:
     json.dump(out, jf, indent=2)
 
-with open('qrisk2_male_coefs.json', 'w') as f:
+with open(os.path.join(resultsloc, f"qrisk2_{gender}_coefs.json"), "w") as f:
     json.dump(coefs, f)
 
