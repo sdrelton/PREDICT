@@ -143,7 +143,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
 
     for metric_choice in metric_choices:
 
-        metrics_df["Method"] = metrics_df["Method"].replace({"Static Threshold": f"Static Threshold ({round(recalthreshold, 2)})"})
+        metrics_df["Method"] = metrics_df["Method"].replace({"Static Threshold": f"Static Threshold"})
 
         fig, ax = plt.subplots(figsize=(14, 7))
 
