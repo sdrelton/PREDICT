@@ -22,9 +22,7 @@ import json
 from sklearn.preprocessing import StandardScaler
 from experiment_plots import *
 
-
-
-os.environ['PYTENSOR_FLAGS'] = 'optimiser=fast_compile'
+os.environ['PYTENSOR_FLAGS'] = 'exception_verbosity=high,floatX=float32'
 
 # Establish connection to SQL Server
 conn = pyodbc.connect(
@@ -104,9 +102,9 @@ if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.c
     perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
 #method_strs = ['Static Threshold']
-#method_strs = ['Bayesian']
+method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -170,7 +168,11 @@ for method_str in method_strs:
             with open(os.path.join(resultsloc, f'qrisk2_{gender}_coefs.json'), 'r') as f:
                 coefs = json.load(f)
 
-        coefs_std = {key: 0.25 for key in coefs}
+        if not os.path.exists(os.path.join(resultsloc, f'qrisk2_{gender}_coefs_std.json')):
+            raise FileNotFoundError(f"Coefficients file 'qrisk2_{gender}_coefs_std.json' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the coefficients file before running this script.")
+        else:
+            with open(os.path.join(resultsloc, f'qrisk2_{gender}_coefs_std.json'), 'r') as f:
+                coefs_std = json.load(f)
 
     else: # Else will only trigger when Bayesian model is run as other methods don't require batching dates
         # select most recent coefs from the bayesian df and set them as the coefs
@@ -268,7 +270,7 @@ for method_str in method_strs:
             priors_df.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'), mode='w', index=False, header=True)
 
         model = BayesianModel(input_data=df, priors=priors_dict,
-                                cores=1, draws=100, tune=100, chains=2, verbose=False,
+                                cores=1, draws=10000, tune=3000, chains=2, verbose=False,
                                 model_formula="outcome ~ white + indian + pakistani + bangladeshi + other_asian + black_caribbean + black_african + other_ethnicity + age + bmi + townsend_score + sbp + chol_hdl_ratio + fh_chd + current_smoker + treated_htn + diabetes + ra + af + ckd + age_bmi + age_townsend + age_sbp + age_fh_chd + age_smoking + age_treated_htn + age_diabetes + age_af")
         model.trigger = TimeframeTrigger(model=model, updateTimestep='month', dataStart=startDate, dataEnd=endDate)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=30)
@@ -360,7 +362,7 @@ for method_str in method_strs:
 ############################################ Plot Metrics #######################################
 
 plot_method_comparison_metrics(metrics_df = os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), recalthreshold=recalthreshold,
-                            model_updates=os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'), model_type='qrisk2', gender=gender)
+                            model_updates=os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'), model_type='qrisk2', gender=gender, fileloc=resultsloc)
 
 plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2', gender=gender, fileloc=resultsloc)
 plot_calibration_yearly(model='qrisk2', method_list = method_strs, gender=gender, fileloc=resultsloc)

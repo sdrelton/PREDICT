@@ -121,7 +121,7 @@ def plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2
     plt.savefig(os.path.join(fileloc, f"{model_type}_{gender}count_over_{int(threshold*100)}%_risk.png"), dpi=600, bbox_inches='tight')
     plt.show()
 
-def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, model_type, gender=''):
+def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, model_type, gender='', fileloc='./'):
     """
     Plot the metric comparison graphs with each line showing a different PREDICT method.
 
@@ -139,7 +139,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
     model_updates = pd.read_csv(model_updates)
     metrics_df["Time"] = pd.to_datetime(metrics_df["Time"])
     sns.set(font_scale=1.2)
-    metric_choices = ["CalibrationSlope", "OE", "CITL"]
+    metric_choices = ["Accuracy", "AUROC", "Precision", "CalibrationSlope", "OE", "CITL", "AUPRC", "F1Score", "Sensitivity", "Specificity", "CoxSnellR2"]
 
     for metric_choice in metric_choices:
 
@@ -165,19 +165,23 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
                 if method == "Regular Testing":
                     marker = 'o'
                     colour = 'orange'
+                    markerbias = -0.02
                 elif method == "Static Threshold":
                     marker = '|'
                     colour = 'green'
+                    markerbias = 0.0
                 elif method == "SPC":
                     marker = '^'
                     colour = 'red'
+                    markerbias = 0.02
                 elif method == "Bayesian":
                     marker = 'D'
                     colour = 'purple'
+                    markerbias = 0.04
                 subset = model_updates[model_updates["method"] == method]
                 ax.scatter(
                     subset["date"],
-                    [metrics_df[metric_choice].min()]*len(subset),
+                    [metrics_df[metric_choice].min() + markerbias]*len(subset),
                     label=f"{method} update",
                     marker=marker,
                     color=colour,
@@ -189,7 +193,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
         ax.set_xlabel("Date")
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         fig.tight_layout()
-        fig.savefig(f"../docs/images/performance_comparison/{model_type}_{gender}{metric_choice}.png", dpi=600, bbox_inches='tight')
+        fig.savefig(os.path.join(fileloc, f"{model_type}_{gender}{metric_choice}.png"), dpi=600, bbox_inches='tight')
         plt.show()
 
 

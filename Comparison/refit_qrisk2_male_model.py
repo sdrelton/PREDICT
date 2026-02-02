@@ -134,12 +134,19 @@ print("Prefit model Intercept:", intercept)
 print("Prefit model coefficients:", model.coef_[0])
 print(f"L2 Norm of coefficients: {np.linalg.norm(model.coef_)}")
 
-coefs = dict(zip(predictors + interactions, model.coef_.ravel().tolist()))
-# add the intercept to the coefs dict
-coefs['Intercept'] = float(intercept)
-coefs_std = {key: 0.25 for key in coefs} # make all the coef stds 0.25
+X_train_sm = sm.add_constant(X_train)
+sm_model = sm.GLM(y_train, X_train_sm, family=sm.families.Binomial())
+sm_results = sm_model.fit()
 
-y_prob = model.predict_proba(X_test)[:, 1]
+coefs = dict(zip(predictors + interactions, sm_results.params[1:].tolist()))
+coefs['Intercept'] = float(sm_results.params[0])
+
+coefs_std = dict(zip(predictors + interactions, sm_results.bse[1:].tolist()))
+coefs_std['Intercept'] = float(sm_results.bse[0])
+
+
+X_test_sm = sm.add_constant(X_test)
+y_prob = sm_results.predict(X_test_sm).values
 auroc = roc_auc_score(y_test, y_prob)
 # bootstrap AUROC, calibration-in-the-large (CITL) and calibration slope; estimate mean and SD
 n_boot = 500
@@ -230,4 +237,6 @@ with open(os.path.join(resultsloc, f"qrisk_{gender}_thresh.json"), "w") as jf:
 
 with open(os.path.join(resultsloc, f"qrisk2_{gender}_coefs.json"), "w") as f:
     json.dump(coefs, f)
-
+    
+with open(os.path.join(resultsloc, f"qrisk2_{gender}_coefs_std.json"), "w") as f:
+    json.dump(coefs_std, f)
