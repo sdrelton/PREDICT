@@ -40,7 +40,7 @@ resultsloc = f'results/efalls'
 os.makedirs(resultsloc, exist_ok=True)
 
 # Query data from a table
-query = f"SELECT * FROM tbl_final_efalls_deduped WHERE DateOnly >= '2019-01-01'"
+query = f"SELECT * FROM tbl_final_efalls_deduped WHERE DateOnly <= '2019-01-01'"
 
 # Store query result in a dataframe
 df = pd.read_sql(query, conn)
@@ -80,7 +80,7 @@ startDate = pd.to_datetime('01-01-2019', dayfirst=True)
 plot_patients_per_month(df, model_type='efalls', resultsloc=resultsloc)
 
 # select prior twelve months used to fit scalers
-prior_twelve_months = df[(df['date'] >= startDate) & (df['date'] < startDate + relativedelta(months=12))]
+prior_twelve_months = df[(df['date'] >= startDate - relativedelta(months=12)) & (df['date'] < startDate)]
 
 # fit scaler on prior twelve months only and apply to entire dataframe
 """ scaler_params = {}
@@ -140,7 +140,7 @@ coef_vector = np.array([coefs_official[f] for f in predictors], dtype=float)
 weighted_coef_sum = np.dot(X, coef_vector)
 official_intercept = coefs_official['Intercept']
 lp = official_intercept + weighted_coef_sum
-recal = sm.GLM(y, sm.add_constant(X), family=sm.families.Binomial()).fit()
+recal = sm.GLM(y, sm.add_constant(lp), family=sm.families.Binomial()).fit()
 y_prob = recal.predict()
 
 print('recal intercept = ', recal.params[0])
