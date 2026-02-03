@@ -40,7 +40,7 @@ resultsloc = f'results/efalls'
 os.makedirs(resultsloc, exist_ok=True)
 
 # Query data from a table
-query = f"SELECT * FROM tbl_final_efalls_deduped WHERE DateOnly < '2019-01-01'"
+query = f"SELECT * FROM tbl_final_efalls_deduped WHERE DateOnly >= '2019-01-01'"
 
 # Store query result in a dataframe
 df = pd.read_sql(query, conn)
@@ -79,30 +79,23 @@ startDate = pd.to_datetime('01-01-2019', dayfirst=True)
 # (original selection already queried DateOnly < '2019-01-01')
 plot_patients_per_month(df, model_type='efalls', resultsloc=resultsloc)
 
-# select prior six months used to fit scalers
-prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
+# select prior twelve months used to fit scalers
+prior_twelve_months = df[(df['date'] >= startDate) & (df['date'] < startDate + relativedelta(months=12))]
 
-# fit scaler on prior six months only and apply to entire dataframe
-scaler_params = {}
+# fit scaler on prior twelve months only and apply to entire dataframe
+""" scaler_params = {}
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
-arr = prior_six_months[['Age']].astype(float).values
+arr = prior_twelve_months[['Age']].astype(float).values
 sc.fit(arr)
 mean_val = float(sc.mean_[0])
 scale_val = float(sc.scale_[0]) if float(sc.scale_[0]) != 0 else 1.0
 scaler_params['Age'] = {'mean': mean_val, 'scale': scale_val}
-df['Age'] = (df['Age'].astype(float) - mean_val) / scale_val
+df['Age'] = (df['Age'].astype(float) - mean_val) / scale_val """
 
-# persist scaler parameters to JSON
+""" # persist scaler parameters to JSON
 with open(os.path.join(resultsloc, f'efalls_scaler.json'), 'w') as sf:
-    json.dump(scaler_params, sf)
-
-# # TODO: Do we want to scale Polypharmacy too?
-# scaled_Polypharmacy = scaler.fit_transform(df[['Polypharmacy']])
-# df['Polypharmacy'] = pd.DataFrame(scaled_Polypharmacy, columns=['Polypharmacy'])
-
-
-
+    json.dump(scaler_params, sf) """
 
 
 startDate = pd.to_datetime('01-01-2019', dayfirst=True)
@@ -110,9 +103,10 @@ startDate = pd.to_datetime('01-01-2019', dayfirst=True)
 plot_patients_per_month(df, model_type='efalls',  resultsloc=resultsloc)
 
 
-X = prior_six_months[predictors]
-y = prior_six_months['outcome']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=5)
+X = prior_twelve_months[predictors].astype(float)
+y = prior_twelve_months['outcome'].astype(float)
+
+""" X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=5)
 
 model = LogisticRegression(penalty=None, solver='lbfgs', tol=1e-8, max_iter=20000)
 model.fit(X_train, y_train)
@@ -135,12 +129,31 @@ coefs_std = dict(zip(predictors, sm_results.bse[1:].tolist()))
 coefs_std['Intercept'] = float(sm_results.bse[0])
 
 X_test_sm = sm.add_constant(X_test.astype(float))
-y_prob = sm_results.predict(X_test_sm).values
-auroc = roc_auc_score(y_test, y_prob)
+y_prob = sm_results.predict(X_test_sm).values """
+
+# Recalibrate efalls model on prior 12 months of data
+with open(os.path.join(resultsloc, "efalls_coefs_official.json"), 'r') as f:
+    coefs_official = json.load(f)
+
+coef_vector = np.array([coefs_official[f] for f in predictors], dtype=float)    
+# Dot product gives weighted sum for each row in df
+weighted_coef_sum = np.dot(X, coef_vector)
+official_intercept = coefs_official['Intercept']
+lp = official_intercept + weighted_coef_sum
+recal = sm.GLM(y, sm.add_constant(X), family=sm.families.Binomial()).fit()
+y_prob = recal.predict()
+
+print('recal intercept = ', recal.params[0])
+print('recal slope = ', recal.params[1])
+
+coefs = {x: coefs_official[x]*recal.params[1] for x in predictors}
+coefs['Intercept'] = recal.params[0] + official_intercept*recal.params[1]
+
+auroc = roc_auc_score(y, y_prob)
 # bootstrap AUROC, calibration-in-the-large (CITL) and calibration slope; estimate mean and SD
 n_boot = 500
 rng = np.random.RandomState(5)
-y_true = y_test.values.ravel()
+y_true = y.values.ravel()
 y_scores = y_prob
 boot_aucs = []
 boot_citls = []
@@ -226,5 +239,5 @@ with open(os.path.join(resultsloc, f"efalls_thresh.json"), "w") as jf:
 with open(os.path.join(resultsloc, f"efalls_coefs.json"), "w") as f:
     json.dump(coefs, f)
 
-with open(os.path.join(resultsloc, f"efalls_coefs_std.json"), "w") as f:
-    json.dump(coefs_std, f)
+#with open(os.path.join(resultsloc, f"efalls_coefs_std.json"), "w") as f:
+#    json.dump(coefs_std, f)

@@ -72,11 +72,9 @@ df = df[["Fall_Outcome", "DateOnly"]+predictors]
 
 df.rename(columns={"DateOnly": "date", "Fall_Outcome":"outcome"}, inplace=True)
 df['date'] = pd.to_datetime(df['date'])
-df["Female"] = df["Female"].astype(int)
-df["Current_Smoker"] = df["Current_Smoker"].astype(int)
 
 # scale continuous variables using saved scaler parameters; require the scaler JSON to exist
-scaler_file = os.path.join(resultsloc, 'efalls_scaler.json')
+""" scaler_file = os.path.join(resultsloc, 'efalls_scaler.json')
 if os.path.exists(scaler_file):
     with open(scaler_file, 'r') as sf:
         scaler_params = json.load(sf)
@@ -88,10 +86,7 @@ if os.path.exists(scaler_file):
     df['Age'] = (df['Age'].astype(float) - mean_val) / scale_val
 else:
     raise FileNotFoundError(f"Scaler file '{scaler_file}' not found. Please run 'refit_efalls_model.py' to generate it before running this script.")
-
-# # TODO: Do we want to scale Polypharmacy too?
-# scaled_Polypharmacy = scaler.fit_transform(df[['Polypharmacy']])
-# df['Polypharmacy'] = pd.DataFrame(scaled_Polypharmacy, columns=['Polypharmacy'])
+"""
 
 # if a file to store the model update dates or performance metrics doesn't exist, then create them with the correct headers
 if not os.path.exists(os.path.join(resultsloc, "efalls_performance_metrics.csv")):
@@ -103,7 +98,7 @@ if not os.path.exists(os.path.join(resultsloc, "efalls_model_updates.csv")):
     perform_metrics_df.to_csv(os.path.join(resultsloc, "efalls_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+method_strs = ['Baseline', 'Regular Testing']#, 'Static Threshold', 'SPC']
 #method_strs = ['Bayesian']
 
 for method_str in method_strs:
@@ -168,9 +163,6 @@ for method_str in method_strs:
         else:
             with open(os.path.join(resultsloc, "efalls_coefs.json"), 'r') as f:
                 coefs = json.load(f)
-            # # if you want to use the refitted coefficients from efalls paper
-            # with open(f'efalls_refitted_coefs.json', 'r') as f:
-            #     coefs = json.load(f)
 
 
         if not os.path.exists(os.path.join(resultsloc, f'efalls_coefs_std.json')):
@@ -205,14 +197,13 @@ for method_str in method_strs:
 
     # Calculate baseline log-odds
     coef_vector = np.array([coefs[f] for f in predictors])    
-    feature_matrix = np.column_stack([df[f] for f in predictors])
+    feature_matrix = df[predictors].astype(float)
     # Dot product gives weighted sum for each row in df
     weighted_coef_sum = np.dot(feature_matrix, coef_vector)
 
 
     # Compute log-odds
     lp = coefs['Intercept'] + weighted_coef_sum
-    lp = np.clip(lp, -20, 20)  # Clip to avoid overflow issues
 
     # Estimate predictions
     curpredictions = 1 / (1 + np.exp(-lp))  # Convert to probability
