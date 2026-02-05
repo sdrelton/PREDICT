@@ -214,7 +214,7 @@ df['age_af'] = df['age']*df['af']
 prior_six_months = df[(df['date'] >= pd.to_datetime(startDate) - relativedelta(months=6) ) & (df['date'] < pd.to_datetime(startDate))]
 
 # Use tableone to describe the prior_twelve_months dataframe
-columns = predictors + ["outcome"] # Including a subset of predictors for brevity
+columns = predictors + interactions + ["outcome"] # Including a subset of predictors for brevity
 categorical = columns.copy()
 categorical.remove("age")
 categorical.remove("age_bmi")
@@ -301,7 +301,7 @@ df['date'] = pd.to_datetime(df['date'])
 
 
 # Use tableone to describe the prior_twelve_months dataframe
-columns = predictors + ["outcome"] # Including a subset of predictors for brevity
+columns = predictors + interactions + ["outcome"] # Including a subset of predictors for brevity
 categorical = columns.copy()
 categorical.remove("age")
 categorical.remove("age_bmi")
@@ -325,7 +325,7 @@ table_one.to_csv(os.path.join('results/qrisk2_female', 'qrisk2_female_demographi
 
 
 #############################################
-# QRISK - FEMALE
+# QRISK - MALE
 #############################################
 conn = pyodbc.connect(
     "DRIVER={SQL Server};"
@@ -409,7 +409,7 @@ df['age_af'] = df['age']*df['af']
 prior_six_months = df[(df['date'] >= pd.to_datetime(startDate) - relativedelta(months=6) ) & (df['date'] < pd.to_datetime(startDate))]
 
 # Use tableone to describe the prior_twelve_months dataframe
-columns = predictors + ["outcome"] # Including a subset of predictors for brevity
+columns = predictors + interactions + ["outcome"] # Including a subset of predictors for brevity
 categorical = columns.copy()
 categorical.remove("age")
 categorical.remove("age_bmi")
@@ -496,7 +496,7 @@ df['date'] = pd.to_datetime(df['date'])
 
 
 # Use tableone to describe the prior_twelve_months dataframe
-columns = predictors + ["outcome"] # Including a subset of predictors for brevity
+columns = predictors + interactions + ["outcome"] # Including a subset of predictors for brevity
 categorical = columns.copy()
 categorical.remove("age")
 categorical.remove("age_bmi")
