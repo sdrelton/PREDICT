@@ -102,9 +102,9 @@ if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.c
     perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
 #method_strs = ['Static Threshold']
-#method_strs = ['Bayesian']
+method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -270,7 +270,7 @@ for method_str in method_strs:
             priors_df.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'), mode='w', index=False, header=True)
 
         model = BayesianModel(input_data=df, priors=priors_dict,
-                                cores=1, draws=10000, tune=3000, chains=2, verbose=False,
+                                cores=6, draws=10000, tune=3000, chains=2, verbose=False,
                                 model_formula="outcome ~ white + indian + pakistani + bangladeshi + other_asian + black_caribbean + black_african + other_ethnicity + age + bmi + townsend_score + sbp + chol_hdl_ratio + fh_chd + current_smoker + treated_htn + diabetes + ra + af + ckd + age_bmi + age_townsend + age_sbp + age_fh_chd + age_smoking + age_treated_htn + age_diabetes + age_af")
         model.trigger = TimeframeTrigger(model=model, updateTimestep='month', dataStart=startDate, dataEnd=endDate)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=30)

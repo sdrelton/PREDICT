@@ -98,8 +98,8 @@ if not os.path.exists(os.path.join(resultsloc, "efalls_model_updates.csv")):
     perform_metrics_df.to_csv(os.path.join(resultsloc, "efalls_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
-#method_strs = ['Bayesian']
+#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -266,7 +266,7 @@ for method_str in method_strs:
             priors_df.to_csv(f'efalls_Bayesian_coefs.csv', mode='w', index=False, header=True)
             
         model = BayesianModel(input_data=df, priors=priors_dict, 
-                                cores=1, draws=100, tune=100, chains=2, verbose=False,
+                                cores=6, draws=10000, tune=3000, chains=2, verbose=False,
                                 model_formula=f"outcome ~ {' + '.join(predictors)}")
                                 
         model.trigger = TimeframeTrigger(model=model, updateTimestep='month', dataStart=startDate, dataEnd=endDate)
