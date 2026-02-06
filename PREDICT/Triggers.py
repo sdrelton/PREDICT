@@ -294,7 +294,7 @@ def __SPCCalculateControlLimits(model, input_data, startCLDate, endCLDate, warni
             input_data['predictions'] = model.predict(input_data)
             errors_by_date = input_data.groupby(model.dateCol).apply(CalculateError)
             model.mean_error = errors_by_date.mean()
-            std_dev_error = errors_by_date.std()
+            std_dev_error = errors_by_date.std() / np.sqrt(len(errors_by_date))
             model.u3sdl = recalCL
             model.u2sdl = warningCL
             model.l3sdl = -recalCL
