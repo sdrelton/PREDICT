@@ -8,6 +8,7 @@ import arviz as az
 from statsmodels.formula.api import logit as bayes_logit
 import matplotlib.pyplot as plt
 import logging
+from PREDICT.Utils import bayesian_no_constants
 
 
 class PREDICTModel:
@@ -262,6 +263,7 @@ class BayesianModel(PREDICTModel):
                 print(f"{prior_key} mean coef: {prior_mean:.2f} ± {prior_std:.2f}")
 
         curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
+        curdata = bayesian_no_constants(curdata) # Ensure no constant values that would break the bambi model.
         self.bayes_model = bmb.Model(self.model_formula, data=curdata, family="bernoulli", priors=bmb_priors, center_predictors=False)
             
 
