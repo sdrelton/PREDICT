@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import entropy
 
-def kl_divergence(x, y, n_bins=50, epsilon=1e-10):
+def kl_divergence(x, y, n_bins=100, epsilon=1e-10):
     """
     Calculates the KL divergence between two continuous distributions, approximated by binning.
 

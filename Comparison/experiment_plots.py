@@ -139,7 +139,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
     model_updates = pd.read_csv(model_updates)
     metrics_df["Time"] = pd.to_datetime(metrics_df["Time"])
     sns.set(font_scale=1.2)
-    metric_choices = ["Accuracy", "AUROC", "Precision", "CalibrationSlope", "OE", "CITL", "AUPRC", "F1Score", "Sensitivity", "Specificity", "CoxSnellR2"]
+    metric_choices = ["Accuracy", "AUROC", "Precision", "CalibrationSlope", "OE", "CITL", "AUPRC", "F1Score", "Sensitivity", "Specificity", "CoxSnellR2", 'KLDivergence']
 
     for metric_choice in metric_choices:
 
@@ -160,7 +160,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
         
         model_updates["date"] = pd.to_datetime(model_updates["date"])
 
-        for method in ['Regular Testing', "Static Threshold", "SPC", "Bayesian"]:
+        for method in ['Regular Testing', "Static Threshold", "SPC", "Bayesian", 'KLD']:
             if method in model_updates['method'].values:
                 if method == "Regular Testing":
                     marker = 'o'
@@ -178,6 +178,10 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
                     marker = 'D'
                     colour = 'purple'
                     markerbias = 0.04
+                elif method == "KLD":
+                    marker = 'X'
+                    colour = 'blue'
+                    markerbias = -0.04
                 subset = model_updates[model_updates["method"] == method]
                 ax.scatter(
                     subset["date"],
@@ -197,7 +201,7 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
         plt.show()
 
 
-def plot_calibration_yearly(model, method_list = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'Bayesian'], gender='', fileloc='./'):
+def plot_calibration_yearly(model, method_list = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'Bayesian', 'KLD'], gender='', fileloc='./'):
     """Plots the calibration slope each year as one plot with each line as a different PREDICT method.
 
     Args:
