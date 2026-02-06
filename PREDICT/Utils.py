@@ -1,5 +1,25 @@
 import numpy as np
 from scipy.stats import entropy
+import pandas as pd
+
+def bayesian_no_constants(df):
+    """
+    Ensures no constant values within the dataframe, which would cause Bambi to crash.
+    If there is such a column, flip a random value.
+
+    Args:
+        df (pd.DataFrame): The input dataframe to check for constant values.
+    """
+    for col in df.columns:
+        if df[col].nunique() == 1:
+            try:
+                # Assume column is binary and flip one of the row values
+                nrows = len(df[col])
+                ix = np.random.choice(nrows)
+                df[col].iloc[ix] = 1 - df[col].iloc[ix]
+            except Exception as e:
+                print(f'Could not process constants for column {col}')
+    return df
 
 def kl_divergence(x, y, n_bins=100, epsilon=1e-10):
     """
