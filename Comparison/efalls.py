@@ -237,7 +237,6 @@ for method_str in method_strs:
     if method_str == 'Static Threshold':
         model = RecalibratePredictions()
         #model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
-        #model.trigger = AUROCThreshold(model=model, update_threshold=recalthreshold)
         def custom_trigger(model, lower_limit_citl, upper_limit_citl, lower_limit_cslope, upper_limit_cslope):
             return CITLThreshold(model=model, lower_limit=lower_limit_citl, upper_limit=upper_limit_citl) or \
                 CalibrationSlopeThreshold(model=model, lower_limit=lower_limit_cslope, upper_limit=upper_limit_cslope)
