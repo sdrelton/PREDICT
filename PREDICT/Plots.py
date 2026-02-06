@@ -550,7 +550,7 @@ def BayesianCoefsPlot(log, model_name=None, max_predictors_per_plot=10, fileloc=
             plt.legend(title="Predictor", fontsize=8, markerscale=0.8, frameon=True)
             plt.tight_layout()
 
-            filename = os.path.join(fileloc, f"bayesian_coefs/bayesian_coefs_{model_name + '_' if model_name else ''}chunk{i+1}_plot.png")
+            filename = os.path.join(fileloc, f"bayesian_coefs_{model_name + '_' if model_name else ''}chunk{i+1}_plot.png")
             plt.savefig(filename, dpi=600)
             plt.show()
 
