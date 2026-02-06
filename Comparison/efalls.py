@@ -333,7 +333,7 @@ for method_str in method_strs:
 
         bayes_coefs_df['date'] = pd.to_datetime(bayes_coefs_df['date'])
 
-        BayesianCoefsPlot(bayes_coefs_df, f'efalls')
+        BayesianCoefsPlot(bayes_coefs_df, f'efalls', fileloc=resultsloc)
 
     ########################################### Save Metrics #######################################
     metrics = pd.DataFrame({'Time': list(log["Accuracy"].keys()), 'Accuracy': list(log["Accuracy"].values()), 'AUROC': list(log["AUROC"].values()), 
