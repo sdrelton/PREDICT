@@ -28,6 +28,58 @@ from experiment_plots import *
 
 os.environ['PYTENSOR_FLAGS'] = 'optimiser=fast_compile'
 
+
+conn = pyodbc.connect(
+    "DRIVER={SQL Server};"
+    "SERVER=BHTS-CONNECTYO3;"
+    "DATABASE=CB_2151;"
+    "Trusted_Connection=yes;"
+)
+
+resultsloc = f'results/efalls'
+os.makedirs(resultsloc, exist_ok=True)
+
+# Query data from a table
+query = f"SELECT * FROM tbl_final_efalls_deduped WHERE DateOnly <= '2019-01-01'"
+
+# Store query result in a dataframe
+df = pd.read_sql(query, conn)
+
+# Close the connection
+conn.close()
+
+df['unique_bnf_last_3_months'] = df['unique_bnf_last_3_months'].astype(float)
+
+df["Polypharmacy"] = np.log(df["unique_bnf_last_3_months"] + 1) / 10 
+
+predictors = ["Age", "Female", "Polypharmacy", "Underweight", "Normal", "Obese", "BMI_missing", "Current_Smoker", "Harmful_drinking",
+                "Higher_risk_drinking", "Previous_harmful_drinking", "Zero_Alcohol", "Alcohol_missing", "Abdominal_pain", "Activity_limitation", 
+                "Anaemia_and_haematinic_deficiency", "Asthma", "Atrial_fibrillation", "Back_pain", "Bone_disease", "Cancer", "Cognitive_impairment",
+                "COPD", "Dementia", "Depression", "Diabetes_mellitus", "Dizziness", "Dressing_and_grooming_problems", "Faecal_incontinence",
+                "Falls", "Fatigue", "Foot_problems", "Fracture", "Fragility_fracture", "General_mental_health", "Headache",
+                "Hearing_impairment", "Heart_failure", "Housebound", "Hypertension", "Hypotension_or_syncope", "Inflammatory_arthritis", 
+                "Inflammatory_bowel_disease", "Liver_problems", "Meal_preparation_problems", "Medication_management",
+                "Memory_concerns", "Mobility_problems", "Mono_or_hemiparesis", "Motor_neurone_disease", "Musculoskeletal_problems", "Osteoarthritis", 
+                "Osteoporosis", "Palliative_care", "Parkinsonism_and_tremor", "Peptic_ulcer_disease", "Peripheral_neuropathy", "Peripheral_vascular_disease",
+                "Requirement_for_care", "Respiratory_disease", "Seizures", "Self_harm", "Severe_mental_illness", "Skin_ulcer", "Sleep_problems",
+                "Social_vulnerability", "Stress", "Stroke", "Thyroid_problems", "Urinary_incontinence", "Urinary_system_disease", "Visual_impairment",
+                "Washing_and_bathing", "Weakness", "Weight_loss"]#, "Intercept"]
+
+# select specific columns
+df = df[["Fall_Outcome", "DateOnly"]+predictors]
+# change some of the column names
+df.rename(columns={"DateOnly": "date", "Fall_Outcome":"outcome"}, inplace=True)
+# convert the date column to datetime
+df['date'] = pd.to_datetime(df['date'])
+
+# define analysis window
+startDate = pd.to_datetime('01-01-2019', dayfirst=True)
+
+# select prior twelve months used to fit scalers
+prior_twelve_months = df[(df['date'] >= startDate - relativedelta(months=12)) & (df['date'] < startDate)]
+
+
+
 # Establish connection to SQL Server
 conn = pyodbc.connect(
     "DRIVER={SQL Server};"
@@ -90,7 +142,7 @@ else:
 
 # if a file to store the model update dates or performance metrics doesn't exist, then create them with the correct headers
 if not os.path.exists(os.path.join(resultsloc, "efalls_performance_metrics.csv")):
-    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC','F1Score','Sensitivity','Specificity','CoxSnellR2','Method'])
+    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC','F1Score','Sensitivity','Specificity','CoxSnellR2','KLDivergence','Method'])
     perform_metrics_df.to_csv(os.path.join(resultsloc, "efalls_performance_metrics.csv"), index=False)
 
 if not os.path.exists(os.path.join(resultsloc, "efalls_model_updates.csv")):
@@ -98,8 +150,8 @@ if not os.path.exists(os.path.join(resultsloc, "efalls_model_updates.csv")):
     perform_metrics_df.to_csv(os.path.join(resultsloc, "efalls_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
-method_strs = ['Bayesian']
+method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'KLD']
+#method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -208,6 +260,12 @@ for method_str in method_strs:
     # Estimate predictions
     curpredictions = 1 / (1 + np.exp(-lp))  # Convert to probability
     df['prediction'] = curpredictions
+    
+    feature_matrix_prior = prior_twelve_months[predictors].astype(float)
+    weighted_coef_sum_prior = np.dot(feature_matrix_prior, coef_vector)
+    lp_prior = coefs['Intercept'] + weighted_coef_sum_prior
+    curpredictions_prior = 1 / (1 + np.exp(-lp_prior))
+    prior_twelve_months['prediction'] = curpredictions_prior
 
         # clear the performance metrics and model updates for the method so we don't duplicate the date
     if (method_str != 'Bayesian') or (method_str=='Bayesian' and startDate == startOfAnalysis):
@@ -249,7 +307,12 @@ for method_str in method_strs:
         model = RecalibratePredictions()
         model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=False)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
-
+        
+    # KL Divergence
+    if method_str == 'KLD':
+        model = RecalibratePredictions()
+        model.trigger = KLDivergenceThreshold(model=model, initial_data=prior_twelve_months, update_threshold=0.03)
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
     # Bayesian Testing
     if method_str == 'Bayesian':
@@ -284,6 +347,7 @@ for method_str in method_strs:
     mytest.addLogHook(Sensitivity(model))
     mytest.addLogHook(Specificity(model))
     mytest.addLogHook(CoxSnellR2(model))
+    mytest.addLogHook(ResidualKLDivergence(model, initial_data=prior_twelve_months))
     
     if method_str == 'Bayesian':
         mytest.addLogHook(TrackBayesianCoefs(model))
@@ -340,7 +404,7 @@ for method_str in method_strs:
                             'Precision': list(log["Precision"].values()), 'CalibrationSlope': list(log["CalibrationSlope"].values()), 
                             'CITL': list(log["CITL"].values()), 'OE': list(log["O/E"].values()), 'AUPRC': list(log["AUPRC"].values()),
                             'F1Score': list(log["F1score"].values()), 'Sensitivity': list(log["Sensitivity"].values()),
-                            'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()),
+                            'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()), 'KLDivergence': list(log["ResidualKLDivergence"].values()),
                             'Method':list([method_str] * len(log["Accuracy"]))})
 
     metrics.to_csv(os.path.join(resultsloc, f'efalls_performance_metrics.csv'), mode='a', header=False, index=False)
