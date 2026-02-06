@@ -3,6 +3,7 @@ import sklearn as skl
 from sklearn.linear_model import LogisticRegression
 import statsmodels.api as sm
 from scipy.special import logit
+from PREDICT.Utils import kl_divergence
 
 def Accuracy(model, outcomeCol='outcome', threshold=0.5):
     """
@@ -461,3 +462,46 @@ def __TrackBayesianCoefs(model):
     """
     priors = model.get_coefs()
     return 'BayesianCoefficients', priors
+
+def ResidualKLDivergence(model, initial_data, outcomeCol='outcome'):
+    """
+    LogHook to compute the KL divergence of model residuals at each timestep.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        initial_data (pd.DataFrame): The data to calculate initial residuals from.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the KL divergence of the model residuals at each timestep when fed data.
+    """
+    predictions = model.predict(initial_data)
+    initial_residuals = initial_data[outcomeCol] - predictions
+    
+    return lambda df: __ResidualKLDivergenceComputation(model, df, initial_residuals, outcomeCol)
+
+def __ResidualKLDivergenceComputation(model, df, initial_residuals, outcomeCol):
+    """
+    Function to compute the KL divergence of model residuals on a given dataframe.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        initial_residuals (pd.Series): The initial residuals to compare against.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('ResidualKLDivergence'), and the resulting KL divergence.
+    """
+    if df.empty:
+        return 'ResidualKLDivergence', 0.0
+        
+    new_predictions = model.predict(df)
+    new_residuals = df[outcomeCol] - new_predictions
+    
+    if len(new_residuals) == 0:
+        return 'ResidualKLDivergence', 0.0
+
+    kld = kl_divergence(initial_residuals, new_residuals)
+    
+    return 'ResidualKLDivergence', kld
