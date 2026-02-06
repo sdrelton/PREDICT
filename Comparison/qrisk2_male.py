@@ -20,10 +20,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import json
 from sklearn.preprocessing import StandardScaler
+from experiment_plots import *
 
-
-
-os.environ['PYTENSOR_FLAGS'] = 'optimiser=fast_compile'
+os.environ['PYTENSOR_FLAGS'] = 'exception_verbosity=high,floatX=float32'
 
 # Establish connection to SQL Server
 conn = pyodbc.connect(
@@ -34,6 +33,12 @@ conn = pyodbc.connect(
 )
 
 gender = "male"
+
+resultsloc = f'results/qrisk2_{gender}'
+os.makedirs(resultsloc, exist_ok=True)
+os.makedirs(os.path.join(resultsloc, 'probs_and_outcomes'), exist_ok=True)
+os.makedirs(os.path.join(resultsloc, 'predictor_distributions'), exist_ok=True)
+
 
 # Query data from a table
 query = f"SELECT * FROM qrisk_{gender}s"
@@ -59,7 +64,7 @@ df.drop('chinese', axis=1, inplace=True)
 predictors.remove('chinese')
 
 # scale continuous variables using saved scaler parameters; require the scaler JSON to exist
-scaler_file = f'qrisk2_{gender}_scaler.json'
+scaler_file = os.path.join(resultsloc, f'qrisk2_{gender}_scaler.json')
 if os.path.exists(scaler_file):
     with open(scaler_file, 'r') as sf:
         scaler_params = json.load(sf)
@@ -88,18 +93,18 @@ df['age_af'] = df['age']*df['af']
 df['date'] = pd.to_datetime(df['date'])
 
 # if a file to store the model update dates or performance metrics doesn't exist, then create them with the correct headers
-if not os.path.exists(f"qrisk2_{gender}_performance_metrics.csv"):
-    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC','Method'])
-    perform_metrics_df.to_csv(f"qrisk2_{gender}_performance_metrics.csv", index=False)
+if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv")):
+    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC', 'F1Score', 'Sensitivity', 'Specificity', 'CoxSnellR2', 'Method'])
+    perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv"), index=False)
 
-if not os.path.exists(f"qrisk2_{gender}_model_updates.csv"):
+if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv")):
     perform_metrics_df = pd.DataFrame(columns=['date', 'method'])
-    perform_metrics_df.to_csv(f"qrisk2_{gender}_model_updates.csv", index=False)
+    perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
 #method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
-method_strs = ['Static Threshold']
-#method_strs = ['Bayesian']
+#method_strs = ['Static Threshold']
+method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -114,9 +119,9 @@ for method_str in method_strs:
 
     df = df[df['date']<= endDate]
 
-    plot_patients_per_month(df, model_type='qrisk2', gender=gender)
+    plot_patients_per_month(df, model_type='qrisk2', gender=gender, resultsloc=resultsloc)
     # Prefer the JSON file produced by the refit script which contains bootstrap summaries
-    thresh_json = f"qrisk_{gender}_thresh.json"
+    thresh_json = os.path.join(resultsloc, f"qrisk_{gender}_thresh.json")
     # Initialize threshold variables
     recalthreshold = None
     citl_thresh_lower = None
@@ -157,18 +162,22 @@ for method_str in method_strs:
 
     # If the startDate and endDate are the full period then fit the initial model
     if startDate == startOfAnalysis:
-        if not os.path.exists(f'qrisk2_{gender}_coefs.json'):
+        if not os.path.exists(os.path.join(resultsloc, f'qrisk2_{gender}_coefs.json')):
             raise FileNotFoundError(f"Coefficients file 'qrisk2_{gender}_coefs.json' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the coefficients file before running this script.")
         else:
-            with open(f'qrisk2_{gender}_coefs.json', 'r') as f:
+            with open(os.path.join(resultsloc, f'qrisk2_{gender}_coefs.json'), 'r') as f:
                 coefs = json.load(f)
 
-        coefs_std = {key: 0.25 for key in coefs}
+        if not os.path.exists(os.path.join(resultsloc, f'qrisk2_{gender}_coefs_std.json')):
+            raise FileNotFoundError(f"Coefficients file 'qrisk2_{gender}_coefs_std.json' not found. Please run 'refit_qrisk2_{gender}_model.py' to generate the coefficients file before running this script.")
+        else:
+            with open(os.path.join(resultsloc, f'qrisk2_{gender}_coefs_std.json'), 'r') as f:
+                coefs_std = json.load(f)
 
     else: # Else will only trigger when Bayesian model is run as other methods don't require batching dates
         # select most recent coefs from the bayesian df and set them as the coefs
-        bayes_coefs_df = pd.read_csv(f'qrisk2_{gender}_Bayesian_coefs.csv')
-        
+        bayes_coefs_df = pd.read_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'))
+
         bayes_coefs_df['date'] = pd.to_datetime(bayes_coefs_df['date'])
         bayes_coefs_df = bayes_coefs_df.sort_values('date')
         latest_bayes_coef = bayes_coefs_df['date'].max()
@@ -206,26 +215,26 @@ for method_str in method_strs:
 
     # clear the performance metrics and model updates for the method so we don't duplicate the date
     if (method_str != 'Bayesian') or (method_str=='Bayesian' and startDate == startOfAnalysis):
-        org_metrics = pd.read_csv(f'qrisk2_{gender}_performance_metrics.csv')
+        org_metrics = pd.read_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'))
         org_metrics = org_metrics[org_metrics["Method"] != method_str]
-        org_metrics.to_csv(f'qrisk2_{gender}_performance_metrics.csv', mode='w', header=True, index=False)
+        org_metrics.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), mode='w', header=True, index=False)
 
-        org_updates = pd.read_csv(f'qrisk2_{gender}_model_updates.csv')
+        org_updates = pd.read_csv(os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'))
         org_updates = org_updates[org_updates["method"] != method_str]
-        org_updates.to_csv(f'qrisk2_{gender}_model_updates.csv', mode='w', header=True, index=False)
+        org_updates.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'), mode='w', header=True, index=False)
 
     # Baseline Testing
     if method_str == 'Baseline':
         model = RecalibratePredictions()
         model.trigger = TimeframeTrigger(model=model, updateTimestep=9_999, dataStart=startDate, dataEnd=endDate)
-        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', model_name=f'{method_str}_qrisk2_{gender}')
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month')
 
     # Regular Testing
     if method_str == 'Regular Testing':
         reg_time = 3*365
         model = RecalibratePredictions()
         model.trigger = TimeframeTrigger(model=model, updateTimestep=reg_time, dataStart=startDate, dataEnd=endDate)
-        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=reg_time, model_name=f'{method_str}_qrisk2_{gender}')
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=reg_time)
 
 
     # Static Threshold Testing
@@ -237,14 +246,14 @@ for method_str in method_strs:
                 CalibrationSlopeThreshold(model=model, lower_limit=lower_limit_cslope, upper_limit=upper_limit_cslope)
 
         model.trigger = custom_trigger(model, lower_limit_citl, upper_limit_citl, lower_limit_cslope, upper_limit_cslope)
-        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=365, model_name=f'{method_str}_qrisk2_{gender}')
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
 
     # SPC Testing
     if method_str == 'SPC':
         model = RecalibratePredictions()
-        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=True)
-        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=365, model_name=f'{method_str}_qrisk2_{gender}')
+        model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=False)
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
 
     # Bayesian Testing
@@ -258,13 +267,13 @@ for method_str in method_strs:
             priors_df = pd.DataFrame([priors_dict])
             # add the date
             priors_df.insert(0, 'date', startDate)
-            priors_df.to_csv(f'qrisk2_{gender}_Bayesian_coefs.csv', mode='w', index=False, header=True)
-            
-        model = BayesianModel(input_data=df, priors=priors_dict, 
-                                cores=1, draws=100, tune=100, chains=2, verbose=False,
+            priors_df.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'), mode='w', index=False, header=True)
+
+        model = BayesianModel(input_data=df, priors=priors_dict,
+                                cores=6, draws=10000, tune=3000, chains=2, verbose=False,
                                 model_formula="outcome ~ white + indian + pakistani + bangladeshi + other_asian + black_caribbean + black_african + other_ethnicity + age + bmi + townsend_score + sbp + chol_hdl_ratio + fh_chd + current_smoker + treated_htn + diabetes + ra + af + ckd + age_bmi + age_townsend + age_sbp + age_fh_chd + age_smoking + age_treated_htn + age_diabetes + age_af")
         model.trigger = TimeframeTrigger(model=model, updateTimestep='month', dataStart=startDate, dataEnd=endDate)
-        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recal_period=30, model_name=f'{method_str}_qrisk2_{gender}', startOfAnalysis=startOfAnalysis)
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=30)
 
     ############################################ Run Testing ###########################################
 
@@ -275,6 +284,11 @@ for method_str in method_strs:
     mytest.addLogHook(CITL(model))
     mytest.addLogHook(OE(model))
     mytest.addLogHook(AUPRC(model))
+    mytest.addLogHook(F1Score(model))
+    mytest.addLogHook(Sensitivity(model))
+    mytest.addLogHook(Specificity(model))
+    mytest.addLogHook(CoxSnellR2(model))
+
     if method_str == 'Bayesian':
         mytest.addLogHook(TrackBayesianCoefs(model))
     mytest.run()
@@ -300,11 +314,11 @@ for method_str in method_strs:
                 transformed = predictionHooks[i](original)
                 postPredDf.loc[mask, 'prediction'] = transformed
 
-            postPredDf.to_csv(f"probs_and_outcomes/{method_str}_qrisk2_{gender}_predictions_and_outcomes.csv", mode='w', header=True, index=False)
+            postPredDf.to_csv(os.path.join(resultsloc, "probs_and_outcomes", f"{method_str}_qrisk2_{gender}_predictions_and_outcomes.csv"), mode='w', header=True, index=False)
 
     else: # if the model doesn't update
         noUpdatePreds = df[['date', 'outcome', 'prediction']].copy()
-        noUpdatePreds.to_csv(f"probs_and_outcomes/{method_str}_qrisk2_{gender}_predictions_and_outcomes.csv", mode='w', header=True, index=False)
+        noUpdatePreds.to_csv(os.path.join(resultsloc, "probs_and_outcomes", f"{method_str}_qrisk2_{gender}_predictions_and_outcomes.csv"), mode='w', header=True, index=False)
 
 
     if method_str == 'Bayesian':
@@ -315,40 +329,42 @@ for method_str in method_strs:
 
         bayes_coefs_df = pd.DataFrame.from_dict(log["BayesianCoefficients"], orient='index').reset_index()
         bayes_coefs_df.columns = ['date'] + list(bayes_coefs_df.columns[1:])
-        
-        bayes_coefs_df.to_csv(f'qrisk2_{gender}_Bayesian_coefs.csv', mode='a', index=False, header=False)
-        bayes_coefs_df = pd.read_csv(f'qrisk2_{gender}_Bayesian_coefs.csv')
+
+        bayes_coefs_df.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'), mode='a', index=False, header=False)
+        bayes_coefs_df = pd.read_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'))
         bayes_coefs_df = bayes_coefs_df.drop_duplicates(subset=['date'], keep='last')
-        bayes_coefs_df.to_csv(f'qrisk2_{gender}_Bayesian_coefs.csv', index=False) # save the changes to the csv
-        
+        bayes_coefs_df.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_Bayesian_coefs.csv'), index=False) # save the changes to the csv
+
         bayes_coefs_df['date'] = pd.to_datetime(bayes_coefs_df['date'])
 
-        BayesianCoefsPlot(bayes_coefs_df, f'qrisk_{gender}')
+        BayesianCoefsPlot(bayes_coefs_df, f'qrisk_{gender}', fileloc=resultsloc)
 
     ########################################### Save Metrics #######################################
     metrics = pd.DataFrame({'Time': list(log["Accuracy"].keys()), 'Accuracy': list(log["Accuracy"].values()), 'AUROC': list(log["AUROC"].values()), 
                             'Precision': list(log["Precision"].values()), 'CalibrationSlope': list(log["CalibrationSlope"].values()), 
                             'CITL': list(log["CITL"].values()), 'OE': list(log["O/E"].values()), 'AUPRC': list(log["AUPRC"].values()),
+                            'F1Score': list(log["F1score"].values()), 'Sensitivity': list(log["Sensitivity"].values()),
+                            'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()),
                             'Method':list([method_str] * len(log["Accuracy"]))})
 
-    metrics.to_csv(f'qrisk2_{gender}_performance_metrics.csv', mode='a', header=False, index=False)
+    metrics.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), mode='a', header=False, index=False)
     # load the data again with the new metrics included
-    metrics_updated = pd.read_csv(f'qrisk2_{gender}_performance_metrics.csv')
+    metrics_updated = pd.read_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'))
     # remove duplicates in the Time and Method columns
     metrics_updated.drop_duplicates(subset=['Time', 'Method'], keep='last', inplace=True)
     # save the metrics csv again
-    metrics_updated.to_csv(f'qrisk2_{gender}_performance_metrics.csv', mode='w', header=True, index=False)
+    metrics_updated.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), mode='w', header=True, index=False)
 
     if 'Model Updated' in log:
-        model_updates.to_csv(f'qrisk2_{gender}_model_updates.csv', mode='a', header=False, index=False)
+        model_updates.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'), mode='a', header=False, index=False)
 
 
 ############################################ Plot Metrics #######################################
 
-plot_method_comparison_metrics(metrics_df = f'qrisk2_{gender}_performance_metrics.csv', recalthreshold=recalthreshold, 
-                            model_updates=f'qrisk2_{gender}_model_updates.csv', model_type='qrisk2', gender=gender)
+plot_method_comparison_metrics(metrics_df = os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), recalthreshold=recalthreshold,
+                            model_updates=os.path.join(resultsloc, f'qrisk2_{gender}_model_updates.csv'), model_type='qrisk2', gender=gender, fileloc=resultsloc)
 
-plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2', gender=gender)
-plot_calibration_yearly(model='qrisk2', method_list = method_strs, gender=gender)
+plot_count_of_patients_over_threshold_risk(threshold=0.1, model_type='qrisk2', gender=gender, fileloc=resultsloc)
+plot_calibration_yearly(model='qrisk2', method_list = method_strs, gender=gender, fileloc=resultsloc)
 
-plot_predictor_distributions(df, predictors=['treated_htn'], plot_type='stacked_perc', model_name=f'qrisk2_{gender}')
+plot_predictor_distributions(df, predictors=['treated_htn'], plot_type='stacked_perc', model_name=f'qrisk2_{gender}', fileloc=resultsloc)

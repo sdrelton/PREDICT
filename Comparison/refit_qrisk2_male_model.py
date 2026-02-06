@@ -25,6 +25,9 @@ from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 from sklearn.calibration import calibration_curve
 from sklearn.preprocessing import StandardScaler
 import json
+from experiment_plots import *
+
+
 
 
 
@@ -39,6 +42,9 @@ conn = pyodbc.connect(
 )
 
 gender = "male"
+
+resultsloc = f'results/qrisk2_{gender}'
+os.makedirs(resultsloc, exist_ok=True)
 
 # Query data from a table
 query = f"SELECT * FROM qrisk_{gender}s"
@@ -78,7 +84,7 @@ endDate = pd.to_datetime('19-08-2015', dayfirst=True) # Most recent record minus
 
 # restrict to endDate and plot
 df = df[df['date']<= endDate]
-plot_patients_per_month(df, model_type='qrisk2', gender=gender)
+plot_patients_per_month(df, model_type='qrisk2', gender=gender, resultsloc=resultsloc)
 
 # select the prior six months used to fit the prefit model and the scalers
 prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
@@ -98,7 +104,7 @@ for var in ['age', 'chol_hdl_ratio', 'bmi', 'townsend_score']:
     df[var] = (df[var].astype(float) - mean_val) / scale_val
 
 # persist scaler parameters to JSON for downstream scripts
-with open(f'qrisk2_{gender}_scaler.json', 'w') as sf:
+with open(os.path.join(resultsloc, f'qrisk2_{gender}_scaler.json'), 'w') as sf:
     json.dump(scaler_params, sf)
 
 # create interaction terms after scaling
@@ -128,12 +134,19 @@ print("Prefit model Intercept:", intercept)
 print("Prefit model coefficients:", model.coef_[0])
 print(f"L2 Norm of coefficients: {np.linalg.norm(model.coef_)}")
 
-coefs = dict(zip(predictors + interactions, model.coef_.ravel().tolist()))
-# add the intercept to the coefs dict
-coefs['Intercept'] = float(intercept)
-coefs_std = {key: 0.25 for key in coefs} # make all the coef stds 0.25
+X_train_sm = sm.add_constant(X_train)
+sm_model = sm.GLM(y_train, X_train_sm, family=sm.families.Binomial())
+sm_results = sm_model.fit()
 
-y_prob = model.predict_proba(X_test)[:, 1]
+coefs = dict(zip(predictors + interactions, sm_results.params[1:].tolist()))
+coefs['Intercept'] = float(sm_results.params[0])
+
+coefs_std = dict(zip(predictors + interactions, sm_results.bse[1:].tolist()))
+coefs_std['Intercept'] = float(sm_results.bse[0])
+
+
+X_test_sm = sm.add_constant(X_test)
+y_prob = sm_results.predict(X_test_sm).values
 auroc = roc_auc_score(y_test, y_prob)
 # bootstrap AUROC, calibration-in-the-large (CITL) and calibration slope; estimate mean and SD
 n_boot = 500
@@ -219,9 +232,11 @@ out = {
     "bootstrap_samples_used": int(boot_aucs.size)
 }
 
-with open(f"qrisk_{gender}_thresh.json", "w") as jf:
+with open(os.path.join(resultsloc, f"qrisk_{gender}_thresh.json"), "w") as jf:
     json.dump(out, jf, indent=2)
 
-with open('qrisk2_male_coefs.json', 'w') as f:
+with open(os.path.join(resultsloc, f"qrisk2_{gender}_coefs.json"), "w") as f:
     json.dump(coefs, f)
-
+    
+with open(os.path.join(resultsloc, f"qrisk2_{gender}_coefs_std.json"), "w") as f:
+    json.dump(coefs_std, f)
