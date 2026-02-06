@@ -40,7 +40,97 @@ os.makedirs(os.path.join(resultsloc, 'probs_and_outcomes'), exist_ok=True)
 os.makedirs(os.path.join(resultsloc, 'predictor_distributions'), exist_ok=True)
 
 
+
+conn = pyodbc.connect(
+    "DRIVER={SQL Server};"
+    "SERVER=BHTS-CONNECTYO3;"
+    "DATABASE=CB_2151;"
+    "Trusted_Connection=yes;"
+)
+
+gender = "male"
+
+resultsloc = f'results/qrisk2_{gender}'
+os.makedirs(resultsloc, exist_ok=True)
+
 # Query data from a table
+query = f"SELECT * FROM qrisk_{gender}s"
+
+# Store query result in a dataframe
+df = pd.read_sql(query, conn)
+
+# Close the connection
+conn.close()
+
+
+predictors = ["age", "chol_hdl_ratio", "current_smoker", "bmi", "townsend_score", "sbp", "fh_chd", "treated_htn", "diabetes", "ra", "af", "ckd", "bangladeshi", "chinese", "indian", "other_asian", "pakistani", "black_african", "black_caribbean", "other_ethnicity", "white"]
+interactions = ["age_bmi", "age_townsend", "age_sbp", "age_fh_chd", "age_smoking", "age_treated_htn", "age_diabetes", "age_af"]
+
+# select specific columns
+df = df[["outcome", "DateOnly", "Age", "chol_hdl_ratio", "smoker_status", "bmi", "townsend_score", "sbp", "fh_chd", "treated_htn", "diabetes", "ra", "af", "ckd", "bangladeshi", "chinese", "indian", "other_asian", "pakistani", "black_african", "black_caribbean", "other_ethnicity", "white"]]
+# change some of the column names
+df.rename(columns={"DateOnly": "date", "smoker_status": "current_smoker", "Age": "age"}, inplace=True)
+print(df.head())
+# TODO: remove this after update, it currently randomly add small number to chol_hdl_ratio to prevent "The term is constant!" error until dataset is updated
+df['chol_hdl_ratio'] = df['chol_hdl_ratio'] + np.random.normal(0.0, 0.01, size=df['chol_hdl_ratio'].shape)
+
+# merge chinese into other asian due to the small number of chinese population
+df.loc[df['chinese'] == 1, 'other_asian'] = 1
+df.drop('chinese', axis=1, inplace=True)
+predictors.remove('chinese')
+
+df['bmi'] = df['bmi'].astype(float)
+df['townsend_score'] = df['townsend_score'].astype(float)
+
+# convert the date column to datetime
+df['date'] = pd.to_datetime(df['date'])
+
+# define analysis window
+startDate = pd.to_datetime('01-04-2008', dayfirst=True)
+endDate = pd.to_datetime('19-08-2015', dayfirst=True) # Most recent record minus 10 years: '2025-08-19'
+
+# restrict to endDate and plot
+df = df[df['date']<= endDate]
+
+# select the prior six months used to fit the prefit model and the scalers
+prior_six_months = df[(df['date'] >= startDate - relativedelta(months=6)) & (df['date'] < startDate)]
+
+# fit scalers on the prior six months only, apply to entire dataframe, and save parameters
+scaler_params = {}
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+for var in ['age', 'chol_hdl_ratio', 'bmi', 'townsend_score']:
+    sc = StandardScaler()
+    arr = prior_six_months[[var]].astype(float).values
+    sc.fit(arr)
+    mean_val = float(sc.mean_[0])
+    scale_val = float(sc.scale_[0]) if float(sc.scale_[0]) != 0 else 1.0
+    scaler_params[var] = {'mean': mean_val, 'scale': scale_val}
+    # apply scaling to full dataframe
+    df[var] = (df[var].astype(float) - mean_val) / scale_val
+
+# create interaction terms after scaling
+df['age_bmi'] = df['age']*df['bmi']
+df['age_townsend'] = df['age']*df['townsend_score']
+df['age_sbp'] = df['age']*df['sbp']
+df['age_fh_chd'] = df['age']*df['fh_chd']
+df['age_smoking'] = df['age']*df['current_smoker']
+df['age_treated_htn'] = df['age']*df['treated_htn']
+df['age_diabetes'] = df['age']*df['diabetes']
+df['age_af'] = df['age']*df['af']
+
+# select the prior six months used to fit the prefit model and the scalers
+prior_six_months = df[(df['date'] >= pd.to_datetime(startDate) - relativedelta(months=6) ) & (df['date'] < pd.to_datetime(startDate))]
+
+
+# Query data from a table
+conn = pyodbc.connect(
+    "DRIVER={SQL Server};"
+    "SERVER=BHTS-CONNECTYO3;"
+    "DATABASE=CB_2151;"
+    "Trusted_Connection=yes;"
+)
+
 query = f"SELECT * FROM qrisk_{gender}s"
 
 # Store query result in a dataframe
@@ -94,7 +184,7 @@ df['date'] = pd.to_datetime(df['date'])
 
 # if a file to store the model update dates or performance metrics doesn't exist, then create them with the correct headers
 if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv")):
-    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC', 'F1Score', 'Sensitivity', 'Specificity', 'CoxSnellR2', 'Method'])
+    perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC', 'F1Score', 'Sensitivity', 'Specificity', 'CoxSnellR2', 'KLDivergence', 'Method'])
     perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv"), index=False)
 
 if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv")):
@@ -102,9 +192,9 @@ if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.c
     perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
 ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-#method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC']
+method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'KLD']
 #method_strs = ['Static Threshold']
-method_strs = ['Bayesian']
+#method_strs = ['Bayesian']
 
 for method_str in method_strs:
 
@@ -212,6 +302,13 @@ for method_str in method_strs:
     # Estimate predictions
     curpredictions = 1 / (1 + np.exp(-lp))  # Convert to probability
     df['prediction'] = curpredictions
+    
+    
+    feature_matrix_prior = prior_six_months[predictors+interactions].astype(float)
+    weighted_coef_sum_prior = np.dot(feature_matrix_prior, coef_vector)
+    lp_prior = coefs['Intercept'] + weighted_coef_sum_prior
+    curpredictions_prior = 1 / (1 + np.exp(-lp_prior))
+    prior_six_months['prediction'] = curpredictions_prior
 
     # clear the performance metrics and model updates for the method so we don't duplicate the date
     if (method_str != 'Bayesian') or (method_str=='Bayesian' and startDate == startOfAnalysis):
@@ -254,6 +351,12 @@ for method_str in method_strs:
         model = RecalibratePredictions()
         model.trigger = SPCTrigger(model=model, input_data=df, numMonths=12, verbose=False)
         mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
+        
+    # KL Divergence
+    if method_str == 'KLD':
+        model = RecalibratePredictions()
+        model.trigger = KLDivergenceThreshold(model=model, initial_data=prior_six_months, update_threshold=0.03)
+        mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
 
     # Bayesian Testing
@@ -288,6 +391,7 @@ for method_str in method_strs:
     mytest.addLogHook(Sensitivity(model))
     mytest.addLogHook(Specificity(model))
     mytest.addLogHook(CoxSnellR2(model))
+    mytest.addLogHook(ResidualKLDivergence(model, initial_data=prior_six_months))
 
     if method_str == 'Bayesian':
         mytest.addLogHook(TrackBayesianCoefs(model))
@@ -344,7 +448,7 @@ for method_str in method_strs:
                             'Precision': list(log["Precision"].values()), 'CalibrationSlope': list(log["CalibrationSlope"].values()), 
                             'CITL': list(log["CITL"].values()), 'OE': list(log["O/E"].values()), 'AUPRC': list(log["AUPRC"].values()),
                             'F1Score': list(log["F1score"].values()), 'Sensitivity': list(log["Sensitivity"].values()),
-                            'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()),
+                            'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()), 'KLDivergence': list(log["ResidualKLDivergence"].values()),
                             'Method':list([method_str] * len(log["Accuracy"]))})
 
     metrics.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), mode='a', header=False, index=False)
