@@ -201,9 +201,6 @@ def __KLDivergenceThreshold(self, input_data, initial_residuals, update_threshol
 
     new_predictions = self.predict(input_data)
     new_residuals = input_data[self.outcomeColName] - new_predictions
-    
-    if len(new_residuals) == 0:
-        return False
 
     kld = kl_divergence(initial_residuals, new_residuals)
 
