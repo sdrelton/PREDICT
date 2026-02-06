@@ -238,6 +238,23 @@ def OEPlot(log):
     plt.show()
 
 
+def KLDivergencePlot(log):
+    """Plot the KL Divergence of the model residuals over time.
+
+    Args:
+        log (dict): Log of model metrics over time and when the model was updated.
+    """
+    plt.figure()
+    plt.plot(log['ResidualKLDivergence'].keys(), log['ResidualKLDivergence'].values(), label='KL Divergence')
+    if 'Model Updated' in log:
+        plt.vlines(log['Model Updated'].keys(), min(log['ResidualKLDivergence'].values()), max(log['ResidualKLDivergence'].values()), colors='r', linestyles='dashed', label='Model Updated')
+    plt.xlabel('Timesteps')
+    plt.ylabel('KL Divergence')
+    plt.legend(loc='lower left', fontsize=8, markerscale=0.8, frameon=True)
+    plt.xticks(rotation=90)
+    plt.show()
+
+
 def NormalisedSumOfDiffPlot(log):
     """Plot the error of the model over time.
 

@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from scipy.special import logit
 from PREDICT import Metrics
 import sklearn as skl
+from PREDICT.Utils import kl_divergence
 
 def AccuracyThreshold(model, pos_threshold=0.5, update_threshold=0.7):
     return MethodType(lambda self, x: __AccuracyThreshold(self, x, pos_threshold, update_threshold), model)
@@ -168,6 +169,45 @@ def __F1Threshold(self, input_data, pos_threshold, update_threshold):
         return False
     else:
         return True
+
+def KLDivergenceThreshold(model, initial_data, update_threshold=0.1):
+    """Create a trigger that fires when the KL divergence of residuals exceeds a threshold.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method and an outcomeColName attribute.
+        initial_data (pd.DataFrame): Data to compute initial residuals from.
+        update_threshold (float): KL divergence threshold to trigger an update.
+
+    Returns:
+        MethodType: Bound method that accepts (self, input_data) and returns True when KL divergence is too high.
+    """
+    if not hasattr(model, 'outcomeColName'):
+        raise AttributeError("Model must have an 'outcomeColName' attribute to use KLDivergenceThreshold.")
+    
+    initial_predictions = model.predict(initial_data)
+    initial_residuals = initial_data[model.outcomeColName] - initial_predictions
+
+    return MethodType(lambda self, x: __KLDivergenceThreshold(self, x, initial_residuals, update_threshold), model)
+
+
+def __KLDivergenceThreshold(self, input_data, initial_residuals, update_threshold):
+    """Trigger implementation that computes KL divergence of residuals and compares to a threshold.
+
+    Returns:
+        bool: True if KL divergence is above threshold.
+    """
+    if input_data.empty:
+        return False
+
+    new_predictions = self.predict(input_data)
+    new_residuals = input_data[self.outcomeColName] - new_predictions
+
+    kld = kl_divergence(initial_residuals, new_residuals)
+
+    if kld > update_threshold:
+        return True
+    else:
+        return False
     
 
 
