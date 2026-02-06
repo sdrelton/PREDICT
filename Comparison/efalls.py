@@ -262,7 +262,7 @@ for method_str in method_strs:
             priors_df = pd.DataFrame([priors_dict])
             # add the date
             priors_df.insert(0, 'date', startDate)
-            priors_df.to_csv(f'efalls_Bayesian_coefs.csv', mode='w', index=False, header=True)
+            priors_df.to_csv(os.path.join(resultsloc, f'efalls_Bayesian_coefs.csv'), mode='w', index=False, header=True)
             
         model = BayesianModel(input_data=df, priors=priors_dict, 
                                 cores=6, draws=10000, tune=3000, chains=2, verbose=False,
