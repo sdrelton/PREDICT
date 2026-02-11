@@ -97,6 +97,8 @@ class PREDICT:
         Runs the prediction model over the specified date range.
         """
         while self.currentWindowEnd <= self.endDate:
+            if self.verbose:
+                print('Current window:', self.currentWindowStart, 'to', self.currentWindowEnd)
             dates = self.data[self.dateCol]
             curdata = self.data[(dates >= self.currentWindowStart) & (dates < self.currentWindowEnd)]
             for hook in self.logHooks:

@@ -149,6 +149,77 @@ class RecalibratePredictions(PREDICTModel):
         recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
         self.addPostPredictHook(recal)
         return intercept, scale
+    
+
+class RecalibratePredictionsDynamicTrigger(PREDICTModel):
+    """
+    A class which recalibrates the predictions arising from another model based on the trigger function.
+    
+    Recalibration involves using a logistic regression to adjust the model predictions.
+    
+    Needs to be followed by setting a trigger function (see example).
+    
+    Args:
+        triggerFunction (MethodType, callable): A function that takes the model and input data, and returns a boolean indicating whether to trigger recalibration.
+            Must be of the form f(model, input_data) and return a MethodType.
+        predictColName (str): The name of the column in the dataframe containing the predictions (default='prediction').
+        outcomeColName (str): The name of the column in the dataframe containing the outcomes (default='outcome').
+        dateCol (str): The name of the column in the dataframe containing the dates (default='date').
+        
+    Examples
+    --------
+    # Create a model which recalibrates predictions when triggered
+    # Full example can be found in Examples/recalibration_example.ipynb
+    model = RecalibratePredictions()
+    model.trigger = AccuracyThreshold(model=model, update_threshold=0.7)       
+    """
+    
+    def __init__(self, triggerFunction=None, predictColName='prediction', outcomeColName='outcome', dateCol='date'):
+        super().__init__()
+        self.predictColName = predictColName
+        self.outcomeColName = outcomeColName
+        self.dateCol = dateCol
+        self.triggerFunction = triggerFunction
+        
+
+    def __sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def __inverseSigmoid(self, y):
+        return np.log(y / (1 - y))
+        
+    def predict(self, input_data):
+        preds = input_data[self.predictColName]
+        # Recalibrate from any hooks that have been added
+        for hook in self.postPredictHooks:
+            preds = hook(preds)
+        return preds
+    
+    def update(self, input_data, windowStart, windowEnd, recalPeriod):
+        # Get predictions
+        if recalPeriod is None:
+            curdata = input_data[(input_data[self.dateCol] >= windowStart) & (input_data[self.dateCol] < windowEnd)]
+        else:
+            curdata = input_data[(input_data[self.dateCol] >= (windowEnd - pd.Timedelta(days=recalPeriod))) & (input_data[self.dateCol] < windowEnd)]
+        
+        preds = self.predict(curdata)
+        
+        # Convert to linear predictor scale
+        lp = self.__inverseSigmoid(preds)
+        
+        # Work out model calibration
+        logreg = LogisticRegression(penalty=None, max_iter=5000) # 'l1', 'elasticnet', 'l2' or None
+        logreg.fit(np.array(lp).reshape(-1, 1), curdata[self.outcomeColName].astype(int))
+        intercept = logreg.intercept_
+        scale = logreg.coef_[0]
+        
+        # Add hook to adjust predictions accordingly
+        recal = lambda p: self.__sigmoid(self.__inverseSigmoid(p) * scale + intercept)
+        self.addPostPredictHook(recal)
+        
+        # After adjusting, reset the trigger function as per function input
+        self.trigger = self.triggerFunction(self, curdata)
+        return intercept, scale
 
 class BayesianModel(PREDICTModel):
     """ A class which uses Bayesian regression to update the coefficients of a logistic regression model.

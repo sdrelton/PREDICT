@@ -145,6 +145,48 @@ def __CITLThreshold(self, input_data, lower_limit, upper_limit):
 
     return False
 
+def DiscriminationErrorThreshold(model, input_data, keepCols=None, update_threshold=0.9):
+    return MethodType(lambda self, x: __DiscriminationErrorThreshold(self, x, input_data, keepCols, update_threshold), model)
+
+
+def __DiscriminationErrorThreshold(self, input_data, initial_data, keepCols, update_threshold):
+    """Trigger implementation that computes discrimination error (Tucker et. al.) and compares to a threshold.
+
+    Args:
+        input_data (pd.DataFrame): Data to compute discrimination error from.
+        initial_data (pd.DataFrame): Initial data used for comparison.
+        keepCols (list, optional): Columns to keep for the analysis.
+        update_threshold (float): Threshold for triggering an update.
+
+    Returns:
+        bool: True if discrimination error is above threshold.
+    """
+    if input_data.empty:
+        return False
+
+    if keepCols is not None:
+        initial_data = initial_data[keepCols]
+        df = input_data[keepCols]
+
+    # Concanate with label of 0 for initial data and 1 for new data
+    initial_data['label'] = 0
+    df['label'] = 1
+    combined = pd.concat([initial_data, df], axis=0)
+    
+    # Fit logistic regression model to predict label given all other columns
+    clf = LogisticRegression(penalty=None, fit_intercept=True, solver='lbfgs', tol=1e-3, max_iter=500).fit(combined.drop(columns=['label']), combined['label'])
+    
+    # Save predictions
+    combined['predictions'] = clf.predict_proba(combined.drop(columns=['label']))[:,1]
+
+    # Compute discrimination error
+    disc_error = combined[combined.label == 0]['predictions'].mean() + (1-combined[combined.label == 1]['predictions']).mean()
+
+    if disc_error <= update_threshold:
+        return True
+    else:
+        return False
+
 def F1Threshold(model, pos_threshold=0.5, update_threshold=0.7):
     return MethodType(lambda self, x: __F1Threshold(self, x, pos_threshold, update_threshold), model)
 
@@ -170,7 +212,7 @@ def __F1Threshold(self, input_data, pos_threshold, update_threshold):
     else:
         return True
 
-def KLDivergenceThreshold(model, initial_data, update_threshold=0.1):
+def KLDivergenceThreshold(model, input_data, update_threshold=0.1):
     """Create a trigger that fires when the KL divergence of residuals exceeds a threshold.
 
     Args:
@@ -184,8 +226,8 @@ def KLDivergenceThreshold(model, initial_data, update_threshold=0.1):
     if not hasattr(model, 'outcomeColName'):
         raise AttributeError("Model must have an 'outcomeColName' attribute to use KLDivergenceThreshold.")
     
-    initial_predictions = model.predict(initial_data)
-    initial_residuals = initial_data[model.outcomeColName] - initial_predictions
+    initial_predictions = model.predict(input_data)
+    initial_residuals = input_data[model.outcomeColName] - initial_predictions
 
     return MethodType(lambda self, x: __KLDivergenceThreshold(self, x, initial_residuals, update_threshold), model)
 
