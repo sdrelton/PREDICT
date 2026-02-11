@@ -146,6 +146,24 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
         metrics_df["Method"] = metrics_df["Method"].replace({"Static Threshold": f"Static Threshold"})
 
         fig, ax = plt.subplots(figsize=(14, 7))
+        
+        for method in ['Regular Testing', "Static Threshold", "SPC", "Bayesian", 'KLD', 'DE']:
+            if method in model_updates['method'].values:
+                if method == "Regular Testing":
+                    curcolour = 'orange'
+                elif method == "Static Threshold":
+                    curcolour = 'green'
+                elif method == "SPC":
+                    curcolour = 'red'
+                elif method == "Bayesian":
+                    curcolour = 'purple'
+                elif method == "KLD":
+                    curcolour = 'blue'
+                elif method == "DE":
+                    curcolour = 'cyan'
+            else:
+                curcolour = 'black'
+
 
         sns.lineplot(
             data=metrics_df,
@@ -154,7 +172,8 @@ def plot_method_comparison_metrics(metrics_df, recalthreshold, model_updates, mo
             hue="Method",
             ci=None,
             style="Method",
-            ax=ax
+            ax=ax,
+            color = curcolour,
         )
 
         
@@ -268,7 +287,7 @@ def plot_calibration_yearly(model, method_list = ['Baseline', 'Regular Testing',
     lowess_frac = None  # set to None to disable LOWESS
 
     years = sorted(df['year'].unique())
-    palette = sns.color_palette('tab10', 5)
+    palette = sns.color_palette('tab10', 8)
 
     for year in years:
         fig, ax = plt.subplots(figsize=(9, 6))
