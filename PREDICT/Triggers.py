@@ -170,7 +170,7 @@ def __F1Threshold(self, input_data, pos_threshold, update_threshold):
     else:
         return True
 
-def KLDivergenceThreshold(model, initial_data, update_threshold=0.1):
+def KLDivergenceThreshold(model, input_data, update_threshold=0.1):
     """Create a trigger that fires when the KL divergence of residuals exceeds a threshold.
 
     Args:
@@ -184,8 +184,8 @@ def KLDivergenceThreshold(model, initial_data, update_threshold=0.1):
     if not hasattr(model, 'outcomeColName'):
         raise AttributeError("Model must have an 'outcomeColName' attribute to use KLDivergenceThreshold.")
     
-    initial_predictions = model.predict(initial_data)
-    initial_residuals = initial_data[model.outcomeColName] - initial_predictions
+    initial_predictions = model.predict(input_data)
+    initial_residuals = input_data[model.outcomeColName] - initial_predictions
 
     return MethodType(lambda self, x: __KLDivergenceThreshold(self, x, initial_residuals, update_threshold), model)
 

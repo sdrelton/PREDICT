@@ -196,7 +196,8 @@ if __name__ == '__main__':
     ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
     #method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'KLD']
     #method_strs = ['Static Threshold']
-    method_strs = ['Bayesian']
+    #method_strs = ['Bayesian']
+    method_strs = ['KLD']
 
     for method_str in method_strs:
 
@@ -356,8 +357,9 @@ if __name__ == '__main__':
             
         # KL Divergence
         if method_str == 'KLD':
-            model = RecalibratePredictions()
-            model.trigger = KLDivergenceThreshold(model=model, initial_data=prior_six_months, update_threshold=0.03)
+            trigger_func = lambda modelobj, input_data: KLDivergenceThreshold(model=modelobj, input_data=input_data, update_threshold=0.05)
+            model = RecalibratePredictionsDynamicTrigger(triggerFunction=trigger_func)
+            model.trigger = trigger_func(model, prior_six_months)
             mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
 
