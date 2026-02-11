@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
     # if a file to store the model update dates or performance metrics doesn't exist, then create them with the correct headers
     if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv")):
-        perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC', 'F1Score', 'Sensitivity', 'Specificity', 'CoxSnellR2', 'KLDivergence', 'Method'])
+        perform_metrics_df = pd.DataFrame(columns=['Time','Accuracy','AUROC','Precision','CalibrationSlope','CITL','OE','AUPRC', 'F1Score', 'Sensitivity', 'Specificity', 'CoxSnellR2', 'KLDivergence', 'DiscriminationError', 'Method'])
         perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_performance_metrics.csv"), index=False)
 
     if not os.path.exists(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv")):
@@ -194,10 +194,10 @@ if __name__ == '__main__':
         perform_metrics_df.to_csv(os.path.join(resultsloc, f"qrisk2_{gender}_model_updates.csv"), index=False)
 
     ################################## FOR SIMPLICITY RUN THE BAYESIAN METHOD SEPARATELY TO THE OTHER METHODS ##################################
-    #method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'KLD']
+    method_strs = ['Baseline', 'Regular Testing', 'Static Threshold', 'SPC', 'KLD', 'DE']
     #method_strs = ['Static Threshold']
     #method_strs = ['Bayesian']
-    method_strs = ['KLD']
+    #method_strs = ['DE']
 
     for method_str in method_strs:
 
@@ -361,7 +361,12 @@ if __name__ == '__main__':
             model = RecalibratePredictionsDynamicTrigger(triggerFunction=trigger_func)
             model.trigger = trigger_func(model, prior_six_months)
             mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
-
+            
+        if method_str == 'DE':
+            trigger_func = lambda modelobj, input_data: DiscriminationErrorThreshold(model=modelobj, input_data=input_data, keepCols=predictors+interactions, update_threshold=0.9)
+            model = RecalibratePredictionsDynamicTrigger(triggerFunction=trigger_func)
+            model.trigger = trigger_func(model, prior_six_months)
+            mytest = PREDICT(data=df, model=model, startDate=startDate, endDate=endDate, timestep='month', recalPeriod=365)
 
         # Bayesian Testing
         if method_str == 'Bayesian':
@@ -396,6 +401,7 @@ if __name__ == '__main__':
         mytest.addLogHook(Specificity(model))
         mytest.addLogHook(CoxSnellR2(model))
         mytest.addLogHook(ResidualKLDivergence(model, initial_data=prior_six_months))
+        mytest.addLogHook(DiscriminationError(model, initial_data=prior_six_months, keepCols=predictors+interactions))
 
         if method_str == 'Bayesian':
             mytest.addLogHook(TrackBayesianCoefs(model))
@@ -452,7 +458,8 @@ if __name__ == '__main__':
                                 'Precision': list(log["Precision"].values()), 'CalibrationSlope': list(log["CalibrationSlope"].values()), 
                                 'CITL': list(log["CITL"].values()), 'OE': list(log["O/E"].values()), 'AUPRC': list(log["AUPRC"].values()),
                                 'F1Score': list(log["F1score"].values()), 'Sensitivity': list(log["Sensitivity"].values()),
-                                'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()), 'KLDivergence': list(log["ResidualKLDivergence"].values()),
+                                'Specificity': list(log["Specificity"].values()), 'CoxSnellR2': list(log["CoxSnellR2"].values()), 
+                                'KLDivergence': list(log["ResidualKLDivergence"].values()), 'DiscriminationError': list(log["DiscriminationError"].values()),
                                 'Method':list([method_str] * len(log["Accuracy"]))})
 
         metrics.to_csv(os.path.join(resultsloc, f'qrisk2_{gender}_performance_metrics.csv'), mode='a', header=False, index=False)

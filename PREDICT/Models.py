@@ -218,7 +218,7 @@ class RecalibratePredictionsDynamicTrigger(PREDICTModel):
         self.addPostPredictHook(recal)
         
         # After adjusting, reset the trigger function as per function input
-        self.trigger = self.triggerFunction(self, input_data)
+        self.trigger = self.triggerFunction(self, curdata)
         return intercept, scale
 
 class BayesianModel(PREDICTModel):

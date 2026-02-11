@@ -1,5 +1,6 @@
 import numpy as np
 import sklearn as skl
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 import statsmodels.api as sm
 from scipy.special import logit
@@ -505,3 +506,60 @@ def __ResidualKLDivergenceComputation(model, df, initial_residuals, outcomeCol):
     kld = kl_divergence(initial_residuals, new_residuals)
     
     return 'ResidualKLDivergence', kld
+
+def DiscriminationError(model, initial_data, keepCols=None):
+    """
+    Function to compute the discrimination error (as described by Tucker et. al.) of new data compared to the initial data.
+    
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        initial_data (pd.DataFrame): The initial data to compare against.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        logHook: A hook to compute the discrimination error at each timestep when fed new data.
+    """
+
+    return lambda df: __DiscriminationErrorComputation(model, df, initial_data, keepCols)
+
+def __DiscriminationErrorComputation(model, df, initial_data, keepCols):
+    """
+    Function to compute the discrimination error (as described by Tucker et. al.) of new data compared to the initial data.
+
+    Args:
+        model (PREDICTModel): The model to evaluate, must have a predict method.
+        df (pd.DataFrame): DataFrame to evaluate the model on.
+        initial_residuals (pd.Series): The initial residuals to compare against.
+        dateCol (str, optional): The column in the dataframe containing the dates. Defaults to 'date'.
+        outcomeCol (str, optional): The column in the dataframe containing the actual outcomes. Defaults to 'outcome'.
+
+    Returns:
+        hookname (str), result (float): The name of the hook ('DiscriminationError'), and the resulting discrimination error.
+    """
+    if df.empty:
+        return 'DiscriminationError', 0.0
+    
+    # Keep only columns mentioned in keepCols
+    if keepCols is not None:
+        initial_data = initial_data[keepCols]
+        df = df[keepCols]
+
+    # Capture length of each dataset
+    initial_length = len(initial_data)
+    new_length = len(df)
+
+    # Concanate with label of 0 for initial data and 1 for new data
+    initial_data['label'] = 0
+    df['label'] = 1
+    combined = pd.concat([initial_data, df], axis=0)
+    
+    # Fit logistic regression model to predict label given all other columns
+    clf = LogisticRegression(penalty=None, fit_intercept=True, solver='lbfgs', tol=1e-3, max_iter=500).fit(combined.drop(columns=['label']), combined['label'])
+
+    # Save predictions
+    combined['predictions'] = clf.predict_proba(combined.drop(columns=['label']))[:,1]
+
+    # Compute discrimination error
+    disc_error = combined[combined.label == 0]['predictions'].mean() + (1-combined[combined.label == 1]['predictions']).mean()
+
+    return 'DiscriminationError', disc_error
